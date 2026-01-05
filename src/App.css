@@ -34,11 +34,146 @@ body {
   padding: 1rem 0;
   margin-bottom: 1rem;
   border-bottom: 1px solid #e0e0e0;
+  position: relative;
 }
 
 .app-header h1 {
   font-size: 1.8rem;
   color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+/* Data Source Controls */
+.data-source-controls {
+  position: relative;
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+.data-source-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2c3e50;
+  background-color: white;
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.data-source-button:hover {
+  background-color: #3498db;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  margin-left: 0.3rem;
+}
+
+.data-source-selector {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0.5rem;
+  background-color: white;
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 280px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.data-source-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+  text-align: left;
+  background-color: white;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.data-source-option:last-child {
+  border-bottom: none;
+}
+
+.data-source-option:hover {
+  background-color: #f8f9fa;
+}
+
+.data-source-option.active {
+  background-color: #e8f4f8;
+}
+
+.source-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.source-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.source-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.source-description {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.check-mark {
+  color: #27ae60;
+  font-size: 1.2rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.data-source-warning {
+  padding: 0.8rem 1rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  color: #856404;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.loading-source {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem;
 }
 
 /* Main Content */

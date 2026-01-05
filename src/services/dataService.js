@@ -3,12 +3,34 @@
 // 本地JSON文件数据源
 import localSentences from '../data/sentences.json';
 
+// 数据源类型常量
+export const DATA_SOURCE_TYPES = {
+  LOCAL: 'local',
+  NOTION: 'notion',
+};
+
+// 数据源配置
+export const DATA_SOURCES = [
+  {
+    id: DATA_SOURCE_TYPES.LOCAL,
+    name: '本地数据',
+    description: '使用本地 JSON 文件中的句子',
+    icon: '📁',
+  },
+  {
+    id: DATA_SOURCE_TYPES.NOTION,
+    name: 'Notion',
+    description: '从 Notion 页面动态获取句子',
+    icon: '📝',
+  },
+];
+
 /**
  * 从本地JSON文件获取句子
- * @returns {Array} 句子数组
+ * @returns {Promise<Array>} 句子数组
  */
-export const getLocalSentences = () => {
-  return localSentences;
+export const getLocalSentences = async () => {
+  return Promise.resolve(localSentences);
 };
 
 /**
@@ -17,10 +39,20 @@ export const getLocalSentences = () => {
  * @returns {Promise<Array>} 句子数组
  */
 export const getNotionSentences = async () => {
+  // 创建超时控制器
+  const controller = new AbortController();
+  let timeoutId = null;
+  
   try {
     // 调用 Netlify Function
     const functionUrl = '/.netlify/functions/get-notion-sentences';
-    const response = await fetch(functionUrl);
+    
+    // 设置超时
+    timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+    
+    const response = await fetch(functionUrl, {
+      signal: controller.signal,
+    });
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -31,31 +63,50 @@ export const getNotionSentences = async () => {
     
     if (data.error) {
       console.error('Notion API error:', data.error);
-      return [];
+      throw new Error(data.message || data.error);
     }
     
     return data.sentences || [];
   } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error('Notion API request timeout');
+      throw new Error('请求超时，请检查网络连接');
+    }
     console.error('Error fetching Notion sentences:', error);
-    return [];
+    throw error;
+  } finally {
+    // 确保清理超时，无论成功还是失败
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
   }
 };
 
 /**
- * 获取句子数据（优先从Notion获取，失败则使用本地JSON）
- * @param {boolean} useNotion - 是否使用 Notion 数据源（默认 true）
+ * 根据数据源类型获取句子
+ * @param {string} dataSourceType - 数据源类型 (DATA_SOURCE_TYPES)
  * @returns {Promise<Array>} 句子数组
  */
-export const getSentences = async (useNotion = true) => {
-  // 如果启用 Notion，则尝试从 Notion 获取
-  if (useNotion) {
-    const notionSentences = await getNotionSentences();
-    if (notionSentences.length > 0) {
-      return notionSentences;
-    }
-    console.warn('Failed to fetch from Notion, falling back to local sentences');
+export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LOCAL) => {
+  switch (dataSourceType) {
+    case DATA_SOURCE_TYPES.NOTION:
+      return await getNotionSentences();
+    case DATA_SOURCE_TYPES.LOCAL:
+    default:
+      return await getLocalSentences();
+  }
+};
+
+/**
+ * 获取句子数据（兼容旧接口）
+ * @param {string|boolean} dataSource - 数据源类型或是否使用 Notion（向后兼容）
+ * @returns {Promise<Array>} 句子数组
+ */
+export const getSentences = async (dataSource = DATA_SOURCE_TYPES.LOCAL) => {
+  // 向后兼容：如果传入 boolean，转换为数据源类型
+  if (typeof dataSource === 'boolean') {
+    dataSource = dataSource ? DATA_SOURCE_TYPES.NOTION : DATA_SOURCE_TYPES.LOCAL;
   }
   
-  // 回退到本地JSON文件
-  return getLocalSentences();
+  return await getSentencesBySource(dataSource);
 };

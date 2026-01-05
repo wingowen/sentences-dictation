@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
-import { getSentences } from './services/dataService'
+import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
 import { parseSentenceForPhonetics } from './services/pronunciationService'
 
@@ -13,13 +13,16 @@ function App() {
   const [result, setResult] = useState(null) // null, 'correct', 'incorrect'
   const [isLoading, setIsLoading] = useState(true)
   const [speechSupported, setSpeechSupported] = useState(false)
-  const [useNotion, setUseNotion] = useState(true) // 是否使用 Notion 数据源
+  const [dataSource, setDataSource] = useState(DATA_SOURCE_TYPES.LOCAL) // 当前数据源，默认为本地
+  const [dataSourceError, setDataSourceError] = useState(null) // 数据源错误信息
   const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
   const [showOriginalText, setShowOriginalText] = useState(false) // 控制是否显示原文
   const [showModal, setShowModal] = useState(false) // 控制弹窗显示
+  const [showDataSourceSelector, setShowDataSourceSelector] = useState(false) // 控制数据源选择器显示
   const [autoPlay, setAutoPlay] = useState(true) // 控制自动朗读，默认打开
   const inputRefs = useRef([]) // 输入框引用数组
   const autoNextTimerRef = useRef(null) // 自动跳转定时器引用
+  const isFallbackInProgressRef = useRef(false) // 标记是否正在进行回退操作
 
   // 初始化
   useEffect(() => {
@@ -27,8 +30,28 @@ function App() {
     setSpeechSupported(isSpeechSupported())
   }, [])
 
-  // 加载句子数据（当 useNotion 变化时重新加载）
+  // 点击外部区域关闭数据源选择器
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDataSourceSelector && !event.target.closest('.data-source-controls')) {
+        setShowDataSourceSelector(false)
+      }
+    }
+
+    if (showDataSourceSelector) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showDataSourceSelector])
+
+  // 加载句子数据（当数据源变化时重新加载）
+  useEffect(() => {
+    // 如果正在进行回退操作，跳过执行
+    if (isFallbackInProgressRef.current) {
+      return
+    }
     loadSentences()
   }, [loadSentences])
 
@@ -73,16 +96,52 @@ function App() {
 
   // 加载句子数据
   const loadSentences = useCallback(async () => {
+    // 如果正在进行回退操作，避免重复执行
+    if (isFallbackInProgressRef.current) {
+      return
+    }
+    
     setIsLoading(true)
+    setDataSourceError(null)
+    setCurrentIndex(0) // 切换数据源时重置到第一题
+    
     try {
-      const data = await getSentences(useNotion)
-      setSentences(data)
+      const data = await getSentences(dataSource)
+      if (data && data.length > 0) {
+        setSentences(data)
+        setDataSourceError(null)
+      } else {
+        throw new Error('数据源返回空数据')
+      }
     } catch (error) {
       console.error('Error loading sentences:', error)
+      setDataSourceError(error.message || '加载数据失败')
+      // 如果当前不是本地数据源，尝试回退到本地数据源
+      if (dataSource !== DATA_SOURCE_TYPES.LOCAL) {
+        console.warn('Falling back to local data source')
+        isFallbackInProgressRef.current = true
+        try {
+          const localData = await getSentences(DATA_SOURCE_TYPES.LOCAL)
+          setSentences(localData)
+          setDataSourceError(`数据源加载失败，已切换到本地数据: ${error.message}`)
+          // 更新数据源状态，但标记回退已完成，避免触发重复加载
+          setDataSource(DATA_SOURCE_TYPES.LOCAL)
+          // 在下一个事件循环中重置回退标记，确保状态更新完成
+          setTimeout(() => {
+            isFallbackInProgressRef.current = false
+          }, 0)
+        } catch (fallbackError) {
+          console.error('Fallback to local also failed:', fallbackError)
+          setSentences([])
+          isFallbackInProgressRef.current = false
+        }
+      } else {
+        setSentences([])
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [useNotion])
+  }, [dataSource])
 
   // 规范化处理：忽略大小写、前后空格和常见标点
   const normalize = (str) => {
@@ -209,21 +268,70 @@ function App() {
     }
   }
 
-  if (isLoading) {
-    return <div className="loading">Loading sentences...</div>
+  // 切换数据源
+  const handleDataSourceChange = (newDataSource) => {
+    if (newDataSource !== dataSource) {
+      setDataSource(newDataSource)
+      setShowDataSourceSelector(false)
+    }
   }
 
-  if (sentences.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="loading">
+        <div>Loading sentences...</div>
+        <div className="loading-source">从 {DATA_SOURCES.find(s => s.id === dataSource)?.name || '数据源'} 加载中...</div>
+      </div>
+    )
+  }
+
+  if (sentences.length === 0 && !dataSourceError) {
     return <div className="error">No sentences available. Please check your data source.</div>
   }
+
+  const currentDataSource = DATA_SOURCES.find(s => s.id === dataSource)
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>Sentence Dictation Practice</h1>
+        <div className="data-source-controls">
+          <button 
+            className="data-source-button"
+            onClick={() => setShowDataSourceSelector(!showDataSourceSelector)}
+            title="切换数据源"
+          >
+            {currentDataSource?.icon} {currentDataSource?.name || '数据源'}
+            <span className="dropdown-arrow">{showDataSourceSelector ? '▲' : '▼'}</span>
+          </button>
+          {showDataSourceSelector && (
+            <div className="data-source-selector">
+              {DATA_SOURCES.map((source) => (
+                <button
+                  key={source.id}
+                  className={`data-source-option ${dataSource === source.id ? 'active' : ''}`}
+                  onClick={() => handleDataSourceChange(source.id)}
+                  title={source.description}
+                >
+                  <span className="source-icon">{source.icon}</span>
+                  <div className="source-info">
+                    <div className="source-name">{source.name}</div>
+                    <div className="source-description">{source.description}</div>
+                  </div>
+                  {dataSource === source.id && <span className="check-mark">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </header>
       
       <main className="app-main">
+        {dataSourceError && (
+          <div className="data-source-warning">
+            <span>⚠️ {dataSourceError}</span>
+          </div>
+        )}
         <div className="progress">
           <span>Question {currentIndex + 1} of {sentences.length}</span>
         </div>
