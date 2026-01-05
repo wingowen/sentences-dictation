@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { getSentences } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
+import { parseSentenceForPhonetics } from './services/pronunciationService'
 
 function App() {
   // 状态管理
   const [sentences, setSentences] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userInput, setUserInput] = useState('')
+  const [wordInputs, setWordInputs] = useState([]) // 按词输入的状态
   const [result, setResult] = useState(null) // null, 'correct', 'incorrect'
   const [isLoading, setIsLoading] = useState(true)
   const [speechSupported, setSpeechSupported] = useState(false)
   const [notionUrl, setNotionUrl] = useState('') // 可以从环境变量或配置文件读取
+  const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
 
   // 初始化
   useEffect(() => {
@@ -21,6 +24,20 @@ function App() {
     // 加载句子数据
     loadSentences()
   }, [])
+
+  // 当当前句子变化时，更新单词和音标
+  useEffect(() => {
+    if (sentences[currentIndex]) {
+      const sentence = sentences[currentIndex]
+      // 解析句子，获取单词和音标
+      const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+      setCurrentWords(wordsWithPhonetics)
+      
+      // 初始化按词输入数组
+      const initialWordInputs = wordsWithPhonetics.map(() => '')
+      setWordInputs(initialWordInputs)
+    }
+  }, [currentIndex, sentences])
 
   // 加载句子数据
   const loadSentences = async () => {
@@ -35,8 +52,11 @@ function App() {
     }
   }
 
-  // 句子比对算法
-  const compareSentences = (userInput, correctSentence) => {
+  // 句子比对算法（按词比较）
+  const compareSentences = (wordInputs, correctSentence) => {
+    // 构建用户输入的句子
+    const userSentence = wordInputs.join(' ')
+    
     // 规范化处理：忽略大小写、前后空格和常见标点
     const normalize = (str) => {
       return str
@@ -46,15 +66,22 @@ function App() {
         .replace(/\s+/g, ' ')
     }
 
-    return normalize(userInput) === normalize(correctSentence)
+    return normalize(userSentence) === normalize(correctSentence)
+  }
+
+  // 处理单个单词输入变化
+  const handleWordInputChange = (index, value) => {
+    const newWordInputs = [...wordInputs]
+    newWordInputs[index] = value
+    setWordInputs(newWordInputs)
   }
 
   // 处理提交
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!userInput.trim()) return
+    if (wordInputs.some(input => input.trim() === '')) return
 
-    const correct = compareSentences(userInput, sentences[currentIndex])
+    const correct = compareSentences(wordInputs, sentences[currentIndex])
     setResult(correct ? 'correct' : 'incorrect')
   }
 
@@ -119,16 +146,39 @@ function App() {
           )}
         </div>
 
+        {/* 音标显示部分 */}
+        {currentWords.length > 0 && (
+          <div className="phonetics-section">
+            <h3>Words & Phonetics:</h3>
+            <div className="phonetics-list">
+              {currentWords.map((wordData, index) => (
+                <div key={index} className="phonetic-item">
+                  <span className="word">{wordData.word}</span>
+                  {wordData.phonetic && (
+                    <span className="phonetic">/{wordData.phonetic}/</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 按词输入部分 */}
         <form className="input-form" onSubmit={handleSubmit}>
-          <label htmlFor="user-input">Type what you hear:</label>
-          <textarea
-            id="user-input"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Enter the sentence you heard..."
-            rows={4}
-            autoFocus
-          />
+          <label>Type what you hear (one word per blank):</label>
+          <div className="word-inputs">
+            {wordInputs.map((input, index) => (
+              <input
+                key={index}
+                type="text"
+                className="word-input"
+                value={input}
+                onChange={(e) => handleWordInputChange(index, e.target.value)}
+                placeholder="_ _"
+                autoFocus={index === 0}
+              />
+            ))}
+          </div>
           
           <div className="button-group">
             <button type="submit" className="submit-button">
