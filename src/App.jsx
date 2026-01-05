@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import { getSentences } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
@@ -13,7 +13,7 @@ function App() {
   const [result, setResult] = useState(null) // null, 'correct', 'incorrect'
   const [isLoading, setIsLoading] = useState(true)
   const [speechSupported, setSpeechSupported] = useState(false)
-  const [notionUrl, setNotionUrl] = useState('') // 可以从环境变量或配置文件读取
+  const [useNotion, setUseNotion] = useState(true) // 是否使用 Notion 数据源
   const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
   const [showOriginalText, setShowOriginalText] = useState(false) // 控制是否显示原文
   const [showModal, setShowModal] = useState(false) // 控制弹窗显示
@@ -25,10 +25,12 @@ function App() {
   useEffect(() => {
     // 检查语音合成支持
     setSpeechSupported(isSpeechSupported())
-    
-    // 加载句子数据
-    loadSentences()
   }, [])
+
+  // 加载句子数据（当 useNotion 变化时重新加载）
+  useEffect(() => {
+    loadSentences()
+  }, [loadSentences])
 
   // 当当前句子变化时，更新单词和音标
   useEffect(() => {
@@ -70,17 +72,17 @@ function App() {
   }, [wordInputs.length])
 
   // 加载句子数据
-  const loadSentences = async () => {
+  const loadSentences = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getSentences(notionUrl)
+      const data = await getSentences(useNotion)
       setSentences(data)
     } catch (error) {
       console.error('Error loading sentences:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [useNotion])
 
   // 规范化处理：忽略大小写、前后空格和常见标点
   const normalize = (str) => {

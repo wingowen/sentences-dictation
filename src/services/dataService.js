@@ -12,34 +12,29 @@ export const getLocalSentences = () => {
 };
 
 /**
- * 从Notion公开页面获取句子
- * @param {string} notionPageUrl - Notion公开页面URL
+ * 从 Netlify Function 获取 Notion 句子
+ * 通过 serverless function 调用 Notion API，避免在前端暴露 API key
  * @returns {Promise<Array>} 句子数组
  */
-export const getNotionSentences = async (notionPageUrl) => {
+export const getNotionSentences = async () => {
   try {
-    // 注意：这里使用的是Notion公开页面的HTML抓取方式
-    // 在生产环境中，建议使用Notion API并通过Netlify Functions等服务端方式调用
-    const response = await fetch(notionPageUrl);
+    // 调用 Netlify Function
+    const functionUrl = '/.netlify/functions/get-notion-sentences';
+    const response = await fetch(functionUrl);
+    
     if (!response.ok) {
-      throw new Error('Failed to fetch Notion page');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
     
-    const html = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    const data = await response.json();
     
-    // 提取页面中的纯文本内容
-    const textContent = doc.body.textContent || '';
+    if (data.error) {
+      console.error('Notion API error:', data.error);
+      return [];
+    }
     
-    // 简单的句子分割逻辑（根据句号、问号、感叹号分割）
-    // 注意：这是一个简化实现，实际Notion页面结构可能更复杂
-    const sentences = textContent
-      .split(/[.!?]+/)
-      .map(sentence => sentence.trim())
-      .filter(sentence => sentence.length > 0);
-    
-    return sentences;
+    return data.sentences || [];
   } catch (error) {
     console.error('Error fetching Notion sentences:', error);
     return [];
@@ -48,16 +43,17 @@ export const getNotionSentences = async (notionPageUrl) => {
 
 /**
  * 获取句子数据（优先从Notion获取，失败则使用本地JSON）
- * @param {string} notionPageUrl - Notion公开页面URL（可选）
+ * @param {boolean} useNotion - 是否使用 Notion 数据源（默认 true）
  * @returns {Promise<Array>} 句子数组
  */
-export const getSentences = async (notionPageUrl = '') => {
-  // 如果提供了Notion URL，则尝试从Notion获取
-  if (notionPageUrl) {
-    const notionSentences = await getNotionSentences(notionPageUrl);
+export const getSentences = async (useNotion = true) => {
+  // 如果启用 Notion，则尝试从 Notion 获取
+  if (useNotion) {
+    const notionSentences = await getNotionSentences();
     if (notionSentences.length > 0) {
       return notionSentences;
     }
+    console.warn('Failed to fetch from Notion, falling back to local sentences');
   }
   
   // 回退到本地JSON文件
