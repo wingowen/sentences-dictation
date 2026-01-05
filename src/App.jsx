@@ -17,6 +17,7 @@ function App() {
   const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
   const [showOriginalText, setShowOriginalText] = useState(false) // 控制是否显示原文
   const [showModal, setShowModal] = useState(false) // 控制弹窗显示
+  const [autoPlay, setAutoPlay] = useState(true) // 控制自动朗读，默认打开
   const inputRefs = useRef([]) // 输入框引用数组
   const autoNextTimerRef = useRef(null) // 自动跳转定时器引用
 
@@ -47,8 +48,19 @@ function App() {
       
       // 初始化输入框引用数组
       inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
+      
+      // 如果自动朗读开启，则自动朗读句子
+      if (autoPlay && speechSupported) {
+        // 延迟一点时间，确保页面已经更新
+        setTimeout(() => {
+          cancelSpeech() // 取消之前的朗读
+          speak(sentence).catch(error => {
+            console.error('Error speaking:', error)
+          })
+        }, 300)
+      }
     }
-  }, [currentIndex, sentences])
+  }, [currentIndex, sentences, autoPlay, speechSupported])
 
   // 当输入框数组变化时，更新引用数组
   useEffect(() => {
@@ -181,26 +193,6 @@ function App() {
     }, 100)
   }
 
-  // 重新开始
-  const handleRestart = () => {
-    // 清除自动跳转定时器
-    if (autoNextTimerRef.current) {
-      clearTimeout(autoNextTimerRef.current)
-      autoNextTimerRef.current = null
-    }
-    
-    cancelSpeech()
-    setCurrentIndex(0)
-    setUserInput('')
-    setResult(null)
-    setShowModal(false)
-    
-    // 聚焦第一个输入框
-    setTimeout(() => {
-      inputRefs.current[0]?.focus()
-    }, 100)
-  }
-
   // 关闭弹窗
   const handleCloseModal = () => {
     // 清除自动跳转定时器
@@ -235,14 +227,26 @@ function App() {
         </div>
 
         <div className="sentence-section">
-          <button 
-            className="play-button" 
-            onClick={handlePlay}
-            disabled={!speechSupported}
-            title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
-          >
-            ▶️ Play
-          </button>
+          <div className="play-controls">
+            <button 
+              className="play-button" 
+              onClick={handlePlay}
+              disabled={!speechSupported}
+              title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
+            >
+              ▶️ Play
+            </button>
+            
+            <label className="auto-play-toggle">
+              <input
+                type="checkbox"
+                checked={autoPlay}
+                onChange={(e) => setAutoPlay(e.target.checked)}
+                disabled={!speechSupported}
+              />
+              <span>自动朗读</span>
+            </label>
+          </div>
           
           {!speechSupported && (
             <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
@@ -257,8 +261,9 @@ function App() {
               <button 
                 className="toggle-text-button"
                 onClick={() => setShowOriginalText(!showOriginalText)}
+                title={showOriginalText ? '隐藏原文' : '显示原文'}
               >
-                {showOriginalText ? 'Hide Original Text' : 'Show Original Text'}
+                {showOriginalText ? '👁️ 隐藏原文' : '👁️‍🗨️ 显示原文'}
               </button>
             </div>
             <div className="phonetics-list">
@@ -298,14 +303,6 @@ function App() {
             })}
           </div>
           
-          <div className="button-group">
-            <button type="submit" className="submit-button">
-              Check Answer
-            </button>
-            <button type="button" className="next-button" onClick={handleNext}>
-              Next Question
-            </button>
-          </div>
         </form>
 
         {/* 弹窗显示结果 */}
@@ -329,12 +326,6 @@ function App() {
             </div>
           </div>
         )}
-
-        <div className="controls">
-          <button type="button" className="restart-button" onClick={handleRestart}>
-            🔄 Restart
-          </button>
-        </div>
       </main>
       
       <footer className="app-footer">
