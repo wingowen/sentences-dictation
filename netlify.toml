@@ -1,0 +1,22 @@
+# Netlify Configuration File
+
+# Build settings
+[build]
+  # Directory to publish (output of build process)
+  publish = "dist"
+  # Build command
+  command = "npm run build"
+  # Base directory for the build (optional, defaults to root)
+  base = "."
+
+# Development server settings (for Netlify Dev)
+[dev]
+  command = "npm run dev"
+  port = 5173
+  publish = "dist"
+
+# Redirects and headers (optional)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
