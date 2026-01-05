@@ -1,7 +1,6 @@
 // 发音服务 - 基于CMU发音字典获取单词音标
 
-// 使用require语法，因为cmu-pronouncing-dictionary包不支持ES模块默认导出
-const cmudict = require('cmu-pronouncing-dictionary');
+import { dictionary } from 'cmu-pronouncing-dictionary';
 
 /**
  * 获取单个单词的音标
@@ -13,11 +12,10 @@ export const getPhonetic = (word) => {
   const lowerWord = word.toLowerCase();
   
   // 从CMU字典中获取音标
-  const phonetics = cmudict[lowerWord];
+  const phonetic = dictionary[lowerWord];
   
-  if (phonetics && phonetics.length > 0) {
-    // 返回第一个音标（通常是最常用的发音）
-    return phonetics[0];
+  if (phonetic) {
+    return phonetic;
   }
   
   return null;

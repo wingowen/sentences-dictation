@@ -15,6 +15,7 @@ function App() {
   const [speechSupported, setSpeechSupported] = useState(false)
   const [notionUrl, setNotionUrl] = useState('') // 可以从环境变量或配置文件读取
   const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
+  const [showOriginalText, setShowOriginalText] = useState(false) // 控制是否显示原文
 
   // 初始化
   useEffect(() => {
@@ -149,11 +150,22 @@ function App() {
         {/* 音标显示部分 */}
         {currentWords.length > 0 && (
           <div className="phonetics-section">
-            <h3>Words & Phonetics:</h3>
+            <div className="phonetics-header">
+              <h3>Words & Phonetics:</h3>
+              <button 
+                className="toggle-text-button"
+                onClick={() => setShowOriginalText(!showOriginalText)}
+              >
+                {showOriginalText ? 'Hide Original Text' : 'Show Original Text'}
+              </button>
+            </div>
             <div className="phonetics-list">
               {currentWords.map((wordData, index) => (
                 <div key={index} className="phonetic-item">
-                  <span className="word">{wordData.word}</span>
+                  {/* 根据状态决定是否显示原文 */}
+                  {showOriginalText && (
+                    <span className="word">{wordData.word}</span>
+                  )}
                   {wordData.phonetic && (
                     <span className="phonetic">/{wordData.phonetic}/</span>
                   )}
@@ -174,7 +186,7 @@ function App() {
                 className="word-input"
                 value={input}
                 onChange={(e) => handleWordInputChange(index, e.target.value)}
-                placeholder="_ _"
+                placeholder=""
                 autoFocus={index === 0}
               />
             ))}
