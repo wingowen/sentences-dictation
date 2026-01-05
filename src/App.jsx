@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { getSentences } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
@@ -16,6 +16,9 @@ function App() {
   const [notionUrl, setNotionUrl] = useState('') // 可以从环境变量或配置文件读取
   const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
   const [showOriginalText, setShowOriginalText] = useState(false) // 控制是否显示原文
+  const [showModal, setShowModal] = useState(false) // 控制弹窗显示
+  const inputRefs = useRef([]) // 输入框引用数组
+  const autoNextTimerRef = useRef(null) // 自动跳转定时器引用
 
   // 初始化
   useEffect(() => {
@@ -37,8 +40,22 @@ function App() {
       // 初始化按词输入数组
       const initialWordInputs = wordsWithPhonetics.map(() => '')
       setWordInputs(initialWordInputs)
+      
+      // 重置弹窗状态
+      setShowModal(false)
+      setResult(null)
+      
+      // 初始化输入框引用数组
+      inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
     }
   }, [currentIndex, sentences])
+
+  // 当输入框数组变化时，更新引用数组
+  useEffect(() => {
+    if (wordInputs.length !== inputRefs.current.length) {
+      inputRefs.current = new Array(wordInputs.length).fill(null)
+    }
+  }, [wordInputs.length])
 
   // 加载句子数据
   const loadSentences = async () => {
@@ -53,21 +70,33 @@ function App() {
     }
   }
 
+  // 规范化处理：忽略大小写、前后空格和常见标点
+  const normalize = (str) => {
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/[.,!?;:"'()\[\]{}\-_]/g, '')
+      .replace(/\s+/g, ' ')
+  }
+
+  // 比较单个单词是否正确
+  const compareWord = (userWord, correctWord) => {
+    return normalize(userWord) === normalize(correctWord)
+  }
+
   // 句子比对算法（按词比较）
   const compareSentences = (wordInputs, correctSentence) => {
     // 构建用户输入的句子
     const userSentence = wordInputs.join(' ')
-    
-    // 规范化处理：忽略大小写、前后空格和常见标点
-    const normalize = (str) => {
-      return str
-        .toLowerCase()
-        .trim()
-        .replace(/[.,!?;:"'()\[\]{}\-_]/g, '')
-        .replace(/\s+/g, ' ')
-    }
-
     return normalize(userSentence) === normalize(correctSentence)
+  }
+
+  // 检查所有单词是否都正确
+  const checkAllWordsCorrect = (wordInputs, correctWords) => {
+    if (wordInputs.length !== correctWords.length) return false
+    return wordInputs.every((input, index) => {
+      return compareWord(input, correctWords[index].word)
+    })
   }
 
   // 处理单个单词输入变化
@@ -75,6 +104,40 @@ function App() {
     const newWordInputs = [...wordInputs]
     newWordInputs[index] = value
     setWordInputs(newWordInputs)
+
+    // 检查当前单词是否正确
+    if (value.trim() && currentWords[index]) {
+      const isCorrect = compareWord(value, currentWords[index].word)
+      
+      if (isCorrect) {
+        // 单词正确，检查是否所有单词都正确
+        const allCorrect = checkAllWordsCorrect(newWordInputs, currentWords)
+        
+        if (allCorrect) {
+          // 所有单词都正确，显示成功弹窗并自动跳转
+          setResult('correct')
+          setShowModal(true)
+          
+          // 清除之前的定时器（如果存在）
+          if (autoNextTimerRef.current) {
+            clearTimeout(autoNextTimerRef.current)
+          }
+          
+          // 延迟跳转到下一题，让用户看到成功提示
+          autoNextTimerRef.current = setTimeout(() => {
+            handleNext()
+            autoNextTimerRef.current = null
+          }, 1500)
+        } else {
+          // 单个单词正确，自动跳转到下一个输入框
+          if (index < wordInputs.length - 1) {
+            setTimeout(() => {
+              inputRefs.current[index + 1]?.focus()
+            }, 100)
+          }
+        }
+      }
+    }
   }
 
   // 处理提交
@@ -84,6 +147,7 @@ function App() {
 
     const correct = compareSentences(wordInputs, sentences[currentIndex])
     setResult(correct ? 'correct' : 'incorrect')
+    setShowModal(true)
   }
 
   // 播放当前句子
@@ -99,18 +163,56 @@ function App() {
 
   // 下一题
   const handleNext = () => {
+    // 清除自动跳转定时器
+    if (autoNextTimerRef.current) {
+      clearTimeout(autoNextTimerRef.current)
+      autoNextTimerRef.current = null
+    }
+    
     cancelSpeech()
     setCurrentIndex((prev) => (prev + 1) % sentences.length)
     setUserInput('')
     setResult(null)
+    setShowModal(false)
+    
+    // 聚焦第一个输入框
+    setTimeout(() => {
+      inputRefs.current[0]?.focus()
+    }, 100)
   }
 
   // 重新开始
   const handleRestart = () => {
+    // 清除自动跳转定时器
+    if (autoNextTimerRef.current) {
+      clearTimeout(autoNextTimerRef.current)
+      autoNextTimerRef.current = null
+    }
+    
     cancelSpeech()
     setCurrentIndex(0)
     setUserInput('')
     setResult(null)
+    setShowModal(false)
+    
+    // 聚焦第一个输入框
+    setTimeout(() => {
+      inputRefs.current[0]?.focus()
+    }, 100)
+  }
+
+  // 关闭弹窗
+  const handleCloseModal = () => {
+    // 清除自动跳转定时器
+    if (autoNextTimerRef.current) {
+      clearTimeout(autoNextTimerRef.current)
+      autoNextTimerRef.current = null
+    }
+    
+    setShowModal(false)
+    if (result === 'correct') {
+      handleNext()
+    }
   }
 
   if (isLoading) {
@@ -179,17 +281,21 @@ function App() {
         <form className="input-form" onSubmit={handleSubmit}>
           <label>Type what you hear (one word per blank):</label>
           <div className="word-inputs">
-            {wordInputs.map((input, index) => (
-              <input
-                key={index}
-                type="text"
-                className="word-input"
-                value={input}
-                onChange={(e) => handleWordInputChange(index, e.target.value)}
-                placeholder=""
-                autoFocus={index === 0}
-              />
-            ))}
+            {wordInputs.map((input, index) => {
+              const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
+              return (
+                <input
+                  key={index}
+                  ref={(el) => (inputRefs.current[index] = el)}
+                  type="text"
+                  className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                  value={input}
+                  onChange={(e) => handleWordInputChange(index, e.target.value)}
+                  placeholder=""
+                  autoFocus={index === 0}
+                />
+              )
+            })}
           </div>
           
           <div className="button-group">
@@ -202,14 +308,25 @@ function App() {
           </div>
         </form>
 
-        {result && (
-          <div className={`result ${result}`}>
-            <h2>
-              {result === 'correct' ? '✅ Correct!' : '❌ Incorrect!'}
-            </h2>
-            <p className="correct-sentence">
-              Correct sentence: <strong>{sentences[currentIndex]}</strong>
-            </p>
+        {/* 弹窗显示结果 */}
+        {showModal && result && (
+          <div className="modal-overlay" onClick={handleCloseModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className={`modal-result ${result}`}>
+                <h2>
+                  {result === 'correct' ? '✅ Correct!' : '❌ Incorrect!'}
+                </h2>
+                <p className="correct-sentence">
+                  Correct sentence: <strong>{sentences[currentIndex]}</strong>
+                </p>
+                {result === 'correct' && (
+                  <p className="auto-next-hint">自动跳转到下一题...</p>
+                )}
+                <button className="modal-close-button" onClick={handleCloseModal}>
+                  {result === 'correct' ? 'Next' : 'Close'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -325,6 +325,105 @@ body {
   font-style: italic;
 }
 
+.word-input.word-correct {
+  border-color: #27ae60;
+  background-color: #d4edda;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-result {
+  text-align: center;
+}
+
+.modal-result.correct {
+  color: #155724;
+}
+
+.modal-result.incorrect {
+  color: #721c24;
+}
+
+.modal-result h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.modal-result .correct-sentence {
+  font-size: 1.1rem;
+  font-style: italic;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.modal-result .auto-next-hint {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.modal-close-button {
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background-color: #3498db;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  min-width: 120px;
+}
+
+.modal-close-button:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+}
+
 /* Footer */
 .app-footer {
   text-align: center;
