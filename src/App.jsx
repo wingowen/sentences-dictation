@@ -345,8 +345,10 @@ function App() {
                   {showOriginalText && (
                     <span className="word">{wordData.word}</span>
                   )}
-                  {wordData.phonetic && (
+                  {wordData.phonetic ? (
                     <span className="phonetic">/{wordData.phonetic}/</span>
+                  ) : (
+                    <span className="phonetic missing">—</span>
                   )}
                 </div>
               ))}
@@ -389,12 +391,18 @@ function App() {
           <div className="word-inputs">
             {wordInputs.map((input, index) => {
               const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
+              const wordLength = currentWords[index]?.word?.length || 5
+              // 根据单词长度计算输入框宽度：每个字符约 0.7ch，加上一些padding，最小4ch，最大15ch
+              const calculatedWidth = wordLength * 0.7 + 2
+              const clampedWidth = Math.max(4, Math.min(15, calculatedWidth))
+              const inputWidth = `${clampedWidth}ch`
               return (
                 <input
                   key={index}
                   ref={(el) => (inputRefs.current[index] = el)}
                   type="text"
                   className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                  style={{ width: inputWidth }}
                   value={input}
                   onChange={(e) => handleWordInputChange(index, e.target.value)}
                   placeholder=""

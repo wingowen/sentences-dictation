@@ -443,6 +443,11 @@ body {
   font-style: italic;
 }
 
+.phonetic-item .phonetic.missing {
+  color: #bdc3c7;
+  font-style: normal;
+}
+
 /* Word Inputs */
 .word-inputs {
   display: flex;
@@ -452,14 +457,15 @@ body {
 }
 
 .word-input {
-  flex: 1;
-  min-width: 80px;
+  flex: 0 0 auto;
+  min-width: 4ch;
+  max-width: 15ch;
   padding: 0.8rem;
   font-size: 1rem;
   border: 2px solid #ddd;
   border-radius: 8px;
   text-align: center;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, width 0.2s ease;
 }
 
 .word-input:focus {

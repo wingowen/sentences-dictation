@@ -3,6 +3,57 @@
 import { dictionary } from 'cmu-pronouncing-dictionary';
 
 /**
+ * 尝试将复合词拆分成多个部分并获取音标
+ * @param {string} word - 要拆分的单词
+ * @param {number} maxDepth - 最大递归深度，防止无限递归
+ * @returns {string|null} 合并后的音标，未找到则返回null
+ */
+const trySplitCompoundWord = (word, maxDepth = 3) => {
+  if (maxDepth <= 0) return null;
+  
+  const lowerWord = word.toLowerCase();
+  const minWordLength = 2; // 最小单词长度
+  const maxLength = lowerWord.length;
+  
+  // 如果单词太短，无法拆分
+  if (maxLength < minWordLength * 2) {
+    return null;
+  }
+  
+  // 从右往左尝试拆分（优先尝试较长的第二部分）
+  for (let i = maxLength - minWordLength; i >= minWordLength; i--) {
+    const part1 = lowerWord.substring(0, i);
+    const part2 = lowerWord.substring(i);
+    
+    const phonetic1 = dictionary[part1];
+    const phonetic2 = dictionary[part2];
+    
+    if (phonetic1 && phonetic2) {
+      // 找到两部分都有音标，合并它们
+      return `${phonetic1} ${phonetic2}`;
+    }
+    
+    // 如果第二部分有音标，继续尝试拆分第一部分
+    if (phonetic2 && part1.length >= minWordLength * 2) {
+      const nestedResult = trySplitCompoundWord(part1, maxDepth - 1);
+      if (nestedResult) {
+        return `${nestedResult} ${phonetic2}`;
+      }
+    }
+    
+    // 如果第一部分有音标，继续尝试拆分第二部分
+    if (phonetic1 && part2.length >= minWordLength * 2) {
+      const nestedResult = trySplitCompoundWord(part2, maxDepth - 1);
+      if (nestedResult) {
+        return `${phonetic1} ${nestedResult}`;
+      }
+    }
+  }
+  
+  return null;
+};
+
+/**
  * 获取单个单词的音标
  * @param {string} word - 要获取音标的单词
  * @returns {string|null} 单词的音标，未找到则返回null
@@ -72,18 +123,26 @@ export const getPhonetic = (word) => {
     const phonetics = words.map(w => dictionary[w]).filter(p => p);
     
     if (phonetics.length > 0) {
-      // 返回第一个单词的音标（简化处理）
-      return phonetics[0];
+      // 合并所有单词的音标
+      return phonetics.join(' ');
     }
   }
   
   // 尝试拆分缩略词（如 "i'm" -> "i" + "m"）
   if (lowerWord.includes("'")) {
     const parts = lowerWord.split("'");
-    for (const part of parts) {
-      if (part && dictionary[part]) {
-        return dictionary[part];
-      }
+    const phonetics = parts.map(part => part && dictionary[part]).filter(p => p);
+    if (phonetics.length > 0) {
+      return phonetics.join(' ');
+    }
+  }
+  
+  // 尝试拆分复合词（如 "openworld" -> "open" + "world"）
+  // 只对长度较长的单词尝试拆分，避免小单词的误拆分
+  if (lowerWord.length >= 6) {
+    const compoundResult = trySplitCompoundWord(lowerWord);
+    if (compoundResult) {
+      return compoundResult;
     }
   }
   
