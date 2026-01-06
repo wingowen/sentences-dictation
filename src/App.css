@@ -310,6 +310,49 @@ body {
   height: 16px;
 }
 
+.speech-rate-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #2c3e50;
+}
+
+.speech-rate-selector.small {
+  font-size: 0.85rem;
+}
+
+.speech-rate-selector span {
+  white-space: nowrap;
+}
+
+.speech-rate-selector select {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  min-width: 110px;
+}
+
+.speech-rate-selector select:hover:not(:disabled) {
+  border-color: #3498db;
+}
+
+.speech-rate-selector select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.speech-rate-selector select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .input-form textarea {
   width: 100%;
   padding: 1rem;
@@ -458,14 +501,17 @@ body {
 
 .word-input {
   flex: 0 0 auto;
-  min-width: 4ch;
-  max-width: 15ch;
+  min-width: 6ch;
+  max-width: 35ch;
   padding: 0.8rem;
   font-size: 1rem;
   border: 2px solid #ddd;
   border-radius: 8px;
   text-align: center;
   transition: border-color 0.3s ease, width 0.2s ease;
+  box-sizing: border-box;
+  /* 确保文本可以完全显示 */
+  overflow: visible;
 }
 
 .word-input:focus {

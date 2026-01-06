@@ -11,9 +11,10 @@ export const isSpeechSupported = () => {
 /**
  * 朗读指定文本
  * @param {string} text - 要朗读的文本
+ * @param {number} rate - 语速 (0.1 - 10, 默认 1.0)
  * @returns {Promise<void>} - 朗读完成的Promise
  */
-export const speak = (text) => {
+export const speak = (text, rate = 1.0) => {
   return new Promise((resolve, reject) => {
     if (!isSpeechSupported()) {
       reject(new Error('Speech synthesis is not supported in this browser.'));
@@ -29,7 +30,7 @@ export const speak = (text) => {
     
     // 使用默认语音设置
     utterance.lang = 'en-US';
-    utterance.rate = 1.0;
+    utterance.rate = Math.max(0.1, Math.min(10, rate)); // 限制语速范围
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     

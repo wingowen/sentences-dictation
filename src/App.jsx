@@ -20,6 +20,7 @@ function App() {
   const [showModal, setShowModal] = useState(false) // 控制弹窗显示
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false) // 控制数据源选择器显示
   const [autoPlay, setAutoPlay] = useState(true) // 控制自动朗读，默认打开
+  const [speechRate, setSpeechRate] = useState(0.5) // 语速，默认0.5（慢速）
   const inputRefs = useRef([]) // 输入框引用数组
   const autoNextTimerRef = useRef(null) // 自动跳转定时器引用
   const isFallbackInProgressRef = useRef(false) // 标记是否正在进行回退操作
@@ -79,13 +80,13 @@ function App() {
         // 延迟一点时间，确保页面已经更新
         setTimeout(() => {
           cancelSpeech() // 取消之前的朗读
-          speak(sentence).catch(error => {
+          speak(sentence, speechRate).catch(error => {
             console.error('Error speaking:', error)
           })
         }, 300)
       }
     }
-  }, [currentIndex, sentences, autoPlay, speechSupported])
+  }, [currentIndex, sentences, autoPlay, speechSupported, speechRate])
 
   // 当输入框数组变化时，更新引用数组
   useEffect(() => {
@@ -227,7 +228,7 @@ function App() {
   const handlePlay = () => {
     if (speechSupported && sentences[currentIndex]) {
       cancelSpeech() // 取消之前的朗读
-      speak(sentences[currentIndex])
+      speak(sentences[currentIndex], speechRate)
         .catch(error => {
           console.error('Error speaking:', error)
         })
@@ -368,6 +369,25 @@ function App() {
           <label className="input-with-controls">
             Type what you hear (one word per blank):
             <div className="input-controls">
+              <label className="speech-rate-selector small">
+                <span>语速:</span>
+                <select
+                  value={speechRate.toFixed(1)}
+                  onChange={(e) => {
+                    const newRate = parseFloat(e.target.value);
+                    setSpeechRate(newRate);
+                  }}
+                  disabled={!speechSupported}
+                  title="选择朗读语速"
+                >
+                  <option value="0.5">0.5x (慢速)</option>
+                  <option value="0.75">0.75x (较慢)</option>
+                  <option value="1.0">1.0x (正常)</option>
+                  <option value="1.25">1.25x (较快)</option>
+                  <option value="1.5">1.5x (快速)</option>
+                  <option value="2.0">2.0x (很快)</option>
+                </select>
+              </label>
               <button 
                 type="button" 
                 className="play-button small"
@@ -392,9 +412,14 @@ function App() {
             {wordInputs.map((input, index) => {
               const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
               const wordLength = currentWords[index]?.word?.length || 5
-              // 根据单词长度计算输入框宽度：每个字符约 0.7ch，加上一些padding，最小4ch，最大15ch
-              const calculatedWidth = wordLength * 0.7 + 2
-              const clampedWidth = Math.max(4, Math.min(15, calculatedWidth))
+              // 使用实际输入长度和原始单词长度中的较大值，确保能显示完整输入
+              const currentInputLength = input.length || wordLength
+              const maxLength = Math.max(wordLength, currentInputLength)
+              // 根据单词长度计算输入框宽度：使用更保守的系数和更大的padding
+              // 每个字符约 1.5ch（考虑不同字符宽度差异），加上额外的padding
+              // 最小6ch，最大35ch（允许更长的单词）
+              const calculatedWidth = maxLength * 1.5 + 4
+              const clampedWidth = Math.max(6, Math.min(35, calculatedWidth))
               const inputWidth = `${clampedWidth}ch`
               return (
                 <input
