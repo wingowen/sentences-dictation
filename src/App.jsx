@@ -143,12 +143,12 @@ function App() {
     }
   }, [dataSource])
 
-  // 规范化处理：忽略大小写、前后空格和常见标点
+  // 规范化处理：忽略大小写、前后空格和常见标点，保留缩略词中的单引号
   const normalize = (str) => {
     return str
       .toLowerCase()
       .trim()
-      .replace(/[.,!?;:"'()\[\]{}\-_]/g, '')
+      .replace(/[.,!?;:\"()\[\]{}_\-]/g, '')
       .replace(/\s+/g, ' ')
   }
 
@@ -332,49 +332,11 @@ function App() {
             <span>⚠️ {dataSourceError}</span>
           </div>
         )}
-        <div className="progress">
-          <span>Question {currentIndex + 1} of {sentences.length}</span>
-        </div>
-
-        <div className="sentence-section">
-          <div className="play-controls">
-            <button 
-              className="play-button" 
-              onClick={handlePlay}
-              disabled={!speechSupported}
-              title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
-            >
-              ▶️ Play
-            </button>
-            
-            <label className="auto-play-toggle">
-              <input
-                type="checkbox"
-                checked={autoPlay}
-                onChange={(e) => setAutoPlay(e.target.checked)}
-                disabled={!speechSupported}
-              />
-              <span>自动朗读</span>
-            </label>
-          </div>
-          
-          {!speechSupported && (
-            <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
-          )}
-        </div>
-
         {/* 音标显示部分 */}
         {currentWords.length > 0 && (
           <div className="phonetics-section">
-            <div className="phonetics-header">
-              <h3>Words & Phonetics:</h3>
-              <button 
-                className="toggle-text-button"
-                onClick={() => setShowOriginalText(!showOriginalText)}
-                title={showOriginalText ? '隐藏原文' : '显示原文'}
-              >
-                {showOriginalText ? '👁️ 隐藏原文' : '👁️‍🗨️ 显示原文'}
-              </button>
+            <div className="progress small">
+              <span>Question {currentIndex + 1} of {sentences.length}</span>
             </div>
             <div className="phonetics-list">
               {currentWords.map((wordData, index) => (
@@ -388,13 +350,42 @@ function App() {
                   )}
                 </div>
               ))}
+              <button 
+                className="toggle-text-button"
+                onClick={() => setShowOriginalText(!showOriginalText)}
+                title={showOriginalText ? '隐藏原文' : '显示原文'}
+              >
+                {showOriginalText ? '👁️ 隐藏原文' : '👁️‍🗨️ 显示原文'}
+              </button>
             </div>
           </div>
         )}
 
         {/* 按词输入部分 */}
         <form className="input-form" onSubmit={handleSubmit}>
-          <label>Type what you hear (one word per blank):</label>
+          <label className="input-with-controls">
+            Type what you hear (one word per blank):
+            <div className="input-controls">
+              <button 
+                type="button" 
+                className="play-button small"
+                onClick={handlePlay}
+                disabled={!speechSupported}
+                title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
+              >
+                ▶️
+              </button>
+              <label className="auto-play-toggle small">
+                <input
+                  type="checkbox"
+                  checked={autoPlay}
+                  onChange={(e) => setAutoPlay(e.target.checked)}
+                  disabled={!speechSupported}
+                />
+                <span>自动朗读</span>
+              </label>
+            </div>
+          </label>
           <div className="word-inputs">
             {wordInputs.map((input, index) => {
               const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
@@ -414,6 +405,10 @@ function App() {
           </div>
           
         </form>
+
+        {!speechSupported && (
+          <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
+        )}
 
         {/* 弹窗显示结果 */}
         {showModal && result && (

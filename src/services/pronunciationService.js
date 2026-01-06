@@ -18,6 +18,75 @@ export const getPhonetic = (word) => {
     return phonetic;
   }
   
+  // 处理常见缩略词
+  const contractionMap = {
+    "i'm": "i am",
+    "you're": "you are",
+    "he's": "he is",
+    "she's": "she is",
+    "it's": "it is",
+    "we're": "we are",
+    "they're": "they are",
+    "i'll": "i will",
+    "you'll": "you will",
+    "he'll": "he will",
+    "she'll": "she will",
+    "it'll": "it will",
+    "we'll": "we will",
+    "they'll": "they will",
+    "i've": "i have",
+    "you've": "you have",
+    "we've": "we have",
+    "they've": "they have",
+    "i'd": "i would",
+    "you'd": "you would",
+    "he'd": "he would",
+    "she'd": "she would",
+    "it'd": "it would",
+    "we'd": "we would",
+    "they'd": "they would",
+    "don't": "do not",
+    "doesn't": "does not",
+    "didn't": "did not",
+    "won't": "will not",
+    "wouldn't": "would not",
+    "can't": "cannot",
+    "couldn't": "could not",
+    "shouldn't": "should not",
+    "mustn't": "must not",
+    "isn't": "is not",
+    "aren't": "are not",
+    "wasn't": "was not",
+    "weren't": "were not",
+    "hasn't": "has not",
+    "haven't": "have not",
+    "hadn't": "had not"
+  };
+  
+  // 检查是否是常见缩略词
+  if (contractionMap[lowerWord]) {
+    const expandedForm = contractionMap[lowerWord];
+    const words = expandedForm.split(' ');
+    
+    // 获取展开形式中每个单词的音标
+    const phonetics = words.map(w => dictionary[w]).filter(p => p);
+    
+    if (phonetics.length > 0) {
+      // 返回第一个单词的音标（简化处理）
+      return phonetics[0];
+    }
+  }
+  
+  // 尝试拆分缩略词（如 "i'm" -> "i" + "m"）
+  if (lowerWord.includes("'")) {
+    const parts = lowerWord.split("'");
+    for (const part of parts) {
+      if (part && dictionary[part]) {
+        return dictionary[part];
+      }
+    }
+  }
+  
   return null;
 };
 
@@ -80,9 +149,9 @@ export const formatPhonetic = (arpabet) => {
  * @returns {Array} 包含单词和音标的对象数组
  */
 export const parseSentenceForPhonetics = (sentence) => {
-  // 移除句子中的标点符号，只保留单词
+  // 移除句子中的标点符号，保留缩略词中的单引号
   const words = sentence
-    .replace(/[.,!?;:"'()\[\]{}\-_]/g, '')
+    .replace(/[.,!?;:\"()\[\]{}_\-]/g, '')
     .split(/\s+/)
     .filter(word => word.length > 0);
   

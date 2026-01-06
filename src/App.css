@@ -192,6 +192,14 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.progress.small {
+  text-align: left;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.8rem;
+  font-weight: 500;
+}
+
 /* Sentence Section */
 .sentence-section {
   display: flex;
@@ -204,13 +212,7 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.play-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-}
+
 
 .play-button {
   padding: 1rem 2rem;
@@ -275,10 +277,37 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.input-form label {
+.input-with-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   font-size: 1.1rem;
   font-weight: bold;
   color: #2c3e50;
+}
+
+.input-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.play-button.small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  min-width: auto;
+  border-radius: 8px;
+}
+
+.auto-play-toggle.small {
+  font-size: 0.9rem;
+}
+
+.auto-play-toggle.small input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
 }
 
 .input-form textarea {
@@ -361,21 +390,7 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.phonetics-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
 
-.phonetics-section h3 {
-  font-size: 1.1rem;
-  color: #2c3e50;
-  margin: 0;
-  text-align: left;
-}
 
 .toggle-text-button {
   padding: 0.6rem 1.2rem;
@@ -581,15 +596,6 @@ body {
     padding: 0.8rem 1.5rem;
     font-size: 1rem;
     min-width: 150px;
-  }
-  
-  .phonetics-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .phonetics-section h3 {
-    text-align: center;
   }
   
   .toggle-text-button {
