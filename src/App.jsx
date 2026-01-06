@@ -53,7 +53,7 @@ function App() {
       return
     }
     loadSentences()
-  }, [loadSentences])
+  }, [dataSource])
 
   // 当当前句子变化时，更新单词和音标
   useEffect(() => {
