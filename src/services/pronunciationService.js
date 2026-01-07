@@ -207,19 +207,107 @@ export const formatPhonetic = (arpabet) => {
  * @param {string} sentence - 要解析的句子
  * @returns {Array} 包含单词和音标的对象数组
  */
-export const parseSentenceForPhonetics = (sentence) => {
+/**
+ * 检测并转换句子中的缩写形式
+ * @param {string} sentence - 要检测的句子
+ * @returns {Array} 包含原始单词和转换后单词的对象数组
+ */
+export const detectAndExpandContractions = (sentence) => {
   // 移除句子中的标点符号，保留缩略词中的单引号
   const words = sentence
     .replace(/[.,!?;:\"()\[\]{}_\-]/g, '')
     .split(/\s+/)
     .filter(word => word.length > 0);
   
+  // 常见缩略词映射
+  const contractionMap = {
+    "i'm": "i am",
+    "you're": "you are",
+    "he's": "he is",
+    "she's": "she is",
+    "it's": "it is",
+    "we're": "we are",
+    "they're": "they are",
+    "i'll": "i will",
+    "you'll": "you will",
+    "he'll": "he will",
+    "she'll": "she will",
+    "it'll": "it will",
+    "we'll": "we will",
+    "they'll": "they will",
+    "i've": "i have",
+    "you've": "you have",
+    "we've": "we have",
+    "they've": "they have",
+    "i'd": "i would",
+    "you'd": "you would",
+    "he'd": "he would",
+    "she'd": "she would",
+    "it'd": "it would",
+    "we'd": "we would",
+    "they'd": "they would",
+    "don't": "do not",
+    "doesn't": "does not",
+    "didn't": "did not",
+    "won't": "will not",
+    "wouldn't": "would not",
+    "can't": "cannot",
+    "couldn't": "could not",
+    "shouldn't": "should not",
+    "mustn't": "must not",
+    "isn't": "is not",
+    "aren't": "are not",
+    "wasn't": "was not",
+    "weren't": "were not",
+    "hasn't": "has not",
+    "haven't": "have not",
+    "hadn't": "had not"
+  };
+  
+  // 检查并转换每个单词
+  const result = [];
+  for (const word of words) {
+    const lowerWord = word.toLowerCase();
+    if (contractionMap[lowerWord]) {
+      // 缩写形式，转换为完整形式并拆分为多个单词
+      const expandedWords = contractionMap[lowerWord].split(' ');
+      expandedWords.forEach(expandedWord => {
+        result.push({
+          original: word,
+          expanded: expandedWord,
+          isContraction: true
+        });
+      });
+    } else {
+      // 非缩写形式，保持原样
+      result.push({
+        original: word,
+        expanded: word,
+        isContraction: false
+      });
+    }
+  }
+  
+  return result;
+};
+
+/**
+ * 解析句子，获取每个单词的音标
+ * @param {string} sentence - 要解析的句子
+ * @returns {Array} 包含单词和音标的对象数组
+ */
+export const parseSentenceForPhonetics = (sentence) => {
+  // 检测并转换缩写形式
+  const wordsWithContractions = detectAndExpandContractions(sentence);
+  
   // 为每个单词获取音标
-  return words.map(word => {
-    const phonetic = getPhonetic(word);
+  return wordsWithContractions.map(wordData => {
+    const phonetic = getPhonetic(wordData.expanded);
     return {
-      word,
-      phonetic: phonetic ? formatPhonetic(phonetic) : null
+      word: wordData.expanded, // 使用转换后的完整形式
+      original: wordData.original, // 保留原始单词
+      phonetic: phonetic ? formatPhonetic(phonetic) : null,
+      isContraction: wordData.isContraction
     };
   });
 };

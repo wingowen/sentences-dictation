@@ -120,6 +120,12 @@ function App() {
     }
   }, [currentIndex, sentences, autoPlay, speechSupported, speechRate])
 
+  // 获取转换后的完整句子
+  const getExpandedSentence = (sentence) => {
+    const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+    return wordsWithPhonetics.map(wordData => wordData.word).join(' ')
+  }
+
   // 当输入框数组变化时，更新引用数组
   useEffect(() => {
     if (wordInputs.length !== inputRefs.current.length) {
@@ -222,7 +228,9 @@ function App() {
   const compareSentences = (wordInputs, correctSentence) => {
     // 构建用户输入的句子
     const userSentence = wordInputs.join(' ')
-    return normalize(userSentence) === normalize(correctSentence)
+    // 获取转换后的完整句子
+    const expandedCorrectSentence = getExpandedSentence(correctSentence)
+    return normalize(userSentence) === normalize(expandedCorrectSentence)
   }
 
   // 检查所有单词是否都正确
@@ -532,7 +540,7 @@ function App() {
                   {result === 'correct' ? '✅ Correct!' : '❌ Incorrect!'}
                 </h2>
                 <p className="correct-sentence">
-                  Correct sentence: <strong>{sentences[currentIndex]}</strong>
+                  Correct sentence: <strong>{getExpandedSentence(sentences[currentIndex])}</strong>
                 </p>
                 {result === 'correct' && (
                   <p className="auto-next-hint">自动跳转到下一题...</p>
