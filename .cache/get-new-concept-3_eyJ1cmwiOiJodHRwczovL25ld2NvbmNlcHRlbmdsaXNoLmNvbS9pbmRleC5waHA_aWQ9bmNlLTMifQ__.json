@@ -1,18 +1,9 @@
 {
-  "timestamp": 1767775024915,
+  "timestamp": 1767778181890,
   "ttl": 3600000,
   "data": {
     "success": true,
-    "articles": [
-      {
-        "id": 1,
-        "title": "Lesson 1",
-        "sentences": [
-          "新概念英语\n        NewConceptEnglish",
-          "com | 关于新概念英语\n © 2025-2026 | 敬请购买正版新概念英语教材"
-        ]
-      }
-    ],
-    "totalArticles": 1
+    "articles": [],
+    "totalArticles": 0
   }
 }

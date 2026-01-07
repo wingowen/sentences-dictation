@@ -110,64 +110,123 @@ export async function handler(event, context) {
     const html = response.data;
     const $ = cheerio.load(html);
     
-    // Extract articles - this will need to be adjusted based on the actual webpage structure
+    // Extract articles - improved selectors for New Concept English 3
     const articles = [];
     
-    // Example structure - you may need to inspect the actual webpage to find the correct selectors
-    // Look for article elements or sections containing the lessons
-    $('.article, .lesson, .content').each((index, element) => {
-      const title = $(element).find('h2, h3, .title').text().trim();
-      if (title) {
-        // Extract paragraphs or sentences
-        const content = $(element).find('p, .content').text().trim();
-        if (content) {
+    // Try different selector strategies to find articles
+    // Strategy 1: Look for main content container first
+    const mainContent = $('#content, .main-content, .article-content, .post-content').first();
+    
+    if (mainContent.length > 0) {
+      // Strategy 1a: Look for article sections within main content
+      mainContent.find('section, div[class*="lesson"], div[class*="article"], h2, h3').each((index, element) => {
+        const $element = $(element);
+        let title = '';
+        let content = '';
+        
+        // Check if this is a heading element
+        if ($element.is('h2, h3')) {
+          title = $element.text().trim();
+          // Get content from following sibling elements
+          let nextElement = $element.next();
+          while (nextElement.length > 0 && !nextElement.is('h2, h3')) {
+            content += nextElement.text() + ' ';
+            nextElement = nextElement.next();
+          }
+        } else {
+          // This is a container element
+          title = $element.find('h2, h3, .title').first().text().trim();
+          content = $element.find('p, .content').text().trim();
+        }
+        
+        if (title && content) {
           // Split content into sentences
           const sentences = content
             .split(/[.!?]+/)
             .map(sentence => sentence.trim())
-            .filter(sentence => sentence.length > 0);
+            .filter(sentence => sentence.length > 0 && sentence.length < 200);
           
           if (sentences.length > 0) {
             articles.push({
-              id: index + 1,
+              id: articles.length + 1,
               title: title,
               sentences: sentences
             });
           }
         }
-      }
-    });
+      });
+    }
     
-    // If no articles found with the above selectors, try a more general approach
+    // Strategy 2: If no articles found, try more general approach
     if (articles.length === 0) {
-      // Extract all text and split into sentences
-      const allText = $('body').text().trim();
-      const allSentences = allText
-        .split(/[.!?]+/)
-        .map(sentence => sentence.trim())
-        .filter(sentence => sentence.length > 0 && sentence.length < 200); // Filter out very long sentences
+      // Extract all paragraphs and filter for meaningful content
+      const paragraphs = [];
+      $('p').each((index, element) => {
+        const text = $(element).text().trim();
+        if (text.length > 50 && text.length < 1000) {
+          paragraphs.push(text);
+        }
+      });
       
-      // Group sentences into pseudo-articles
-      if (allSentences.length > 0) {
-        const pseudoArticles = [];
-        const sentencesPerArticle = 10;
+      // Group paragraphs into articles
+      if (paragraphs.length > 0) {
+        const sentencesPerArticle = 15;
+        let currentSentences = [];
         
-        for (let i = 0; i < allSentences.length; i += sentencesPerArticle) {
-          pseudoArticles.push({
-            id: pseudoArticles.length + 1,
-            title: `Lesson ${pseudoArticles.length + 1}`,
-            sentences: allSentences.slice(i, i + sentencesPerArticle)
+        paragraphs.forEach(paragraph => {
+          const paraSentences = paragraph
+            .split(/[.!?]+/)
+            .map(sentence => sentence.trim())
+            .filter(sentence => sentence.length > 0 && sentence.length < 200);
+          
+          currentSentences.push(...paraSentences);
+          
+          // When we have enough sentences, create an article
+          if (currentSentences.length >= sentencesPerArticle) {
+            articles.push({
+              id: articles.length + 1,
+              title: `Lesson ${articles.length + 1}`,
+              sentences: currentSentences.slice(0, sentencesPerArticle)
+            });
+            currentSentences = currentSentences.slice(sentencesPerArticle);
+          }
+        });
+        
+        // Add any remaining sentences as the last article
+        if (currentSentences.length > 0) {
+          articles.push({
+            id: articles.length + 1,
+            title: `Lesson ${articles.length + 1}`,
+            sentences: currentSentences
           });
         }
-        
-        articles.push(...pseudoArticles);
       }
     }
     
+    // Remove any articles that appear to be non-lesson content
+    const filteredArticles = articles.filter(article => {
+      // Filter out articles with generic titles that don't look like lessons
+      const hasLessonTitle = article.title.toLowerCase().includes('lesson') || 
+                           article.title.match(/\b\d+\b/);
+      // Filter out articles with very short or low-quality content
+      const hasQualityContent = article.sentences.length > 2 && 
+                               article.sentences.some(sentence => sentence.length > 30);
+      // Filter out articles that seem to be copyright or navigation content
+      const isNotCopyright = !article.title.toLowerCase().includes('copyright') && 
+                            !article.title.toLowerCase().includes('©') &&
+                            !article.sentences.some(s => s.toLowerCase().includes('copyright') || 
+                                                          s.toLowerCase().includes('正版') ||
+                                                          s.toLowerCase().includes('购买'));
+      return hasLessonTitle && hasQualityContent && isNotCopyright;
+    });
+    
+    // Use filtered articles
+    const finalArticles = filteredArticles;
+    
     const result = {
       success: true,
-      articles: articles,
-      totalArticles: articles.length
+      articles: finalArticles,
+      totalArticles: finalArticles.length
     };
 
     // 写入缓存
