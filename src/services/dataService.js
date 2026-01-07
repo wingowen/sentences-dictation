@@ -2,11 +2,13 @@
 
 // 本地JSON文件数据源
 import localSentences from '../data/sentences.json';
+import newConcept1Sentences from '../data/new-concept-1.json';
 
 // 数据源类型常量
 export const DATA_SOURCE_TYPES = {
   LOCAL: 'local',
   NOTION: 'notion',
+  NEW_CONCEPT_1: 'new-concept-1',
 };
 
 // 数据源配置
@@ -23,6 +25,12 @@ export const DATA_SOURCES = [
     description: '从 Notion 页面动态获取句子',
     icon: '📝',
   },
+  {
+    id: DATA_SOURCE_TYPES.NEW_CONCEPT_1,
+    name: '新概念一',
+    description: '使用新概念英语第一册的句子',
+    icon: '📚',
+  },
 ];
 
 /**
@@ -31,6 +39,14 @@ export const DATA_SOURCES = [
  */
 export const getLocalSentences = async () => {
   return Promise.resolve(localSentences);
+};
+
+/**
+ * 从本地JSON文件获取新概念一句子
+ * @returns {Promise<Array>} 句子数组
+ */
+export const getNewConcept1Sentences = async () => {
+  return Promise.resolve(newConcept1Sentences);
 };
 
 /**
@@ -91,6 +107,8 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
   switch (dataSourceType) {
     case DATA_SOURCE_TYPES.NOTION:
       return await getNotionSentences();
+    case DATA_SOURCE_TYPES.NEW_CONCEPT_1:
+      return await getNewConcept1Sentences();
     case DATA_SOURCE_TYPES.LOCAL:
     default:
       return await getLocalSentences();
