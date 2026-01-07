@@ -12,7 +12,7 @@
 # Development server settings (for Netlify Dev)
 [dev]
   command = "npm run dev"
-  port = 5173
+  port = 8888
   publish = "dist"
 
 # Redirects and headers (optional)
