@@ -110,118 +110,126 @@ export async function handler(event, context) {
     const html = response.data;
     const $ = cheerio.load(html);
     
-    // Extract articles - improved selectors for New Concept English 3
+    // Extract articles - specifically targeting the courselist-table
     const articles = [];
     
-    // Try different selector strategies to find articles
-    // Strategy 1: Look for main content container first
-    const mainContent = $('#content, .main-content, .article-content, .post-content').first();
+    console.log('Starting to extract New Concept 3 articles...');
     
-    if (mainContent.length > 0) {
-      // Strategy 1a: Look for article sections within main content
-      mainContent.find('section, div[class*="lesson"], div[class*="article"], h2, h3').each((index, element) => {
-        const $element = $(element);
-        let title = '';
-        let content = '';
+    // Strategy 1: Target the specific courselist-table
+    const courseListTable = $('#courselist-table');
+    console.log('Course list table found:', courseListTable.length > 0);
+    
+    if (courseListTable.length > 0) {
+      // Extract lessons from the table
+      const tableRows = courseListTable.find('tr');
+      console.log('Table rows found:', tableRows.length);
+      
+      tableRows.each((index, row) => {
+        const $row = $(row);
+        const linkElement = $row.find('a');
         
-        // Check if this is a heading element
-        if ($element.is('h2, h3')) {
-          title = $element.text().trim();
-          // Get content from following sibling elements
-          let nextElement = $element.next();
-          while (nextElement.length > 0 && !nextElement.is('h2, h3')) {
-            content += nextElement.text() + ' ';
-            nextElement = nextElement.next();
-          }
-        } else {
-          // This is a container element
-          title = $element.find('h2, h3, .title').first().text().trim();
-          content = $element.find('p, .content').text().trim();
-        }
-        
-        if (title && content) {
-          // Split content into sentences
-          const sentences = content
-            .split(/[.!?]+/)
-            .map(sentence => sentence.trim())
-            .filter(sentence => sentence.length > 0 && sentence.length < 200);
+        if (linkElement.length > 0) {
+          const linkText = linkElement.text().trim();
+          console.log(`Found lesson link: ${linkText}`);
           
-          if (sentences.length > 0) {
+          // Get the actual link URL
+          const linkUrl = linkElement.attr('href');
+          console.log(`Lesson link URL: ${linkUrl}`);
+          
+          // Parse the lesson information
+          const match = linkText.match(/^(3-\d{3})\s+(.*)$/);
+          if (match) {
+            const lessonId = match[1];
+            const lessonTitle = match[2];
+            
+            console.log(`Parsed lesson: ${lessonId} - ${lessonTitle}`);
+            
+            // Create article with link information
             articles.push({
               id: articles.length + 1,
-              title: title,
-              sentences: sentences
+              title: `${lessonId} ${lessonTitle}`,
+              link: linkUrl,
+              sentences: [] // Empty sentences array - will be filled when lesson is selected
             });
+            
+            console.log(`Added lesson: ${lessonId} ${lessonTitle} with link: ${linkUrl}`);
           }
         }
       });
     }
     
-    // Strategy 2: If no articles found, try more general approach
+    console.log('After strategy 1, articles found:', articles.length);
+    
+    // Strategy 2: If no articles found in table, try general approach
     if (articles.length === 0) {
-      // Extract all paragraphs and filter for meaningful content
-      const paragraphs = [];
-      $('p').each((index, element) => {
-        const text = $(element).text().trim();
-        if (text.length > 50 && text.length < 1000) {
-          paragraphs.push(text);
-        }
-      });
-      
-      // Group paragraphs into articles
-      if (paragraphs.length > 0) {
-        const sentencesPerArticle = 15;
-        let currentSentences = [];
-        
-        paragraphs.forEach(paragraph => {
-          const paraSentences = paragraph
+      console.log('Trying strategy 2: general content extraction...');
+      // Extract from main content
+      const mainContent = $('main, article, .content, .container').first();
+      if (mainContent.length > 0) {
+        const contentText = mainContent.text().trim();
+        if (contentText.length > 100) {
+          const sentences = contentText
             .split(/[.!?]+/)
             .map(sentence => sentence.trim())
-            .filter(sentence => sentence.length > 0 && sentence.length < 200);
+            .filter(sentence => sentence.length > 0 && sentence.length < 200)
+            .slice(0, 10);
           
-          currentSentences.push(...paraSentences);
-          
-          // When we have enough sentences, create an article
-          if (currentSentences.length >= sentencesPerArticle) {
+          if (sentences.length > 0) {
             articles.push({
-              id: articles.length + 1,
-              title: `Lesson ${articles.length + 1}`,
-              sentences: currentSentences.slice(0, sentencesPerArticle)
+              id: 1,
+              title: 'New Concept 3 Content',
+              sentences: sentences
             });
-            currentSentences = currentSentences.slice(sentencesPerArticle);
+            console.log('Added general content article');
           }
-        });
-        
-        // Add any remaining sentences as the last article
-        if (currentSentences.length > 0) {
-          articles.push({
-            id: articles.length + 1,
-            title: `Lesson ${articles.length + 1}`,
-            sentences: currentSentences
-          });
         }
       }
     }
     
+    console.log('Final articles found before filtering:', articles.length);
+    
     // Remove any articles that appear to be non-lesson content
     const filteredArticles = articles.filter(article => {
-      // Filter out articles with generic titles that don't look like lessons
-      const hasLessonTitle = article.title.toLowerCase().includes('lesson') || 
-                           article.title.match(/\b\d+\b/);
-      // Filter out articles with very short or low-quality content
-      const hasQualityContent = article.sentences.length > 2 && 
-                               article.sentences.some(sentence => sentence.length > 30);
+      // For New Concept 3 lessons, we don't check sentences length
+      // because content will be fetched from the link later
+      const hasQualityContent = true;
+      
       // Filter out articles that seem to be copyright or navigation content
       const isNotCopyright = !article.title.toLowerCase().includes('copyright') && 
-                            !article.title.toLowerCase().includes('©') &&
-                            !article.sentences.some(s => s.toLowerCase().includes('copyright') || 
-                                                          s.toLowerCase().includes('正版') ||
-                                                          s.toLowerCase().includes('购买'));
-      return hasLessonTitle && hasQualityContent && isNotCopyright;
+                            !article.title.toLowerCase().includes('©');
+      
+      // Filter out articles that appear to be website navigation or headers
+      const isNotNavigation = !article.title.toLowerCase().includes('home') && 
+                             !article.title.toLowerCase().includes('menu') &&
+                             !article.title.toLowerCase().includes('导航');
+      
+      // For New Concept 3, we only need valid title and link
+      const hasValidLink = article.link && article.link.length > 0;
+      const hasValidTitle = article.title && article.title.length > 5;
+      
+      return hasQualityContent && isNotCopyright && isNotNavigation && hasValidLink && hasValidTitle;
     });
     
     // Use filtered articles
     const finalArticles = filteredArticles;
+    
+    // Check if we have any articles
+    if (finalArticles.length === 0) {
+      // Return error response when no articles found
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          success: false,
+          error: '未能找到新概念三文章内容，请检查网页结构是否变化',
+          articles: [],
+          totalArticles: 0
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*' // Allow CORS
+        }
+      };
+    }
     
     const result = {
       success: true,

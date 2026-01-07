@@ -148,26 +148,32 @@ function App() {
       let data;
       
       if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && selectedArticleId) {
-        // 对于新概念三，获取所有文章然后筛选选中的文章
-        const allArticles = await getSentences(dataSource);
-        // 这里需要修改，因为getSentences返回的是扁平化的句子数组
-        // 我们需要重新获取文章数据并筛选
-        const functionUrl = '/.netlify/functions/get-new-concept-3';
-        const response = await fetch(functionUrl);
-        if (response.ok) {
-          const articlesData = await response.json();
-          if (articlesData.success && articlesData.articles) {
-            const selectedArticle = articlesData.articles.find(article => article.id === selectedArticleId);
-            if (selectedArticle) {
-              data = selectedArticle.sentences;
+        // 对于新概念三，获取选中文章的链接并动态加载内容
+        const selectedArticle = newConcept3Articles.find(article => article.id === selectedArticleId);
+        if (selectedArticle && selectedArticle.link) {
+          // 调用新的函数获取课程内容
+          const functionUrl = '/.netlify/functions/get-new-concept-3-lesson';
+          const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ link: selectedArticle.link })
+          });
+          
+          if (response.ok) {
+            const lessonData = await response.json();
+            if (lessonData.success && lessonData.sentences) {
+              data = lessonData.sentences;
+              console.log(`Loaded ${data.length} sentences from lesson: ${selectedArticle.title}`);
             } else {
-              throw new Error('选中的文章不存在');
+              throw new Error('获取课程内容失败');
             }
           } else {
-            throw new Error('获取文章数据失败');
+            throw new Error('请求课程内容失败');
           }
         } else {
-          throw new Error('请求文章数据失败');
+          throw new Error('未找到选中的文章或文章链接');
         }
       } else {
         // 其他数据源正常获取
@@ -208,7 +214,7 @@ function App() {
     } finally {
       setIsLoading(false)
     }
-  }, [dataSource, selectedArticleId])
+  }, [dataSource, selectedArticleId, newConcept3Articles])
 
   // 规范化处理：忽略大小写、前后空格和常见标点，保留缩略词中的单引号
   const normalize = (str) => {
