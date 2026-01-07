@@ -139,6 +139,7 @@ export async function handler(event, context) {
     // 初始化 Notion 客户端
     const notion = new Client({
       auth: notionToken,
+      timeoutMs: 60000, // 增加超时时间到 60 秒
     });
 
     // 获取页面内容
@@ -281,12 +282,19 @@ export async function handler(event, context) {
     };
   } catch (error) {
     console.error('Error fetching Notion data:', error);
+    
+    let errorMessage = error.message;
+    if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+      errorMessage = '连接 Notion API 超时。如果您在中国大陆，可能需要配置代理或检查网络连接。';
+    }
+
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Failed to fetch Notion data',
-        message: error.message,
+        message: errorMessage,
+        originalError: error.message
       }),
     };
   }

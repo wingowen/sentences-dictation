@@ -5,27 +5,27 @@ import { speak, isSpeechSupported, cancelSpeech } from './services/speechService
 import { parseSentenceForPhonetics } from './services/pronunciationService'
 
 function App() {
-  // 状态管理
   const [sentences, setSentences] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userInput, setUserInput] = useState('')
-  const [wordInputs, setWordInputs] = useState([]) // 按词输入的状态
-  const [result, setResult] = useState(null) // null, 'correct', 'incorrect'
+  const [wordInputs, setWordInputs] = useState([])
+  const [result, setResult] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [speechSupported, setSpeechSupported] = useState(false)
-  const [dataSource, setDataSource] = useState(DATA_SOURCE_TYPES.LOCAL) // 当前数据源，默认为本地
-  const [dataSourceError, setDataSourceError] = useState(null) // 数据源错误信息
-  const [currentWords, setCurrentWords] = useState([]) // 当前句子的单词和音标
-  const [showOriginalText, setShowOriginalText] = useState(false) // 控制是否显示原文
-  const [showModal, setShowModal] = useState(false) // 控制弹窗显示
-  const [showDataSourceSelector, setShowDataSourceSelector] = useState(false) // 控制数据源选择器显示
-  const [autoPlay, setAutoPlay] = useState(true) // 控制自动朗读，默认打开
-  const [speechRate, setSpeechRate] = useState(0.5) // 语速，默认0.5（慢速）
-  const [newConcept3Articles, setNewConcept3Articles] = useState([]) // 新概念三文章列表
-  const [selectedArticleId, setSelectedArticleId] = useState(null) // 当前选择的文章ID
-  const inputRefs = useRef([]) // 输入框引用数组
-  const autoNextTimerRef = useRef(null) // 自动跳转定时器引用
-  const isFallbackInProgressRef = useRef(false) // 标记是否正在进行回退操作
+  const [dataSource, setDataSource] = useState(DATA_SOURCE_TYPES.LOCAL)
+  const [dataSourceError, setDataSourceError] = useState(null)
+  const [currentWords, setCurrentWords] = useState([])
+  const [showOriginalText, setShowOriginalText] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [showDataSourceSelector, setShowDataSourceSelector] = useState(false)
+  const [autoPlay, setAutoPlay] = useState(true)
+  const [speechRate, setSpeechRate] = useState(0.5)
+  const [newConcept3Articles, setNewConcept3Articles] = useState([])
+  const [selectedArticleId, setSelectedArticleId] = useState(null)
+  const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
+  const inputRefs = useRef([])
+  const autoNextTimerRef = useRef(null)
+  const isFallbackInProgressRef = useRef(false)
 
   // 初始化
   useEffect(() => {
@@ -56,18 +56,27 @@ function App() {
         try {
           const functionUrl = '/.netlify/functions/get-new-concept-3';
           const response = await fetch(functionUrl);
+          
+          // 检查响应类型
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Netlify Functions 未运行或返回了非 JSON 数据。请确保使用 `npm run netlify-dev` 启动项目。');
+          }
+
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.articles) {
               setNewConcept3Articles(data.articles);
-              // 默认选择第一篇文章
-              if (data.articles.length > 0 && !selectedArticleId) {
-                setSelectedArticleId(data.articles[0].id);
-              }
+            } else {
+              throw new Error(data.error || '获取文章列表失败');
             }
+          } else {
+            throw new Error('Netlify Functions 在开发环境下不可用，请使用生产环境或选择其他数据源');
           }
         } catch (error) {
           console.error('Error fetching New Concept 3 articles:', error);
+          setDataSourceError(error.message || '加载新概念三文章失败');
+          setNewConcept3Articles([]);
         }
       };
       
@@ -76,8 +85,9 @@ function App() {
       // 切换到其他数据源时重置状态
       setNewConcept3Articles([]);
       setSelectedArticleId(null);
+      setDataSourceError(null);
     }
-  }, [dataSource, selectedArticleId])
+  }, [dataSource])
 
   // 加载句子数据（当数据源变化时重新加载）
   useEffect(() => {
@@ -85,8 +95,11 @@ function App() {
     if (isFallbackInProgressRef.current) {
       return
     }
-    loadSentences()
-  }, [dataSource, selectedArticleId])
+    // 只有在用户已经选择数据源后才加载数据
+    if (hasSelectedDataSource) {
+      loadSentences()
+    }
+  }, [dataSource, selectedArticleId, hasSelectedDataSource])
 
   // 当当前句子变化时，更新单词和音标
   useEffect(() => {
@@ -140,6 +153,19 @@ function App() {
       return
     }
     
+    // 如果用户还未选择数据源，不执行加载
+    if (!hasSelectedDataSource) {
+      return
+    }
+    
+    // 如果是新概念三但未选择文章，优雅地跳过加载
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) {
+      setIsLoading(false)
+      setSentences([])
+      setDataSourceError(null)
+      return
+    }
+    
     setIsLoading(true)
     setDataSourceError(null)
     setCurrentIndex(0) // 切换数据源时重置到第一题
@@ -160,6 +186,12 @@ function App() {
             },
             body: JSON.stringify({ link: selectedArticle.link })
           });
+          
+          // 检查响应类型
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Netlify Functions 未运行或返回了非 JSON 数据。请确保使用 `npm run netlify-dev` 启动项目。');
+          }
           
           if (response.ok) {
             const lessonData = await response.json();
@@ -351,6 +383,45 @@ function App() {
     }
   }
 
+  const currentDataSource = DATA_SOURCES.find(s => s.id === dataSource)
+
+  const DataSourceSelectionPage = () => (
+    <div className="data-source-selection-page">
+      <div className="selection-container">
+        <h1>选择数据源</h1>
+        <p>请选择您想要练习的数据源开始拼写练习</p>
+        {dataSourceError && (
+          <div className="data-source-error">
+            <span>⚠️ {dataSourceError}</span>
+          </div>
+        )}
+        <div className="data-source-cards">
+          {DATA_SOURCES.map((source) => (
+            <button
+              key={source.id}
+              className="data-source-card"
+              onClick={() => {
+                setDataSource(source.id)
+                setHasSelectedDataSource(true)
+                setDataSourceError(null)
+              }}
+            >
+              <span className="card-icon">{source.icon}</span>
+              <div className="card-content">
+                <h3>{source.name}</h3>
+                <p>{source.description}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  if (!hasSelectedDataSource) {
+    return <DataSourceSelectionPage />
+  }
+
   if (isLoading) {
     return (
       <div className="loading">
@@ -361,14 +432,23 @@ function App() {
   }
 
   if (sentences.length === 0 && !dataSourceError) {
-    return <div className="error">No sentences available. Please check your data source.</div>
+    if (dataSource !== DATA_SOURCE_TYPES.NEW_CONCEPT_3 || selectedArticleId) {
+      return <div className="error">No sentences available. Please check your data source.</div>
+    }
   }
-
-  const currentDataSource = DATA_SOURCES.find(s => s.id === dataSource)
 
   return (
     <div className="app">
       <header className="app-header">
+        <div className="header-left">
+          <button 
+            className="back-button"
+            onClick={() => setHasSelectedDataSource(false)}
+            title="返回数据源选择"
+          >
+            ← 返回
+          </button>
+        </div>
         <h1>Sentence Dictation Practice</h1>
         <div className="data-source-controls">
           <button 
@@ -415,8 +495,12 @@ function App() {
               选择文章:
               <select
                 value={selectedArticleId || ''}
-                onChange={(e) => setSelectedArticleId(parseInt(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedArticleId(value ? parseInt(value) : null);
+                }}
               >
+                <option value="">请选择文章</option>
                 {newConcept3Articles.map(article => (
                   <option key={article.id} value={article.id}>
                     {article.title}
@@ -427,136 +511,148 @@ function App() {
           </div>
         )}
         
-        {/* 音标显示部分 */}
-        {currentWords.length > 0 && (
-          <div className="phonetics-section">
-            <div className="progress small">
-              <span>Question {currentIndex + 1} of {sentences.length}</span>
-            </div>
-            <div className="phonetics-list">
-              {currentWords.map((wordData, index) => (
-                <div key={index} className="phonetic-item">
-                  {/* 根据状态决定是否显示原文 */}
-                  {showOriginalText && (
-                    <span className="word">{wordData.word}</span>
-                  )}
-                  {wordData.phonetic ? (
-                    <span className="phonetic">/{wordData.phonetic}/</span>
-                  ) : (
-                    <span className="phonetic missing">—</span>
-                  )}
+        {/* 新概念三未选择文章时的提示 */}
+        {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Articles.length > 0 && !selectedArticleId && !isLoading && (
+          <div className="article-selector-hint">
+            <p>👆 请在上方选择一篇文章开始练习</p>
+          </div>
+        )}
+        
+        {/* 只有当有句子数据时才显示听写区域 */}
+        {sentences.length > 0 && (
+          <>
+            {/* 音标显示部分 */}
+            {currentWords.length > 0 && (
+              <div className="phonetics-section">
+                <div className="progress small">
+                  <span>Question {currentIndex + 1} of {sentences.length}</span>
                 </div>
-              ))}
-              <button 
-                className="toggle-text-button"
-                onClick={() => setShowOriginalText(!showOriginalText)}
-                title={showOriginalText ? '隐藏原文' : '显示原文'}
-              >
-                {showOriginalText ? '👁️ 隐藏原文' : '👁️‍🗨️ 显示原文'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 按词输入部分 */}
-        <form className="input-form" onSubmit={handleSubmit}>
-          <label className="input-with-controls">
-            Type what you hear (one word per blank):
-            <div className="input-controls">
-              <label className="speech-rate-selector small">
-                <span>语速:</span>
-                <select
-                  value={speechRate.toFixed(1)}
-                  onChange={(e) => {
-                    const newRate = parseFloat(e.target.value);
-                    setSpeechRate(newRate);
-                  }}
-                  disabled={!speechSupported}
-                  title="选择朗读语速"
-                >
-                  <option value="0.5">0.5x (慢速)</option>
-                  <option value="0.75">0.75x (较慢)</option>
-                  <option value="1.0">1.0x (正常)</option>
-                  <option value="1.25">1.25x (较快)</option>
-                  <option value="1.5">1.5x (快速)</option>
-                  <option value="2.0">2.0x (很快)</option>
-                </select>
-              </label>
-              <button 
-                type="button" 
-                className="play-button small"
-                onClick={handlePlay}
-                disabled={!speechSupported}
-                title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
-              >
-                ▶️
-              </button>
-              <label className="auto-play-toggle small">
-                <input
-                  type="checkbox"
-                  checked={autoPlay}
-                  onChange={(e) => setAutoPlay(e.target.checked)}
-                  disabled={!speechSupported}
-                />
-                <span>自动朗读</span>
-              </label>
-            </div>
-          </label>
-          <div className="word-inputs">
-            {wordInputs.map((input, index) => {
-              const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
-              const wordLength = currentWords[index]?.word?.length || 5
-              // 使用实际输入长度和原始单词长度中的较大值，确保能显示完整输入
-              const currentInputLength = input.length || wordLength
-              const maxLength = Math.max(wordLength, currentInputLength)
-              // 根据单词长度计算输入框宽度：使用更保守的系数和更大的padding
-              // 每个字符约 1.5ch（考虑不同字符宽度差异），加上额外的padding
-              // 最小6ch，最大35ch（允许更长的单词）
-              const calculatedWidth = maxLength * 1.5 + 4
-              const clampedWidth = Math.max(6, Math.min(35, calculatedWidth))
-              const inputWidth = `${clampedWidth}ch`
-              return (
-                <input
-                  key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
-                  type="text"
-                  className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-                  style={{ width: inputWidth }}
-                  value={input}
-                  onChange={(e) => handleWordInputChange(index, e.target.value)}
-                  placeholder=""
-                  autoFocus={index === 0}
-                />
-              )
-            })}
-          </div>
-          
-        </form>
-
-        {!speechSupported && (
-          <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
-        )}
-
-        {/* 弹窗显示结果 */}
-        {showModal && result && (
-          <div className="modal-overlay" onClick={handleCloseModal}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className={`modal-result ${result}`}>
-                <h2>
-                  {result === 'correct' ? '✅ Correct!' : '❌ Incorrect!'}
-                </h2>
-                <p className="correct-sentence">
-                  Correct sentence: <strong>{getExpandedSentence(sentences[currentIndex])}</strong>
-                </p>
-                {result === 'correct' && (
-                  <p className="auto-next-hint">自动跳转到下一题...</p>
-                )}
-                <button className="modal-close-button" onClick={handleCloseModal}>
-                  {result === 'correct' ? 'Next' : 'Close'}
-                </button>
+                <div className="phonetics-list">
+                  {currentWords.map((wordData, index) => (
+                    <div key={index} className="phonetic-item">
+                      {/* 根据状态决定是否显示原文 */}
+                      {showOriginalText && (
+                        <span className="word">{wordData.word}</span>
+                      )}
+                      {wordData.phonetic ? (
+                        <span className="phonetic">/{wordData.phonetic}/</span>
+                      ) : (
+                        <span className="phonetic missing">—</span>
+                      )}
+                    </div>
+                  ))}
+                  <button 
+                    className="toggle-text-button"
+                    onClick={() => setShowOriginalText(!showOriginalText)}
+                    title={showOriginalText ? '隐藏原文' : '显示原文'}
+                  >
+                    {showOriginalText ? '👁️ 隐藏原文' : '👁️‍🗨️ 显示原文'}
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {/* 按词输入部分 */}
+            <form className="input-form" onSubmit={handleSubmit}>
+              <label className="input-with-controls">
+                Type what you hear (one word per blank):
+                <div className="input-controls">
+                  <label className="speech-rate-selector small">
+                    <span>语速:</span>
+                    <select
+                      value={speechRate.toFixed(1)}
+                      onChange={(e) => {
+                        const newRate = parseFloat(e.target.value);
+                        setSpeechRate(newRate);
+                      }}
+                      disabled={!speechSupported}
+                      title="选择朗读语速"
+                    >
+                      <option value="0.5">0.5x (慢速)</option>
+                      <option value="0.75">0.75x (较慢)</option>
+                      <option value="1.0">1.0x (正常)</option>
+                      <option value="1.25">1.25x (较快)</option>
+                      <option value="1.5">1.5x (快速)</option>
+                      <option value="2.0">2.0x (很快)</option>
+                    </select>
+                  </label>
+                  <button 
+                    type="button" 
+                    className="play-button small"
+                    onClick={handlePlay}
+                    disabled={!speechSupported}
+                    title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
+                  >
+                    ▶️
+                  </button>
+                  <label className="auto-play-toggle small">
+                    <input
+                      type="checkbox"
+                      checked={autoPlay}
+                      onChange={(e) => setAutoPlay(e.target.checked)}
+                      disabled={!speechSupported}
+                    />
+                    <span>自动朗读</span>
+                  </label>
+                </div>
+              </label>
+              <div className="word-inputs">
+                {wordInputs.map((input, index) => {
+                  const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
+                  const wordLength = currentWords[index]?.word?.length || 5
+                  // 使用实际输入长度和原始单词长度中的较大值，确保能显示完整输入
+                  const currentInputLength = input.length || wordLength
+                  const maxLength = Math.max(wordLength, currentInputLength)
+                  // 根据单词长度计算输入框宽度：使用更保守的系数和更大的padding
+                  // 每个字符约 1.5ch（考虑不同字符宽度差异），加上额外的padding
+                  // 最小6ch，最大35ch（允许更长的单词）
+                  const calculatedWidth = maxLength * 1.5 + 4
+                  const clampedWidth = Math.max(6, Math.min(35, calculatedWidth))
+                  const inputWidth = `${clampedWidth}ch`
+                  return (
+                    <input
+                      key={index}
+                      ref={(el) => (inputRefs.current[index] = el)}
+                      type="text"
+                      className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                      style={{ width: inputWidth }}
+                      value={input}
+                      onChange={(e) => handleWordInputChange(index, e.target.value)}
+                      placeholder=""
+                      autoFocus={index === 0}
+                    />
+                  )
+                })}
+              </div>
+              
+            </form>
+
+            {!speechSupported && (
+              <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
+            )}
+
+            {/* 弹窗显示结果 */}
+            {showModal && result && (
+              <div className="modal-overlay" onClick={handleCloseModal}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <div className={`modal-result ${result}`}>
+                    <h2>
+                      {result === 'correct' ? '✅ Correct!' : '❌ Incorrect!'}
+                    </h2>
+                    <p className="correct-sentence">
+                      Correct sentence: <strong>{getExpandedSentence(sentences[currentIndex])}</strong>
+                    </p>
+                    {result === 'correct' && (
+                      <p className="auto-next-hint">自动跳转到下一题...</p>
+                    )}
+                    <button className="modal-close-button" onClick={handleCloseModal}>
+                      {result === 'correct' ? 'Next' : 'Close'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
       
