@@ -9,6 +9,7 @@ export const DATA_SOURCE_TYPES = {
   LOCAL: 'local',
   NOTION: 'notion',
   NEW_CONCEPT_1: 'new-concept-1',
+  NEW_CONCEPT_3: 'new-concept-3',
 };
 
 // 数据源配置
@@ -30,6 +31,12 @@ export const DATA_SOURCES = [
     name: '新概念一',
     description: '使用新概念英语第一册的句子',
     icon: '📚',
+  },
+  {
+    id: DATA_SOURCE_TYPES.NEW_CONCEPT_3,
+    name: '新概念三',
+    description: '从网页动态获取新概念英语第三册文章',
+    icon: '📖',
   },
 ];
 
@@ -109,9 +116,60 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
       return await getNotionSentences();
     case DATA_SOURCE_TYPES.NEW_CONCEPT_1:
       return await getNewConcept1Sentences();
+    case DATA_SOURCE_TYPES.NEW_CONCEPT_3:
+      return await getNewConcept3Sentences();
     case DATA_SOURCE_TYPES.LOCAL:
     default:
       return await getLocalSentences();
+  }
+};
+
+/**
+ * 从 Netlify Function 获取新概念三句子
+ * @returns {Promise<Array>} 句子数组
+ */
+export const getNewConcept3Sentences = async () => {
+  // 创建超时控制器
+  const controller = new AbortController();
+  let timeoutId = null;
+  
+  try {
+    // 调用 Netlify Function
+    const functionUrl = '/.netlify/functions/get-new-concept-3';
+    
+    // 设置超时
+    timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+    
+    const response = await fetch(functionUrl, {
+      signal: controller.signal,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success || !data.articles || data.articles.length === 0) {
+      throw new Error('获取新概念三文章失败或无数据');
+    }
+    
+    // 扁平化所有文章的句子
+    const allSentences = data.articles.flatMap(article => article.sentences);
+    return allSentences;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error('New Concept 3 API request timeout');
+      throw new Error('请求超时，请检查网络连接');
+    }
+    console.error('Error fetching New Concept 3 sentences:', error);
+    throw error;
+  } finally {
+    // 确保清理超时，无论成功还是失败
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
   }
 };
 

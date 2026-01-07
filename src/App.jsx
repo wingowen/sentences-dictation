@@ -21,6 +21,8 @@ function App() {
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false) // 控制数据源选择器显示
   const [autoPlay, setAutoPlay] = useState(true) // 控制自动朗读，默认打开
   const [speechRate, setSpeechRate] = useState(0.5) // 语速，默认0.5（慢速）
+  const [newConcept3Articles, setNewConcept3Articles] = useState([]) // 新概念三文章列表
+  const [selectedArticleId, setSelectedArticleId] = useState(null) // 当前选择的文章ID
   const inputRefs = useRef([]) // 输入框引用数组
   const autoNextTimerRef = useRef(null) // 自动跳转定时器引用
   const isFallbackInProgressRef = useRef(false) // 标记是否正在进行回退操作
@@ -47,6 +49,36 @@ function App() {
     }
   }, [showDataSourceSelector])
 
+  // 加载新概念三文章列表
+  useEffect(() => {
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3) {
+      const fetchNewConcept3Articles = async () => {
+        try {
+          const functionUrl = '/.netlify/functions/get-new-concept-3';
+          const response = await fetch(functionUrl);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.articles) {
+              setNewConcept3Articles(data.articles);
+              // 默认选择第一篇文章
+              if (data.articles.length > 0 && !selectedArticleId) {
+                setSelectedArticleId(data.articles[0].id);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching New Concept 3 articles:', error);
+        }
+      };
+      
+      fetchNewConcept3Articles();
+    } else {
+      // 切换到其他数据源时重置状态
+      setNewConcept3Articles([]);
+      setSelectedArticleId(null);
+    }
+  }, [dataSource, selectedArticleId])
+
   // 加载句子数据（当数据源变化时重新加载）
   useEffect(() => {
     // 如果正在进行回退操作，跳过执行
@@ -54,7 +86,7 @@ function App() {
       return
     }
     loadSentences()
-  }, [dataSource])
+  }, [dataSource, selectedArticleId])
 
   // 当当前句子变化时，更新单词和音标
   useEffect(() => {
@@ -107,7 +139,35 @@ function App() {
     setCurrentIndex(0) // 切换数据源时重置到第一题
     
     try {
-      const data = await getSentences(dataSource)
+      let data;
+      
+      if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && selectedArticleId) {
+        // 对于新概念三，获取所有文章然后筛选选中的文章
+        const allArticles = await getSentences(dataSource);
+        // 这里需要修改，因为getSentences返回的是扁平化的句子数组
+        // 我们需要重新获取文章数据并筛选
+        const functionUrl = '/.netlify/functions/get-new-concept-3';
+        const response = await fetch(functionUrl);
+        if (response.ok) {
+          const articlesData = await response.json();
+          if (articlesData.success && articlesData.articles) {
+            const selectedArticle = articlesData.articles.find(article => article.id === selectedArticleId);
+            if (selectedArticle) {
+              data = selectedArticle.sentences;
+            } else {
+              throw new Error('选中的文章不存在');
+            }
+          } else {
+            throw new Error('获取文章数据失败');
+          }
+        } else {
+          throw new Error('请求文章数据失败');
+        }
+      } else {
+        // 其他数据源正常获取
+        data = await getSentences(dataSource);
+      }
+      
       if (data && data.length > 0) {
         setSentences(data)
         setDataSourceError(null)
@@ -142,7 +202,7 @@ function App() {
     } finally {
       setIsLoading(false)
     }
-  }, [dataSource])
+  }, [dataSource, selectedArticleId])
 
   // 规范化处理：忽略大小写、前后空格和常见标点，保留缩略词中的单引号
   const normalize = (str) => {
@@ -333,6 +393,26 @@ function App() {
             <span>⚠️ {dataSourceError}</span>
           </div>
         )}
+        
+        {/* 新概念三文章选择器 */}
+        {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Articles.length > 0 && (
+          <div className="article-selector">
+            <label>
+              选择文章:
+              <select
+                value={selectedArticleId || ''}
+                onChange={(e) => setSelectedArticleId(parseInt(e.target.value))}
+              >
+                {newConcept3Articles.map(article => (
+                  <option key={article.id} value={article.id}>
+                    {article.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+        
         {/* 音标显示部分 */}
         {currentWords.length > 0 && (
           <div className="phonetics-section">
