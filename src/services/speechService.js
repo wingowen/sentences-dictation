@@ -2,7 +2,6 @@
 
 // 语音合成状态管理
 let isSpeaking = false;
-let currentUtterance = null;
 let lastSpeakTime = 0;
 const SPEAK_DEBOUNCE_DELAY = 300; // 防抖延迟（毫秒）
 
@@ -13,10 +12,6 @@ let speechConfig = {
   pitch: 1.0,
   volume: 1.0
 };
-
-// 语音缓存
-const speechCache = new Map();
-const CACHE_EXPIRY_TIME = 3600000; // 缓存过期时间（1小时）
 
 /**
  * 检查浏览器是否支持语音合成
@@ -82,25 +77,7 @@ export const getSpeechConfig = () => {
   return { ...speechConfig };
 };
 
-/**
- * 生成语音缓存键
- * @param {string} text 文本内容
- * @param {number} rate 语速
- * @returns {string} 缓存键
- */
-const generateCacheKey = (text, rate) => {
-  const voiceId = selectedVoice ? selectedVoice.name : 'default';
-  return `${text}_${rate}_${voiceId}_${speechConfig.pitch}_${speechConfig.volume}`;
-};
 
-/**
- * 检查缓存是否有效
- * @param {Object} cachedItem 缓存项
- * @returns {boolean} 缓存是否有效
- */
-const isCacheValid = (cachedItem) => {
-  return Date.now() - cachedItem.timestamp < CACHE_EXPIRY_TIME;
-};
 
 /**
  * 清除所有语音任务并重置状态
@@ -111,7 +88,6 @@ const clearSpeechTasks = () => {
     window.speechSynthesis.cancel();
     // 重置状态
     isSpeaking = false;
-    currentUtterance = null;
   }
 };
 
@@ -142,17 +118,14 @@ export const speak = (text, rate = 1.0) => {
     try {
       // 创建语音合成实例
       const utterance = new SpeechSynthesisUtterance(text);
-      currentUtterance = utterance;
       
       // 设置事件监听器
       utterance.onend = () => {
         isSpeaking = false;
-        currentUtterance = null;
         resolve();
       };
       utterance.onerror = (error) => {
         isSpeaking = false;
-        currentUtterance = null;
         reject(error);
       };
       utterance.onstart = () => {
@@ -180,7 +153,6 @@ export const speak = (text, rate = 1.0) => {
       window.speechSynthesis.speak(utterance);
     } catch (error) {
       isSpeaking = false;
-      currentUtterance = null;
       reject(error);
     }
   });

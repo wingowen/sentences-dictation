@@ -1,9 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES } from './services/dataService'
-import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice, getSelectedVoice, updateSpeechConfig, getSpeechConfig } from './services/speechService'
-import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService, getCurrentService, isExternalServiceAvailable } from './services/externalSpeechService'
+import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
+import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
+
+// 导入组件
+import DataSourceSelection from './components/DataSourceSelection'
+import PracticeStats from './components/PracticeStats'
+import PhoneticsSection from './components/PhoneticsSection'
+import WordInputs from './components/WordInputs'
+import VoiceSettings from './components/VoiceSettings'
+import ResultModal from './components/ResultModal'
 
 /**
  * 转换句子中的缩写为完整形式
@@ -21,7 +29,6 @@ const expandContractionsInSentence = (sentence) => {
 function App() {
   const [sentences, setSentences] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [userInput, setUserInput] = useState('')
   const [wordInputs, setWordInputs] = useState([])
   const [result, setResult] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -33,7 +40,7 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false)
   const [autoPlay, setAutoPlay] = useState(true)
-  const [speechRate, setSpeechRate] = useState(0.5)
+  const [speechRate] = useState(0.5)
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
@@ -277,89 +284,6 @@ function App() {
     }
   }, [dataSource])
 
-  // 加载句子数据（当数据源变化时重新加载）
-  useEffect(() => {
-    // 如果正在进行回退操作，跳过执行
-    if (isFallbackInProgressRef.current) {
-      return
-    }
-    // 只有在用户已经选择数据源后才加载数据
-    if (hasSelectedDataSource) {
-      loadSentences()
-    }
-  }, [dataSource, selectedArticleId, hasSelectedDataSource])
-
-  // 当当前句子变化时，更新单词和音标
-  useEffect(() => {
-    if (sentences[currentIndex]) {
-      const sentence = sentences[currentIndex]
-      // 解析句子，获取单词和音标
-      const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
-      setCurrentWords(wordsWithPhonetics)
-      
-      // 初始化按词输入数组
-      const initialWordInputs = wordsWithPhonetics.map(() => '')
-      setWordInputs(initialWordInputs)
-      
-      // 重置弹窗状态
-      setShowModal(false)
-      setResult(null)
-      
-      // 初始化输入框引用数组
-      inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
-      
-      // 如果自动朗读开启，则自动朗读句子
-      if (autoPlay && speechSupported) {
-        // 延迟一点时间，确保页面已经更新
-        setTimeout(() => {
-          // 根据当前选择的语音服务使用相应的speak函数
-          if (speechService === 'web_speech') {
-            cancelSpeech() // 取消之前的朗读
-            speak(sentence, speechRate).catch(error => {
-              console.error('Error speaking:', error)
-            })
-          } else if (speechService === 'uberduck') {
-            externalCancelSpeech() // 取消之前的朗读
-            externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
-              .catch(error => {
-                console.error('Error speaking with external service:', error)
-                // 如果外部服务失败，尝试回退到Web Speech API
-                cancelSpeech()
-                speak(sentence, speechRate)
-                  .catch(fallbackError => {
-                    console.error('Fallback to web speech also failed:', fallbackError)
-                  })
-              })
-          }
-        }, 300)
-      }
-    }
-  }, [currentIndex, sentences, autoPlay, speechSupported, speechRate])
-
-  // 获取转换后的完整句子
-  const getExpandedSentence = (sentence) => {
-    const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
-    return wordsWithPhonetics.map(wordData => wordData.word).join(' ')
-  }
-
-  // 当输入框数组变化时，更新引用数组
-  useEffect(() => {
-    if (wordInputs.length !== inputRefs.current.length) {
-      inputRefs.current = new Array(wordInputs.length).fill(null)
-    }
-  }, [wordInputs.length])
-
-  // 生成随机顺序的句子索引
-  const generateRandomOrder = (length) => {
-    const order = Array.from({ length }, (_, i) => i);
-    // Fisher-Yates 洗牌算法
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    return order;
-  };
-
   // 加载句子数据
   const loadSentences = useCallback(async () => {
     console.log('开始加载句子数据', { dataSource, selectedArticleId, hasSelectedDataSource });
@@ -512,14 +436,99 @@ function App() {
       console.log('加载完成，设置isLoading为false');
       setIsLoading(false)
     }
-  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource])
+  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource, practiceProgress])
+
+  // 加载句子数据（当数据源变化时重新加载）
+  useEffect(() => {
+    // 如果正在进行回退操作，跳过执行
+    if (isFallbackInProgressRef.current) {
+      return
+    }
+    // 只有在用户已经选择数据源后才加载数据
+    if (hasSelectedDataSource) {
+      loadSentences()
+    }
+  }, [dataSource, selectedArticleId, hasSelectedDataSource, loadSentences])
+
+  // 当当前句子变化时，更新单词和音标
+  useEffect(() => {
+    if (sentences[currentIndex]) {
+      const sentence = sentences[currentIndex]
+      // 解析句子，获取单词和音标
+      const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+      setCurrentWords(wordsWithPhonetics)
+      
+      // 初始化按词输入数组
+      const initialWordInputs = wordsWithPhonetics.map(() => '')
+      setWordInputs(initialWordInputs)
+      
+      // 重置弹窗状态
+      setShowModal(false)
+      setResult(null)
+      
+      // 初始化输入框引用数组
+      inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
+      
+      // 如果自动朗读开启，则自动朗读句子
+      if (autoPlay && speechSupported) {
+        // 延迟一点时间，确保页面已经更新
+        setTimeout(() => {
+          // 根据当前选择的语音服务使用相应的speak函数
+          if (speechService === 'web_speech') {
+            cancelSpeech() // 取消之前的朗读
+            speak(sentence, speechRate).catch(error => {
+              console.error('Error speaking:', error)
+            })
+          } else if (speechService === 'uberduck') {
+            externalCancelSpeech() // 取消之前的朗读
+            externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
+              .catch(error => {
+                console.error('Error speaking with external service:', error)
+                // 如果外部服务失败，尝试回退到Web Speech API
+                cancelSpeech()
+                speak(sentence, speechRate)
+                  .catch(fallbackError => {
+                    console.error('Fallback to web speech also failed:', fallbackError)
+                  })
+              })
+          }
+        }, 300)
+      }
+    }
+  }, [currentIndex, sentences, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService])
+
+  // 获取转换后的完整句子
+  const getExpandedSentence = (sentence) => {
+    const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+    return wordsWithPhonetics.map(wordData => wordData.word).join(' ')
+  }
+
+  // 当输入框数组变化时，更新引用数组
+  useEffect(() => {
+    if (wordInputs.length !== inputRefs.current.length) {
+      inputRefs.current = new Array(wordInputs.length).fill(null)
+    }
+  }, [wordInputs.length])
+
+  // 生成随机顺序的句子索引
+  const generateRandomOrder = (length) => {
+    const order = Array.from({ length }, (_, i) => i);
+    // Fisher-Yates 洗牌算法
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    return order;
+  };
+
+
 
   // 规范化处理：忽略大小写、前后空格和常见标点，保留缩略词中的单引号
   const normalize = (str) => {
     return str
       .toLowerCase()
       .trim()
-      .replace(/[.,!?;:\"()\[\]{}_\-]/g, '')
+      .replace(/[.,!?;:"()\[\]{}_-]/g, '')
       .replace(/\s+/g, ' ')
   }
 
@@ -778,7 +787,6 @@ function App() {
     // 更新练习进度的最后练习索引
     setPracticeProgress(prevProgress => {
       const currentDataSource = dataSource;
-      const totalSentences = sentences.length;
       
       // 确保当前数据源的进度对象存在
       const sourceProgress = prevProgress[currentDataSource] || {
@@ -800,7 +808,6 @@ function App() {
     // 设置新的当前索引
     setCurrentIndex(nextIndex);
     
-    setUserInput('')
     setResult(null)
     setShowModal(false)
     
@@ -869,7 +876,7 @@ function App() {
   };
 
   // 开始听句子模式
-  const startListenMode = () => {
+  const startListenMode = useCallback(() => {
     if (!speechSupported || sentences.length === 0) return;
 
     const listenModeLoop = async () => {
@@ -898,7 +905,7 @@ function App() {
 
     isListenModePlayingRef.current = true;
     listenModeLoop();
-  };
+  }, [speechSupported, sentences, currentIndex, listenMode, playSentenceTwice, handleNext]);
 
   // 停止听句子模式
   const stopListenMode = () => {
@@ -938,6 +945,74 @@ function App() {
     }
   };
   
+  // 重置练习进度
+  const resetPracticeProgress = useCallback(() => {
+    // 重置当前数据源的练习进度
+    setPracticeProgress(prevProgress => ({
+      ...prevProgress,
+      [dataSource]: {
+        completedSentences: [],
+        correctSentences: [],
+        lastPracticedIndex: -1,
+        progressPercentage: 0
+      }
+    }));
+    // 重置到第一题
+    setCurrentIndex(0);
+  }, [dataSource]);
+  
+  // 切换随机模式
+  const handleRandomModeToggle = useCallback((enabled) => {
+    setRandomMode(enabled);
+    // 切换随机模式时重置索引
+    currentRandomIndexRef.current = 0;
+    if (enabled && sentences.length > 0) {
+      // 启用随机模式时生成新的随机顺序
+      randomOrderRef.current = generateRandomOrder(sentences.length);
+      // 切换到第一个随机句子
+      setCurrentIndex(randomOrderRef.current[0]);
+    }
+  }, [sentences.length]);
+  
+  // 切换自动朗读
+  const handleAutoPlayToggle = useCallback((enabled) => {
+    setAutoPlay(enabled);
+  }, []);
+  
+  // 切换显示原文
+  const handleToggleOriginalText = useCallback(() => {
+    setShowOriginalText(!showOriginalText);
+  }, [showOriginalText]);
+  
+  // 切换语音设置弹窗
+  const handleToggleVoiceSettings = useCallback(() => {
+    setShowVoiceSettings(!showVoiceSettings);
+  }, [showVoiceSettings]);
+  
+  // 切换语音服务
+  const handleSpeechServiceChange = useCallback((newService) => {
+    setSpeechService(newService);
+    setCurrentService(newService);
+  }, []);
+  
+  // 切换语音
+  const handleVoiceChange = useCallback((voice) => {
+    setSelectedVoice(voice);
+    setVoice(voice);
+  }, []);
+  
+  // 切换外部语音
+  const handleExternalVoiceChange = useCallback((voice) => {
+    setSelectedExternalVoice(voice);
+  }, []);
+  
+  // 处理数据源选择
+  const handleSelectDataSource = useCallback((sourceId) => {
+    setDataSource(sourceId);
+    setHasSelectedDataSource(true);
+    setDataSourceError(null);
+  }, []);
+  
   // 监听听句子模式状态变化
   useEffect(() => {
     if (listenMode) {
@@ -945,52 +1020,26 @@ function App() {
       setShowOriginalText(true); // 自动显示原文
       startListenMode();
     }
-  }, [listenMode]);
+  }, [listenMode, startListenMode]);
 
-  const currentDataSource = DATA_SOURCES.find(s => s.id === dataSource)
-
-  const DataSourceSelectionPage = () => (
-    <div className="data-source-selection-page">
-      <div className="selection-container">
-        <h1>选择数据源</h1>
-        <p>请选择您想要练习的数据源开始拼写练习</p>
-        {dataSourceError && (
-          <div className="data-source-error">
-            <span>⚠️ {dataSourceError}</span>
-          </div>
-        )}
-        <div className="data-source-cards">
-          {DATA_SOURCES.map((source) => (
-            <button
-              key={source.id}
-              className="data-source-card"
-              onClick={() => {
-                setDataSource(source.id)
-                setHasSelectedDataSource(true)
-                setDataSourceError(null)
-              }}
-            >
-              <span className="card-icon">{source.icon}</span>
-              <div className="card-content">
-                <h3>{source.name}</h3>
-                <p>{source.description}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+  const currentDataSource = useMemo(() => {
+    return DATA_SOURCES.find(s => s.id === dataSource)
+  }, [dataSource])
 
   if (!hasSelectedDataSource) {
-    return <DataSourceSelectionPage />
+    return (
+      <DataSourceSelection 
+        dataSourceError={dataSourceError}
+        onSelectDataSource={handleSelectDataSource}
+      />
+    )
   }
 
   if (isLoading) {
     return (
       <div className="loading">
         <div>Loading sentences...</div>
-        <div className="loading-source">从 {DATA_SOURCES.find(s => s.id === dataSource)?.name || '数据源'} 加载中...</div>
+        <div className="loading-source">从 {currentDataSource?.name || '数据源'} 加载中...</div>
       </div>
     )
   }
@@ -1086,436 +1135,70 @@ function App() {
         {sentences.length > 0 && (
           <>
             {/* 练习状态面板 */}
-            <div className="practice-stats-section" style={{ 
-              marginBottom: '20px', 
-              padding: '15px', 
-              backgroundColor: '#f8f9fa', 
-              borderRadius: '8px', 
-              border: '1px solid #dee2e6',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#495057' }}>练习状态</h3>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    onClick={resetPracticeStats}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #dc3545',
-                      backgroundColor: '#dc3545',
-                      color: '#fff',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
-                  >
-                    重置统计
-                  </button>
-                  <button 
-                    onClick={() => {
-                      // 重置当前数据源的练习进度
-                      setPracticeProgress(prevProgress => ({
-                        ...prevProgress,
-                        [dataSource]: {
-                          completedSentences: [],
-                          correctSentences: [],
-                          lastPracticedIndex: -1,
-                          progressPercentage: 0
-                        }
-                      }));
-                      // 重置到第一题
-                      setCurrentIndex(0);
-                    }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ffc107',
-                      backgroundColor: '#ffc107',
-                      color: '#212529',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e0a800'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = '#ffc107'}
-                  >
-                    重置进度
-                  </button>
-                </div>
-              </div>
-              
-              {/* 练习进度条 */}
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#495057' }}>当前进度</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '500', color: '#28a745' }}>
-                    {practiceProgress[dataSource]?.progressPercentage || 0}%
-                  </span>
-                </div>
-                <div style={{ 
-                  width: '100%', 
-                  height: '8px', 
-                  backgroundColor: '#e9ecef', 
-                  borderRadius: '4px', 
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ 
-                    width: `${practiceProgress[dataSource]?.progressPercentage || 0}%`, 
-                    height: '100%', 
-                    backgroundColor: '#28a745', 
-                    borderRadius: '4px',
-                    transition: 'width 0.3s ease'
-                  }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '0.8rem', color: '#6c757d' }}>
-                  <span>已完成: {practiceProgress[dataSource]?.completedSentences?.length || 0}</span>
-                  <span>总句子: {sentences.length}</span>
-                </div>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>准确率</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#28a745' }}>{practiceStats.accuracy}%</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>连续正确</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#17a2b8' }}>{practiceStats.streak}</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>最长连续</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffc107' }}>{practiceStats.longestStreak}</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>总尝试</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#495057' }}>{practiceStats.totalAttempts}</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>正确</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#28a745' }}>{practiceStats.correctAnswers}</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>错误</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#dc3545' }}>{practiceStats.incorrectAnswers}</div>
-                </div>
-              </div>
-            </div>
+            <PracticeStats 
+              stats={practiceStats}
+              progress={practiceProgress}
+              dataSource={dataSource}
+              onResetStats={resetPracticeStats}
+              onResetProgress={resetPracticeProgress}
+            />
             
             {/* 音标显示部分 */}
             {currentWords.length > 0 && (
-              <div className="phonetics-section">
-                <div className="progress small">
-                  <span>Question {currentIndex + 1} of {sentences.length}</span>
-                </div>
-                <div className="phonetics-list">
-                  {currentWords.map((wordData, index) => (
-                    <div key={index} className="phonetic-item">
-                      {/* 根据状态决定是否显示原文 */}
-                      {showOriginalText && (
-                        <span className="word">{wordData.word}</span>
-                      )}
-                      {wordData.phonetic ? (
-                        <span className="phonetic">/{wordData.phonetic}/</span>
-                      ) : (
-                        <span className="phonetic missing">—</span>
-                      )}
-                    </div>
-                  ))}
-                  <button 
-                    className="toggle-text-button"
-                    onClick={() => setShowOriginalText(!showOriginalText)}
-                    title={showOriginalText ? '隐藏原文' : '显示原文'}
-                  >
-                    {showOriginalText ? '👁️ 隐藏原文' : '👁️‍🗨️ 显示原文'}
-                  </button>
-                </div>
-              </div>
+              <PhoneticsSection 
+                currentWords={currentWords}
+                currentIndex={currentIndex}
+                totalSentences={sentences.length}
+                showOriginalText={showOriginalText}
+                onToggleOriginalText={handleToggleOriginalText}
+              />
             )}
 
             {/* 按词输入部分 */}
-            <form className="input-form" onSubmit={handleSubmit}>
-              <label className="input-with-controls">
-                <div className="input-controls">
-                  <label className="speech-rate-selector small">
-                    <span>语速:</span>
-                    <select
-                      value={speechRate.toFixed(1)}
-                      onChange={(e) => {
-                        const newRate = parseFloat(e.target.value);
-                        setSpeechRate(newRate);
-                      }}
-                      disabled={!speechSupported || listenMode}
-                      title="选择朗读语速"
-                    >
-                      <option value="0.5">0.5x (慢速)</option>
-                      <option value="0.75">0.75x (较慢)</option>
-                      <option value="1.0">1.0x (正常)</option>
-                      <option value="1.25">1.25x (较快)</option>
-                      <option value="1.5">1.5x (快速)</option>
-                      <option value="2.0">2.0x (很快)</option>
-                    </select>
-                  </label>
-                  <button 
-                    type="button" 
-                    className="play-button small"
-                    onClick={handlePlay}
-                    disabled={!speechSupported || listenMode}
-                    title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
-                  >
-                    ▶️
-                  </button>
-                  <label className="auto-play-toggle small">
-                    <input
-                      type="checkbox"
-                      checked={autoPlay}
-                      onChange={(e) => setAutoPlay(e.target.checked)}
-                      disabled={!speechSupported || listenMode}
-                    />
-                    <span>自动朗读</span>
-                  </label>
-                  <button 
-                    type="button" 
-                    className="voice-settings-button small"
-                    onClick={() => setShowVoiceSettings(!showVoiceSettings)}
-                    disabled={!speechSupported}
-                    title="语音设置"
-                  >
-                    🎤 语音设置
-                  </button>
-                  <label className="random-mode-toggle small">
-                    <input
-                      type="checkbox"
-                      checked={randomMode}
-                      onChange={(e) => {
-                        setRandomMode(e.target.checked);
-                        // 切换随机模式时重置索引
-                        currentRandomIndexRef.current = 0;
-                        if (e.target.checked && sentences.length > 0) {
-                          // 启用随机模式时生成新的随机顺序
-                          randomOrderRef.current = generateRandomOrder(sentences.length);
-                          // 切换到第一个随机句子
-                          setCurrentIndex(randomOrderRef.current[0]);
-                        }
-                      }}
-                      disabled={listenMode}
-                    />
-                    <span>随机模式</span>
-                  </label>
-                  <label className="listen-mode-toggle small">
-                    <input
-                      type="checkbox"
-                      checked={listenMode}
-                      onChange={(e) => handleListenModeToggle(e.target.checked)}
-                      disabled={!speechSupported}
-                    />
-                    <span>听句子模式</span>
-                  </label>
-                </div>
-                
-
-              </label>
-              <div className="word-inputs">
-                {wordInputs.map((input, index) => {
-                  const isCorrect = input.trim() && currentWords[index] && compareWord(input, currentWords[index].word)
-                  const wordLength = currentWords[index]?.word?.length || 5
-                  // 使用实际输入长度和原始单词长度中的较大值，确保能显示完整输入
-                  const currentInputLength = input.length || wordLength
-                  const maxLength = Math.max(wordLength, currentInputLength)
-                  // 根据单词长度计算输入框宽度：使用更保守的系数和更大的padding
-                  // 每个字符约 1.5ch（考虑不同字符宽度差异），加上额外的padding
-                  // 最小6ch，最大35ch（允许更长的单词）
-                  const calculatedWidth = maxLength * 1.5 + 4
-                  const clampedWidth = Math.max(6, Math.min(35, calculatedWidth))
-                  const inputWidth = `${clampedWidth}ch`
-                  return (
-                    <input
-                      key={index}
-                      ref={(el) => (inputRefs.current[index] = el)}
-                      type="text"
-                      className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-                      style={{ width: inputWidth }}
-                      value={input}
-                      onChange={(e) => handleWordInputChange(index, e.target.value)}
-                      placeholder=""
-                      autoFocus={index === 0}
-                    />
-                  )
-                })}
-              </div>
-              
-            </form>
+            <WordInputs 
+              wordInputs={wordInputs}
+              currentWords={currentWords}
+              onWordInputChange={handleWordInputChange}
+              onSubmit={handleSubmit}
+              listenMode={listenMode}
+              speechSupported={speechSupported}
+              speechRate={speechRate}
+              onPlay={handlePlay}
+              autoPlay={autoPlay}
+              onToggleAutoPlay={handleAutoPlayToggle}
+              randomMode={randomMode}
+              onToggleRandomMode={handleRandomModeToggle}
+              onToggleListenMode={handleListenModeToggle}
+              showVoiceSettings={showVoiceSettings}
+              onToggleVoiceSettings={handleToggleVoiceSettings}
+            />
 
             {!speechSupported && (
               <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
             )}
 
             {/* 弹窗显示结果 */}
-            {showModal && result && (
-              <div className="modal-overlay" onClick={handleCloseModal}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                  <div className={`modal-result ${result}`}>
-                    <h2>
-                      {result === 'correct' ? '✅ Correct!' : '❌ Incorrect!'}
-                    </h2>
-                    <p className="correct-sentence">
-                      Correct sentence: <strong>{getExpandedSentence(sentences[currentIndex])}</strong>
-                    </p>
-                    {/* 显示练习状态更新 */}
-                    <div style={{ 
-                      marginTop: '15px', 
-                      padding: '10px', 
-                      backgroundColor: '#f8f9fa', 
-                      borderRadius: '6px', 
-                      border: '1px solid #dee2e6'
-                    }}>
-                      <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>练习状态</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <div>
-                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>准确率:</span>
-                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#28a745' }}>{practiceStats.accuracy}%</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>连续正确:</span>
-                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#17a2b8' }}>{practiceStats.streak}</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>总尝试:</span>
-                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#495057' }}>{practiceStats.totalAttempts}</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>正确/错误:</span>
-                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#28a745' }}>{practiceStats.correctAnswers}</span>
-                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#dc3545' }}>/{practiceStats.incorrectAnswers}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {result === 'correct' && (
-                      <p className="auto-next-hint">自动跳转到下一题...</p>
-                    )}
-                    <button className="modal-close-button" onClick={handleCloseModal}>
-                      {result === 'correct' ? 'Next' : 'Close'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <ResultModal 
+              isOpen={showModal}
+              result={result}
+              correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
+              practiceStats={practiceStats}
+              onClose={handleCloseModal}
+            />
             
             {/* 语音设置独立弹窗 */}
-            {showVoiceSettings && speechSupported && (
-              <div className="modal-overlay" onClick={() => setShowVoiceSettings(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ width: '400px', maxWidth: '90%' }}>
-                  <div className="voice-settings-modal" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <h3 style={{ margin: '0 0 10px 0', textAlign: 'center', fontSize: '1.2rem' }}>语音设置</h3>
-                    <div className="service-selector" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>语音服务:</span>
-                        <select
-                          value={speechService}
-                          onChange={(e) => {
-                            const newService = e.target.value;
-                            setSpeechService(newService);
-                            setCurrentService(newService);
-                          }}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '4px',
-                            border: '1px solid #ddd',
-                            fontSize: '0.9rem',
-                            backgroundColor: '#fff',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <option value="web_speech">Web Speech API (浏览器内置)</option>
-                          <option value="uberduck">Uberduck.ai (外部服务)</option>
-                        </select>
-                      </label>
-                    </div>
-                    <div className="voice-selector" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>选择语音:</span>
-                        {speechService === 'web_speech' ? (
-                          <select
-                            value={selectedVoice ? selectedVoice.name : ''}
-                            onChange={(e) => {
-                              const selectedVoiceName = e.target.value;
-                              const voice = availableVoices.find(v => v.name === selectedVoiceName);
-                              if (voice) {
-                                setSelectedVoice(voice);
-                                setVoice(voice);
-                              }
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              borderRadius: '4px',
-                              border: '1px solid #ddd',
-                              fontSize: '0.9rem',
-                              backgroundColor: '#fff',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {availableVoices.map((voice) => (
-                              <option key={voice.name} value={voice.name}>
-                                {voice.name} ({voice.lang})
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <select
-                            value={selectedExternalVoice ? selectedExternalVoice.name : ''}
-                            onChange={(e) => {
-                              const selectedVoiceName = e.target.value;
-                              const voice = externalVoices.find(v => v.name === selectedVoiceName);
-                              if (voice) {
-                                setSelectedExternalVoice(voice);
-                              }
-                            }}
-                            style={{
-                              padding: '8px 12px',
-                              borderRadius: '4px',
-                              border: '1px solid #ddd',
-                              fontSize: '0.9rem',
-                              backgroundColor: '#fff',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {externalVoices.map((voice) => (
-                              <option key={voice.name} value={voice.name}>
-                                {voice.displayName}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </label>
-                    </div>
-                    <button 
-                      type="button" 
-                      className="modal-close-button"
-                      onClick={() => setShowVoiceSettings(false)}
-                      style={{
-                        padding: '10px 20px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        backgroundColor: '#007bff',
-                        color: '#fff',
-                        fontSize: '0.9rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                        alignSelf: 'center',
-                        marginTop: '10px'
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#0069d9'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}
-                    >
-                      关闭
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <VoiceSettings 
+              isOpen={showVoiceSettings}
+              onClose={handleToggleVoiceSettings}
+              speechService={speechService}
+              onSpeechServiceChange={handleSpeechServiceChange}
+              availableVoices={availableVoices}
+              selectedVoice={selectedVoice}
+              onVoiceChange={handleVoiceChange}
+              externalVoices={externalVoices}
+              selectedExternalVoice={selectedExternalVoice}
+              onExternalVoiceChange={handleExternalVoiceChange}
+            />
           </>
         )}
       </main>

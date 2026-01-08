@@ -89,58 +89,50 @@ const isCacheValid = (cachedItem) => {
  * @returns {Promise<Audio>} 音频对象
  */
 const speakWithUberduck = async (text, rate, voice = 'en-us-amy-low') => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // 生成缓存键
-      const cacheKey = generateCacheKey(text, rate, voice);
-      
-      // 检查缓存
-      if (speechCache.has(cacheKey)) {
-        const cachedItem = speechCache.get(cacheKey);
-        if (isCacheValid(cachedItem)) {
-          // 使用缓存的音频
-          const audio = new Audio(cachedItem.url);
-          resolve(audio);
-          return;
-        }
-      }
-      
-      // 构建请求参数
-      const params = new URLSearchParams();
-      params.append('text', text);
-      params.append('voice', voice);
-      params.append('speed', rate);
-      
-      // 发送请求
-      const response = await fetch(`${API_CONFIG[ SERVICES.UBERDUCK ].endpoint}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'audio/wav'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Uberduck API error: ${response.statusText}`);
-      }
-      
-      // 转换响应为Blob
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      // 缓存音频
-      speechCache.set(cacheKey, {
-        url,
-        timestamp: Date.now()
-      });
-      
-      // 创建音频对象
-      const audio = new Audio(url);
-      resolve(audio);
-    } catch (error) {
-      console.error('Error with Uberduck TTS:', error);
-      reject(error);
+  // 生成缓存键
+  const cacheKey = generateCacheKey(text, rate, voice);
+  
+  // 检查缓存
+  if (speechCache.has(cacheKey)) {
+    const cachedItem = speechCache.get(cacheKey);
+    if (isCacheValid(cachedItem)) {
+      // 使用缓存的音频
+      const audio = new Audio(cachedItem.url);
+      return audio;
+    }
+  }
+  
+  // 构建请求参数
+  const params = new URLSearchParams();
+  params.append('text', text);
+  params.append('voice', voice);
+  params.append('speed', rate);
+  
+  // 发送请求
+  const response = await fetch(`${API_CONFIG[ SERVICES.UBERDUCK ].endpoint}?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'audio/wav'
     }
   });
+  
+  if (!response.ok) {
+    throw new Error(`Uberduck API error: ${response.statusText}`);
+  }
+  
+  // 转换响应为Blob
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  
+  // 缓存音频
+  speechCache.set(cacheKey, {
+    url,
+    timestamp: Date.now()
+  });
+  
+  // 创建音频对象
+  const audio = new Audio(url);
+  return audio;
 };
 
 /**
@@ -151,31 +143,29 @@ const speakWithUberduck = async (text, rate, voice = 'en-us-amy-low') => {
  * @returns {Promise<void>}
  */
 export const speak = async (text, rate = 1.0, voice = 'en-us-amy-low') => {
-  return new Promise(async (resolve, reject) => {
-    // 防抖处理
-    const now = Date.now();
-    if (now - lastSpeakTime < SPEAK_DEBOUNCE_DELAY) {
-      reject(new Error('Speech synthesis is debounced. Please wait a moment and try again.'));
-      return;
-    }
-    lastSpeakTime = now;
+  // 防抖处理
+  const now = Date.now();
+  if (now - lastSpeakTime < SPEAK_DEBOUNCE_DELAY) {
+    throw new Error('Speech synthesis is debounced. Please wait a moment and try again.');
+  }
+  lastSpeakTime = now;
+  
+  try {
+    isSpeaking = true;
     
-    try {
-      isSpeaking = true;
-      
-      let audio;
-      
-      // 根据当前服务选择合成方法
-      switch (currentService) {
-        case SERVICES.UBERDUCK:
-          audio = await speakWithUberduck(text, rate, voice);
-          break;
-        default:
-          reject(new Error('Invalid speech service'));
-          return;
-      }
-      
-      // 播放音频
+    let audio;
+    
+    // 根据当前服务选择合成方法
+    switch (currentService) {
+      case SERVICES.UBERDUCK:
+        audio = await speakWithUberduck(text, rate, voice);
+        break;
+      default:
+        throw new Error('Invalid speech service');
+    }
+    
+    // 播放音频
+    return new Promise((resolve, reject) => {
       audio.onended = () => {
         isSpeaking = false;
         resolve();
@@ -187,11 +177,11 @@ export const speak = async (text, rate = 1.0, voice = 'en-us-amy-low') => {
       };
       
       audio.play();
-    } catch (error) {
-      isSpeaking = false;
-      reject(error);
-    }
-  });
+    });
+  } catch (error) {
+    isSpeaking = false;
+    throw error;
+  }
 };
 
 /**
