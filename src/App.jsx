@@ -2,7 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
-import { parseSentenceForPhonetics } from './services/pronunciationService'
+import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
+
+/**
+ * 转换句子中的缩写为完整形式
+ * @param {string} sentence - 包含缩写的句子
+ * @returns {string} 转换后的完整形式句子
+ */
+const expandContractionsInSentence = (sentence) => {
+  // 检测并转换缩写形式
+  const wordsWithContractions = detectAndExpandContractions(sentence)
+  // 提取转换后的单词并重新组合成句子
+  const expandedWords = wordsWithContractions.map(wordData => wordData.expanded)
+  return expandedWords.join(' ')
+}
 
 function App() {
   const [sentences, setSentences] = useState([])
@@ -233,7 +246,8 @@ function App() {
           if (response.ok) {
             const lessonData = await response.json();
             if (lessonData.success && lessonData.sentences) {
-              data = lessonData.sentences;
+              // 转换所有句子中的缩写为完整形式
+              data = lessonData.sentences.map(sentence => expandContractionsInSentence(sentence));
               console.log(`Loaded ${data.length} sentences from lesson: ${selectedArticle.title}`);
             } else {
               throw new Error('获取课程内容失败');
@@ -250,10 +264,12 @@ function App() {
       }
       
       if (data && data.length > 0) {
-        setSentences(data)
+        // 转换所有句子中的缩写为完整形式
+        const expandedSentences = data.map(sentence => expandContractionsInSentence(sentence))
+        setSentences(expandedSentences)
         setDataSourceError(null)
         // 生成随机顺序
-        randomOrderRef.current = generateRandomOrder(data.length);
+        randomOrderRef.current = generateRandomOrder(expandedSentences.length);
       } else {
         throw new Error('数据源返回空数据')
       }
