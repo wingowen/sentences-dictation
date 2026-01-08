@@ -23,9 +23,12 @@ function App() {
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
+  const [randomMode, setRandomMode] = useState(false)
   const inputRefs = useRef([])
   const autoNextTimerRef = useRef(null)
   const isFallbackInProgressRef = useRef(false)
+  const randomOrderRef = useRef([])
+  const currentRandomIndexRef = useRef(0)
 
   // 初始化
   useEffect(() => {
@@ -146,6 +149,17 @@ function App() {
     }
   }, [wordInputs.length])
 
+  // 生成随机顺序的句子索引
+  const generateRandomOrder = (length) => {
+    const order = Array.from({ length }, (_, i) => i);
+    // Fisher-Yates 洗牌算法
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    return order;
+  };
+
   // 加载句子数据
   const loadSentences = useCallback(async () => {
     // 如果正在进行回退操作，避免重复执行
@@ -169,6 +183,7 @@ function App() {
     setIsLoading(true)
     setDataSourceError(null)
     setCurrentIndex(0) // 切换数据源时重置到第一题
+    currentRandomIndexRef.current = 0 // 重置随机索引
     
     try {
       let data;
@@ -215,6 +230,8 @@ function App() {
       if (data && data.length > 0) {
         setSentences(data)
         setDataSourceError(null)
+        // 生成随机顺序
+        randomOrderRef.current = generateRandomOrder(data.length);
       } else {
         throw new Error('数据源返回空数据')
       }
@@ -229,6 +246,8 @@ function App() {
           const localData = await getSentences(DATA_SOURCE_TYPES.LOCAL)
           setSentences(localData)
           setDataSourceError(`数据源加载失败，已切换到本地数据: ${error.message}`)
+          // 生成随机顺序
+          randomOrderRef.current = generateRandomOrder(localData.length);
           // 更新数据源状态，但标记回退已完成，避免触发重复加载
           setDataSource(DATA_SOURCE_TYPES.LOCAL)
           // 在下一个事件循环中重置回退标记，确保状态更新完成
@@ -350,7 +369,20 @@ function App() {
     }
     
     cancelSpeech()
-    setCurrentIndex((prev) => (prev + 1) % sentences.length)
+    
+    if (randomMode) {
+      // 随机模式：按照随机顺序切换句子
+      currentRandomIndexRef.current = (currentRandomIndexRef.current + 1) % sentences.length;
+      if (currentRandomIndexRef.current === 0) {
+        // 如果已经遍历完所有句子，重新生成随机顺序
+        randomOrderRef.current = generateRandomOrder(sentences.length);
+      }
+      setCurrentIndex(randomOrderRef.current[currentRandomIndexRef.current]);
+    } else {
+      // 顺序模式：按照顺序切换句子
+      setCurrentIndex((prev) => (prev + 1) % sentences.length);
+    }
+    
     setUserInput('')
     setResult(null)
     setShowModal(false)
@@ -593,6 +625,24 @@ function App() {
                       disabled={!speechSupported}
                     />
                     <span>自动朗读</span>
+                  </label>
+                  <label className="random-mode-toggle small">
+                    <input
+                      type="checkbox"
+                      checked={randomMode}
+                      onChange={(e) => {
+                        setRandomMode(e.target.checked);
+                        // 切换随机模式时重置索引
+                        currentRandomIndexRef.current = 0;
+                        if (e.target.checked && sentences.length > 0) {
+                          // 启用随机模式时生成新的随机顺序
+                          randomOrderRef.current = generateRandomOrder(sentences.length);
+                          // 切换到第一个随机句子
+                          setCurrentIndex(randomOrderRef.current[0]);
+                        }
+                      }}
+                    />
+                    <span>随机模式</span>
                   </label>
                 </div>
               </label>

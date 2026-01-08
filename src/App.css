@@ -481,6 +481,32 @@ body {
   height: 16px;
 }
 
+.random-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.random-mode-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #3498db;
+}
+
+.random-mode-toggle.small {
+  font-size: 0.9rem;
+}
+
+.random-mode-toggle.small input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
 .speech-rate-selector {
   display: flex;
   align-items: center;
