@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES } from './services/dataService'
-import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
+import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice, getSelectedVoice, updateSpeechConfig, getSpeechConfig } from './services/speechService'
+import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService, getCurrentService, isExternalServiceAvailable } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
 
 /**
@@ -38,6 +39,12 @@ function App() {
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
   const [randomMode, setRandomMode] = useState(false)
   const [listenMode, setListenMode] = useState(false)
+  const [availableVoices, setAvailableVoices] = useState([])
+  const [selectedVoice, setSelectedVoice] = useState(null)
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false)
+  const [speechService, setSpeechService] = useState('web_speech')
+  const [externalVoices, setExternalVoices] = useState([])
+  const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
   const inputRefs = useRef([])
   const autoNextTimerRef = useRef(null)
   const isFallbackInProgressRef = useRef(false)
@@ -51,6 +58,57 @@ function App() {
     // 检查语音合成支持
     setSpeechSupported(isSpeechSupported())
     // 不再自动设置本地数据源为已选择，确保每次启动都显示数据源选择页面
+  }, [])
+
+  // 初始化语音服务
+  useEffect(() => {
+    if (speechSupported) {
+      // 监听语音加载事件
+      const handleVoicesChanged = () => {
+        const voices = getAvailableVoices();
+        setAvailableVoices(voices);
+        
+        // 选择默认英语语音
+        const defaultVoice = voices.find(voice => 
+          voice.lang === 'en-US' || voice.lang === 'en-GB'
+        );
+        if (defaultVoice) {
+          setSelectedVoice(defaultVoice);
+          setVoice(defaultVoice);
+        }
+      };
+      
+      // 注册语音加载事件监听器
+      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+      
+      // 立即尝试获取语音列表
+      handleVoicesChanged();
+      
+      return () => {
+        // 清理事件监听器
+        window.speechSynthesis.onvoiceschanged = null;
+      };
+    }
+  }, [speechSupported])
+
+  // 初始化外部语音服务
+  useEffect(() => {
+    // 获取外部语音服务可用语音列表
+    const loadExternalVoices = async () => {
+      try {
+        const voices = await getExternalAvailableVoices();
+        setExternalVoices(voices);
+        
+        // 选择默认外部语音
+        if (voices.length > 0) {
+          setSelectedExternalVoice(voices[0]);
+        }
+      } catch (error) {
+        console.error('Error loading external voices:', error);
+      }
+    };
+    
+    loadExternalVoices();
   }, [])
 
   // 组件卸载时清理
@@ -159,10 +217,25 @@ function App() {
       if (autoPlay && speechSupported) {
         // 延迟一点时间，确保页面已经更新
         setTimeout(() => {
-          cancelSpeech() // 取消之前的朗读
-          speak(sentence, speechRate).catch(error => {
-            console.error('Error speaking:', error)
-          })
+          // 根据当前选择的语音服务使用相应的speak函数
+          if (speechService === 'web_speech') {
+            cancelSpeech() // 取消之前的朗读
+            speak(sentence, speechRate).catch(error => {
+              console.error('Error speaking:', error)
+            })
+          } else if (speechService === 'uberduck') {
+            externalCancelSpeech() // 取消之前的朗读
+            externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
+              .catch(error => {
+                console.error('Error speaking with external service:', error)
+                // 如果外部服务失败，尝试回退到Web Speech API
+                cancelSpeech()
+                speak(sentence, speechRate)
+                  .catch(fallbackError => {
+                    console.error('Fallback to web speech also failed:', fallbackError)
+                  })
+              })
+          }
         }, 300)
       }
     }
@@ -387,11 +460,28 @@ function App() {
   // 播放当前句子
   const handlePlay = () => {
     if (speechSupported && sentences[currentIndex]) {
-      cancelSpeech() // 取消之前的朗读
-      speak(sentences[currentIndex], speechRate)
-        .catch(error => {
-          console.error('Error speaking:', error)
-        })
+      const sentence = sentences[currentIndex];
+      
+      // 根据当前选择的语音服务使用相应的speak函数
+      if (speechService === 'web_speech') {
+        cancelSpeech() // 取消之前的朗读
+        speak(sentence, speechRate)
+          .catch(error => {
+            console.error('Error speaking:', error)
+          })
+      } else if (speechService === 'uberduck') {
+        externalCancelSpeech() // 取消之前的朗读
+        externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
+          .catch(error => {
+            console.error('Error speaking with external service:', error)
+            // 如果外部服务失败，尝试回退到Web Speech API
+            cancelSpeech()
+            speak(sentence, speechRate)
+              .catch(fallbackError => {
+                console.error('Fallback to web speech also failed:', fallbackError)
+              })
+          })
+      }
     }
   }
 
@@ -453,14 +543,35 @@ function App() {
   // 播放句子两次（第一次0.75倍速，第二次1倍速）
   const playSentenceTwice = async (sentence) => {
     try {
-      // 第一次朗读：0.75倍速
-      await speak(sentence, 0.75);
-      // 短暂停顿
-      await new Promise(resolve => setTimeout(resolve, 500));
-      // 第二次朗读：1倍速
-      await speak(sentence, 1.0);
+      // 根据当前选择的语音服务使用相应的speak函数
+      if (speechService === 'web_speech') {
+        // 第一次朗读：0.75倍速
+        await speak(sentence, 0.75);
+        // 短暂停顿
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // 第二次朗读：1倍速
+        await speak(sentence, 1.0);
+      } else if (speechService === 'uberduck') {
+        // 第一次朗读：0.75倍速
+        await externalSpeak(sentence, 0.75, selectedExternalVoice?.name);
+        // 短暂停顿
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // 第二次朗读：1倍速
+        await externalSpeak(sentence, 1.0, selectedExternalVoice?.name);
+      }
     } catch (error) {
       console.error('Error playing sentence twice:', error);
+      // 如果外部服务失败，尝试回退到Web Speech API
+      try {
+        // 第一次朗读：0.75倍速
+        await speak(sentence, 0.75);
+        // 短暂停顿
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // 第二次朗读：1倍速
+        await speak(sentence, 1.0);
+      } catch (fallbackError) {
+        console.error('Fallback to web speech also failed:', fallbackError);
+      }
     }
   };
 
@@ -731,6 +842,15 @@ function App() {
                     />
                     <span>自动朗读</span>
                   </label>
+                  <button 
+                    type="button" 
+                    className="voice-settings-button small"
+                    onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+                    disabled={!speechSupported}
+                    title="语音设置"
+                  >
+                    🎤 语音设置
+                  </button>
                   <label className="random-mode-toggle small">
                     <input
                       type="checkbox"
@@ -760,6 +880,8 @@ function App() {
                     <span>听句子模式</span>
                   </label>
                 </div>
+                
+
               </label>
               <div className="word-inputs">
                 {wordInputs.map((input, index) => {
@@ -812,6 +934,120 @@ function App() {
                     )}
                     <button className="modal-close-button" onClick={handleCloseModal}>
                       {result === 'correct' ? 'Next' : 'Close'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 语音设置独立弹窗 */}
+            {showVoiceSettings && speechSupported && (
+              <div className="modal-overlay" onClick={() => setShowVoiceSettings(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ width: '400px', maxWidth: '90%' }}>
+                  <div className="voice-settings-modal" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <h3 style={{ margin: '0 0 10px 0', textAlign: 'center', fontSize: '1.2rem' }}>语音设置</h3>
+                    <div className="service-selector" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>语音服务:</span>
+                        <select
+                          value={speechService}
+                          onChange={(e) => {
+                            const newService = e.target.value;
+                            setSpeechService(newService);
+                            setCurrentService(newService);
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                            fontSize: '0.9rem',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="web_speech">Web Speech API (浏览器内置)</option>
+                          <option value="uberduck">Uberduck.ai (外部服务)</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="voice-selector" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>选择语音:</span>
+                        {speechService === 'web_speech' ? (
+                          <select
+                            value={selectedVoice ? selectedVoice.name : ''}
+                            onChange={(e) => {
+                              const selectedVoiceName = e.target.value;
+                              const voice = availableVoices.find(v => v.name === selectedVoiceName);
+                              if (voice) {
+                                setSelectedVoice(voice);
+                                setVoice(voice);
+                              }
+                            }}
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: '4px',
+                              border: '1px solid #ddd',
+                              fontSize: '0.9rem',
+                              backgroundColor: '#fff',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {availableVoices.map((voice) => (
+                              <option key={voice.name} value={voice.name}>
+                                {voice.name} ({voice.lang})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <select
+                            value={selectedExternalVoice ? selectedExternalVoice.name : ''}
+                            onChange={(e) => {
+                              const selectedVoiceName = e.target.value;
+                              const voice = externalVoices.find(v => v.name === selectedVoiceName);
+                              if (voice) {
+                                setSelectedExternalVoice(voice);
+                              }
+                            }}
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: '4px',
+                              border: '1px solid #ddd',
+                              fontSize: '0.9rem',
+                              backgroundColor: '#fff',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {externalVoices.map((voice) => (
+                              <option key={voice.name} value={voice.name}>
+                                {voice.displayName}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </label>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="modal-close-button"
+                      onClick={() => setShowVoiceSettings(false)}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '4px',
+                        border: 'none',
+                        backgroundColor: '#007bff',
+                        color: '#fff',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        alignSelf: 'center',
+                        marginTop: '10px'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#0069d9'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}
+                    >
+                      关闭
                     </button>
                   </div>
                 </div>
