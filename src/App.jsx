@@ -863,6 +863,7 @@ function App() {
         await speak(sentence, 1.0);
       } catch (fallbackError) {
         console.error('Fallback to web speech also failed:', fallbackError);
+        // 即使回退也失败，仍然继续执行，确保listenModeLoop能继续
       }
     }
   };
@@ -931,15 +932,20 @@ function App() {
   const handleListenModeToggle = (enabled) => {
     setListenMode(enabled);
     
-    if (enabled) {
-      // 启用听句子模式
-      setShowOriginalText(true); // 自动显示原文
-      startListenMode();
-    } else {
+    if (!enabled) {
       // 禁用听句子模式
       stopListenMode();
     }
   };
+  
+  // 监听听句子模式状态变化
+  useEffect(() => {
+    if (listenMode) {
+      // 启用听句子模式
+      setShowOriginalText(true); // 自动显示原文
+      startListenMode();
+    }
+  }, [listenMode]);
 
   const currentDataSource = DATA_SOURCES.find(s => s.id === dataSource)
 
