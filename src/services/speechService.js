@@ -42,7 +42,9 @@ export const getAvailableVoices = () => {
   }
   
   availableVoices = window.speechSynthesis.getVoices();
-  return availableVoices;
+  // 只返回英文语音选项（语言代码以"en-"开头）
+  const englishVoices = availableVoices.filter(voice => voice.lang.startsWith('en-'));
+  return englishVoices;
 };
 
 /**

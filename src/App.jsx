@@ -97,16 +97,23 @@ function App() {
     if (speechSupported) {
       // 监听语音加载事件
       const handleVoicesChanged = () => {
-        const voices = getAvailableVoices();
+        let voices = getAvailableVoices();
+        console.log('获取到的语音列表:', voices);
+        
+        // 额外过滤，确保只保留英文语音
+        voices = voices.filter(voice => voice.lang.startsWith('en-'));
+        console.log('过滤后的英文语音列表:', voices);
+        
         setAvailableVoices(voices);
         
-        // 选择默认英语语音
+        // 选择默认英语语音（只考虑英文语音）
         const defaultVoice = voices.find(voice => 
-          voice.lang === 'en-US' || voice.lang === 'en-GB'
+          voice.lang.startsWith('en-')
         );
         if (defaultVoice) {
           setSelectedVoice(defaultVoice);
           setVoice(defaultVoice);
+          console.log('选择的默认语音:', defaultVoice);
         }
       };
       
