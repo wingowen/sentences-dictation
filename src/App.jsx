@@ -50,10 +50,7 @@ function App() {
   useEffect(() => {
     // 检查语音合成支持
     setSpeechSupported(isSpeechSupported())
-    // 当直接打开本地文件时，自动设置本地数据源为已选择
-    if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
-      setHasSelectedDataSource(true)
-    }
+    // 不再自动设置本地数据源为已选择，确保每次启动都显示数据源选择页面
   }, [])
 
   // 组件卸载时清理
