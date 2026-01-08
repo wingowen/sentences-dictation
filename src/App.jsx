@@ -45,6 +45,17 @@ function App() {
   const [speechService, setSpeechService] = useState('web_speech')
   const [externalVoices, setExternalVoices] = useState([])
   const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
+  // 练习状态
+  const [practiceStats, setPracticeStats] = useState({
+    totalAttempts: 0,       // 总尝试次数
+    correctAnswers: 0,      // 正确次数
+    incorrectAnswers: 0,    // 错误次数
+    accuracy: 0,            // 准确率
+    streak: 0,              // 连续正确次数
+    longestStreak: 0,       // 最长连续正确次数
+    totalTime: 0,           // 总练习时间（秒）
+    startTime: null          // 当前练习开始时间
+  })
   const inputRefs = useRef([])
   const autoNextTimerRef = useRef(null)
   const isFallbackInProgressRef = useRef(false)
@@ -58,6 +69,27 @@ function App() {
     // 检查语音合成支持
     setSpeechSupported(isSpeechSupported())
     // 不再自动设置本地数据源为已选择，确保每次启动都显示数据源选择页面
+    
+    // 从localStorage加载练习状态
+    console.log('尝试从localStorage加载练习状态');
+    const savedStats = localStorage.getItem('practiceStats');
+    console.log('localStorage中的练习状态:', savedStats);
+    
+    if (savedStats) {
+      try {
+        const parsedStats = JSON.parse(savedStats);
+        console.log('解析后的练习状态:', parsedStats);
+        setPracticeStats(parsedStats);
+        console.log('从localStorage加载练习状态成功');
+      } catch (error) {
+        console.error('从localStorage加载练习状态失败:', error);
+        // 清除损坏的存储
+        localStorage.removeItem('practiceStats');
+        console.log('已清除损坏的练习状态存储');
+      }
+    } else {
+      console.log('localStorage中没有保存的练习状态');
+    }
   }, [])
 
   // 初始化语音服务
@@ -111,8 +143,25 @@ function App() {
     loadExternalVoices();
   }, [])
 
+  // 监听练习状态变化，保存到localStorage
+  useEffect(() => {
+    // 保存练习状态到localStorage
+    console.log('保存练习状态到localStorage:', practiceStats);
+    localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
+    console.log('练习状态已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceStats'));
+  }, [practiceStats])
+
   // 组件卸载时清理
   useEffect(() => {
+    // 监听页面关闭或刷新事件，确保保存练习状态
+    const handleBeforeUnload = () => {
+      console.log('页面即将关闭，保存练习状态');
+      localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
+    };
+    
+    // 添加事件监听器
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     return () => {
       // 清除所有定时器
       if (autoNextTimerRef.current) {
@@ -123,8 +172,13 @@ function App() {
       }
       // 取消所有朗读
       cancelSpeech();
+      // 保存练习状态
+      console.log('组件卸载，保存练习状态');
+      localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
+      // 移除事件监听器
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [])
+  }, [practiceStats])
 
   // 点击外部区域关闭数据源选择器
   useEffect(() => {
@@ -267,18 +321,23 @@ function App() {
 
   // 加载句子数据
   const loadSentences = useCallback(async () => {
+    console.log('开始加载句子数据', { dataSource, selectedArticleId, hasSelectedDataSource });
+    
     // 如果正在进行回退操作，避免重复执行
     if (isFallbackInProgressRef.current) {
+      console.log('正在进行回退操作，跳过加载');
       return
     }
     
     // 如果用户还未选择数据源，不执行加载
     if (!hasSelectedDataSource) {
+      console.log('用户未选择数据源，跳过加载');
       return
     }
     
     // 如果是新概念三但未选择文章，优雅地跳过加载
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) {
+      console.log('新概念三未选择文章，跳过加载');
       setIsLoading(false)
       setSentences([])
       setDataSourceError(null)
@@ -290,15 +349,23 @@ function App() {
     setCurrentIndex(0) // 切换数据源时重置到第一题
     currentRandomIndexRef.current = 0 // 重置随机索引
     
+    // 更新练习开始时间
+    setPracticeStats(prevStats => ({
+      ...prevStats,
+      startTime: Date.now()
+    }))
+    
     try {
       let data;
       
       if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && selectedArticleId) {
         // 对于新概念三，获取选中文章的链接并动态加载内容
+        console.log('加载新概念三课程内容', { selectedArticleId });
         const selectedArticle = newConcept3Articles.find(article => article.id === selectedArticleId);
         if (selectedArticle && selectedArticle.link) {
           // 调用新的函数获取课程内容
           const functionUrl = '/.netlify/functions/get-new-concept-3-lesson';
+          console.log('调用新概念三API', { functionUrl });
           const response = await fetch(functionUrl, {
             method: 'POST',
             headers: {
@@ -330,50 +397,66 @@ function App() {
         }
       } else {
         // 其他数据源正常获取
+        console.log('获取数据源', { dataSource });
         data = await getSentences(dataSource);
+        console.log('获取到数据', { dataLength: data?.length || 0 });
+        
+        // 对于非本地数据源，需要转换缩写
+        if (dataSource !== DATA_SOURCE_TYPES.LOCAL && data && data.length > 0) {
+          console.log('转换非本地数据源的缩写');
+          data = data.map(sentence => expandContractionsInSentence(sentence));
+          console.log('转换完成', { dataLength: data.length });
+        }
       }
       
       if (data && data.length > 0) {
-        // 转换所有句子中的缩写为完整形式
-        const expandedSentences = data.map(sentence => expandContractionsInSentence(sentence))
-        setSentences(expandedSentences)
+        console.log('设置句子数据', { dataLength: data.length });
+        setSentences(data)
         setDataSourceError(null)
         // 生成随机顺序
-        randomOrderRef.current = generateRandomOrder(expandedSentences.length);
+        randomOrderRef.current = generateRandomOrder(data.length);
+        console.log('生成随机顺序完成');
       } else {
         throw new Error('数据源返回空数据')
       }
     } catch (error) {
-      console.error('Error loading sentences:', error)
+      console.error('加载句子数据失败:', error)
       setDataSourceError(error.message || '加载数据失败')
+      
       // 如果当前不是本地数据源，尝试回退到本地数据源
       if (dataSource !== DATA_SOURCE_TYPES.LOCAL) {
-        console.warn('Falling back to local data source')
+        console.warn('回退到本地数据源')
         isFallbackInProgressRef.current = true
         try {
           const localData = await getSentences(DATA_SOURCE_TYPES.LOCAL)
+          console.log('获取本地数据成功', { localDataLength: localData.length });
           setSentences(localData)
           setDataSourceError(`数据源加载失败，已切换到本地数据: ${error.message}`)
           // 生成随机顺序
           randomOrderRef.current = generateRandomOrder(localData.length);
+          console.log('生成本地数据随机顺序完成');
           // 更新数据源状态，但标记回退已完成，避免触发重复加载
           setDataSource(DATA_SOURCE_TYPES.LOCAL)
+          console.log('更新数据源为本地');
           // 在下一个事件循环中重置回退标记，确保状态更新完成
           setTimeout(() => {
             isFallbackInProgressRef.current = false
+            console.log('重置回退标记');
           }, 0)
         } catch (fallbackError) {
-          console.error('Fallback to local also failed:', fallbackError)
+          console.error('回退到本地数据源也失败:', fallbackError)
           setSentences([])
           isFallbackInProgressRef.current = false
         }
       } else {
+        console.log('本地数据源加载失败，设置空句子');
         setSentences([])
       }
     } finally {
+      console.log('加载完成，设置isLoading为false');
       setIsLoading(false)
     }
-  }, [dataSource, selectedArticleId, newConcept3Articles])
+  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource])
 
   // 规范化处理：忽略大小写、前后空格和常见标点，保留缩略词中的单引号
   const normalize = (str) => {
@@ -421,6 +504,24 @@ function App() {
         const allCorrect = checkAllWordsCorrect(newWordInputs, currentWords)
         
         if (allCorrect) {
+          // 所有单词都正确，更新练习状态
+          setPracticeStats(prevStats => {
+            const newStreak = prevStats.streak + 1;
+            const newLongestStreak = Math.max(newStreak, prevStats.longestStreak);
+            const newTotalAttempts = prevStats.totalAttempts + 1;
+            const newCorrectAnswers = prevStats.correctAnswers + 1;
+            const newAccuracy = Math.round((newCorrectAnswers / newTotalAttempts) * 100);
+            
+            return {
+              ...prevStats,
+              totalAttempts: newTotalAttempts,
+              correctAnswers: newCorrectAnswers,
+              accuracy: newAccuracy,
+              streak: newStreak,
+              longestStreak: newLongestStreak
+            };
+          });
+          
           // 所有单词都正确，显示成功弹窗并自动跳转
           setResult('correct')
           setShowModal(true)
@@ -453,6 +554,43 @@ function App() {
     if (wordInputs.some(input => input.trim() === '')) return
 
     const correct = compareSentences(wordInputs, sentences[currentIndex])
+    
+    // 更新练习状态
+    if (correct) {
+      setPracticeStats(prevStats => {
+        const newStreak = prevStats.streak + 1;
+        const newLongestStreak = Math.max(newStreak, prevStats.longestStreak);
+        const newTotalAttempts = prevStats.totalAttempts + 1;
+        const newCorrectAnswers = prevStats.correctAnswers + 1;
+        const newAccuracy = Math.round((newCorrectAnswers / newTotalAttempts) * 100);
+        
+        return {
+          ...prevStats,
+          totalAttempts: newTotalAttempts,
+          correctAnswers: newCorrectAnswers,
+          accuracy: newAccuracy,
+          streak: newStreak,
+          longestStreak: newLongestStreak
+        };
+      });
+    } else {
+      setPracticeStats(prevStats => {
+        const newTotalAttempts = prevStats.totalAttempts + 1;
+        const newIncorrectAnswers = prevStats.incorrectAnswers + 1;
+        const newAccuracy = prevStats.totalAttempts > 0 
+          ? Math.round((prevStats.correctAnswers / newTotalAttempts) * 100) 
+          : 0;
+        
+        return {
+          ...prevStats,
+          totalAttempts: newTotalAttempts,
+          incorrectAnswers: newIncorrectAnswers,
+          accuracy: newAccuracy,
+          streak: 0 // 重置连续正确次数
+        };
+      });
+    }
+    
     setResult(correct ? 'correct' : 'incorrect')
     setShowModal(true)
   }
@@ -617,6 +755,24 @@ function App() {
     isListenModePlayingRef.current = false;
   };
 
+  // 重置练习状态
+  const resetPracticeStats = () => {
+    const resetStats = {
+      totalAttempts: 0,
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      accuracy: 0,
+      streak: 0,
+      longestStreak: 0,
+      totalTime: 0,
+      startTime: Date.now()
+    };
+    setPracticeStats(resetStats);
+    // 直接更新localStorage，确保重置状态立即保存
+    localStorage.setItem('practiceStats', JSON.stringify(resetStats));
+    console.log('练习状态已重置并保存到localStorage');
+  };
+
   // 切换听句子模式
   const handleListenModeToggle = (enabled) => {
     setListenMode(enabled);
@@ -769,6 +925,63 @@ function App() {
         {/* 只有当有句子数据时才显示听写区域 */}
         {sentences.length > 0 && (
           <>
+            {/* 练习状态面板 */}
+            <div className="practice-stats-section" style={{ 
+              marginBottom: '20px', 
+              padding: '15px', 
+              backgroundColor: '#f8f9fa', 
+              borderRadius: '8px', 
+              border: '1px solid #dee2e6',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#495057' }}>练习状态</h3>
+                <button 
+                  onClick={resetPracticeStats}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    border: '1px solid #dc3545',
+                    backgroundColor: '#dc3545',
+                    color: '#fff',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+                >
+                  重置
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>准确率</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#28a745' }}>{practiceStats.accuracy}%</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>连续正确</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#17a2b8' }}>{practiceStats.streak}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>最长连续</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffc107' }}>{practiceStats.longestStreak}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>总尝试</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#495057' }}>{practiceStats.totalAttempts}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>正确</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#28a745' }}>{practiceStats.correctAnswers}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>错误</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#dc3545' }}>{practiceStats.incorrectAnswers}</div>
+                </div>
+              </div>
+            </div>
+            
             {/* 音标显示部分 */}
             {currentWords.length > 0 && (
               <div className="phonetics-section">
@@ -929,6 +1142,35 @@ function App() {
                     <p className="correct-sentence">
                       Correct sentence: <strong>{getExpandedSentence(sentences[currentIndex])}</strong>
                     </p>
+                    {/* 显示练习状态更新 */}
+                    <div style={{ 
+                      marginTop: '15px', 
+                      padding: '10px', 
+                      backgroundColor: '#f8f9fa', 
+                      borderRadius: '6px', 
+                      border: '1px solid #dee2e6'
+                    }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>练习状态</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div>
+                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>准确率:</span>
+                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#28a745' }}>{practiceStats.accuracy}%</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>连续正确:</span>
+                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#17a2b8' }}>{practiceStats.streak}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>总尝试:</span>
+                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#495057' }}>{practiceStats.totalAttempts}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>正确/错误:</span>
+                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#28a745' }}>{practiceStats.correctAnswers}</span>
+                          <span style={{ marginLeft: '5px', fontWeight: '500', color: '#dc3545' }}>/{practiceStats.incorrectAnswers}</span>
+                        </div>
+                      </div>
+                    </div>
                     {result === 'correct' && (
                       <p className="auto-next-hint">自动跳转到下一题...</p>
                     )}
