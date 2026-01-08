@@ -52,6 +52,26 @@ const WordInputs = ({
     }
   }
 
+  const handleKeyDown = (index, e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault()
+      // 检查当前单词是否正确
+      const userWord = wordInputs[index]
+      const correctWord = currentWords[index]?.word
+      
+      if (userWord.trim() && correctWord) {
+        const isCorrect = normalize(userWord) === normalize(correctWord)
+        
+        if (isCorrect && index < wordInputs.length - 1) {
+          // 单词正确，跳转到下一个输入框
+          setTimeout(() => {
+            inputRefs.current[index + 1]?.focus()
+          }, 100)
+        }
+      }
+    }
+  }
+
   // 规范化处理：忽略大小写、前后空格和常见标点
   const normalize = (str) => {
     return str
@@ -149,6 +169,7 @@ const WordInputs = ({
               style={{ width: inputWidth }}
               value={input}
               onChange={(e) => handleWordInputChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
               placeholder=""
               autoFocus={index === 0}
             />

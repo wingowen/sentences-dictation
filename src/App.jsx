@@ -632,13 +632,6 @@ function App() {
             handleNext()
             autoNextTimerRef.current = null
           }, 1500)
-        } else {
-          // 单个单词正确，自动跳转到下一个输入框
-          if (index < wordInputs.length - 1) {
-            setTimeout(() => {
-              inputRefs.current[index + 1]?.focus()
-            }, 100)
-          }
         }
       }
     }
