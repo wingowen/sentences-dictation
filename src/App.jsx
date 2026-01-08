@@ -56,6 +56,9 @@ function App() {
     totalTime: 0,           // 总练习时间（秒）
     startTime: null          // 当前练习开始时间
   })
+  
+  // 练习进度 - 按数据源缓存每个句子的练习状态
+  const [practiceProgress, setPracticeProgress] = useState({})
   const inputRefs = useRef([])
   const autoNextTimerRef = useRef(null)
   const isFallbackInProgressRef = useRef(false)
@@ -89,6 +92,27 @@ function App() {
       }
     } else {
       console.log('localStorage中没有保存的练习状态');
+    }
+    
+    // 从localStorage加载练习进度
+    console.log('尝试从localStorage加载练习进度');
+    const savedProgress = localStorage.getItem('practiceProgress');
+    console.log('localStorage中的练习进度:', savedProgress);
+    
+    if (savedProgress) {
+      try {
+        const parsedProgress = JSON.parse(savedProgress);
+        console.log('解析后的练习进度:', parsedProgress);
+        setPracticeProgress(parsedProgress);
+        console.log('从localStorage加载练习进度成功');
+      } catch (error) {
+        console.error('从localStorage加载练习进度失败:', error);
+        // 清除损坏的存储
+        localStorage.removeItem('practiceProgress');
+        console.log('已清除损坏的练习进度存储');
+      }
+    } else {
+      console.log('localStorage中没有保存的练习进度');
     }
   }, [])
 
@@ -158,12 +182,21 @@ function App() {
     console.log('练习状态已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceStats'));
   }, [practiceStats])
 
+  // 监听练习进度变化，保存到localStorage
+  useEffect(() => {
+    // 保存练习进度到localStorage
+    console.log('保存练习进度到localStorage:', practiceProgress);
+    localStorage.setItem('practiceProgress', JSON.stringify(practiceProgress));
+    console.log('练习进度已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceProgress'));
+  }, [practiceProgress])
+
   // 组件卸载时清理
   useEffect(() => {
-    // 监听页面关闭或刷新事件，确保保存练习状态
+    // 监听页面关闭或刷新事件，确保保存练习状态和进度
     const handleBeforeUnload = () => {
-      console.log('页面即将关闭，保存练习状态');
+      console.log('页面即将关闭，保存练习状态和进度');
       localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
+      localStorage.setItem('practiceProgress', JSON.stringify(practiceProgress));
     };
     
     // 添加事件监听器
@@ -179,13 +212,14 @@ function App() {
       }
       // 取消所有朗读
       cancelSpeech();
-      // 保存练习状态
-      console.log('组件卸载，保存练习状态');
+      // 保存练习状态和进度
+      console.log('组件卸载，保存练习状态和进度');
       localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
+      localStorage.setItem('practiceProgress', JSON.stringify(practiceProgress));
       // 移除事件监听器
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [practiceStats])
+  }, [practiceStats, practiceProgress])
 
   // 点击外部区域关闭数据源选择器
   useEffect(() => {
@@ -423,6 +457,21 @@ function App() {
         // 生成随机顺序
         randomOrderRef.current = generateRandomOrder(data.length);
         console.log('生成随机顺序完成');
+        
+        // 恢复练习进度
+        const sourceProgress = practiceProgress[dataSource];
+        if (sourceProgress && sourceProgress.lastPracticedIndex >= 0) {
+          // 如果有保存的进度，恢复到上次练习的位置
+          console.log('恢复练习进度，从索引', sourceProgress.lastPracticedIndex, '开始');
+          // 延迟设置索引，确保句子数据已经更新
+          setTimeout(() => {
+            setCurrentIndex(sourceProgress.lastPracticedIndex);
+          }, 0);
+        } else {
+          // 没有保存的进度，从第一题开始
+          console.log('没有保存的练习进度，从第一题开始');
+          setCurrentIndex(0);
+        }
       } else {
         throw new Error('数据源返回空数据')
       }
@@ -529,6 +578,37 @@ function App() {
             };
           });
           
+          // 更新练习进度
+          setPracticeProgress(prevProgress => {
+            const currentDataSource = dataSource;
+            const currentIndexValue = currentIndex;
+            const totalSentences = sentences.length;
+            
+            // 确保当前数据源的进度对象存在
+            const sourceProgress = prevProgress[currentDataSource] || {
+              completedSentences: [],
+              correctSentences: [],
+              lastPracticedIndex: -1,
+              progressPercentage: 0
+            };
+            
+            // 更新已完成和正确的句子列表
+            const updatedCompletedSentences = [...new Set([...sourceProgress.completedSentences, currentIndexValue])];
+            const updatedCorrectSentences = [...new Set([...sourceProgress.correctSentences, currentIndexValue])];
+            const updatedProgressPercentage = Math.round((updatedCompletedSentences.length / totalSentences) * 100);
+            
+            return {
+              ...prevProgress,
+              [currentDataSource]: {
+                ...sourceProgress,
+                completedSentences: updatedCompletedSentences,
+                correctSentences: updatedCorrectSentences,
+                lastPracticedIndex: currentIndexValue,
+                progressPercentage: updatedProgressPercentage
+              }
+            };
+          });
+          
           // 所有单词都正确，显示成功弹窗并自动跳转
           setResult('correct')
           setShowModal(true)
@@ -598,6 +678,47 @@ function App() {
       });
     }
     
+    // 更新练习进度
+    setPracticeProgress(prevProgress => {
+      const currentDataSource = dataSource;
+      const currentIndexValue = currentIndex;
+      const totalSentences = sentences.length;
+      
+      // 确保当前数据源的进度对象存在
+      const sourceProgress = prevProgress[currentDataSource] || {
+        completedSentences: [],
+        correctSentences: [],
+        lastPracticedIndex: -1,
+        progressPercentage: 0
+      };
+      
+      // 更新已完成的句子列表
+      const updatedCompletedSentences = [...new Set([...sourceProgress.completedSentences, currentIndexValue])];
+      
+      // 根据结果更新正确的句子列表
+      let updatedCorrectSentences = [...sourceProgress.correctSentences];
+      if (correct) {
+        // 如果答对，添加到正确列表
+        updatedCorrectSentences = [...new Set([...updatedCorrectSentences, currentIndexValue])];
+      } else {
+        // 如果答错，从正确列表中移除
+        updatedCorrectSentences = updatedCorrectSentences.filter(index => index !== currentIndexValue);
+      }
+      
+      const updatedProgressPercentage = Math.round((updatedCompletedSentences.length / totalSentences) * 100);
+      
+      return {
+        ...prevProgress,
+        [currentDataSource]: {
+          ...sourceProgress,
+          completedSentences: updatedCompletedSentences,
+          correctSentences: updatedCorrectSentences,
+          lastPracticedIndex: currentIndexValue,
+          progressPercentage: updatedProgressPercentage
+        }
+      };
+    });
+    
     setResult(correct ? 'correct' : 'incorrect')
     setShowModal(true)
   }
@@ -640,6 +761,7 @@ function App() {
     
     cancelSpeech()
     
+    let nextIndex;
     if (randomMode) {
       // 随机模式：按照随机顺序切换句子
       currentRandomIndexRef.current = (currentRandomIndexRef.current + 1) % sentences.length;
@@ -647,11 +769,36 @@ function App() {
         // 如果已经遍历完所有句子，重新生成随机顺序
         randomOrderRef.current = generateRandomOrder(sentences.length);
       }
-      setCurrentIndex(randomOrderRef.current[currentRandomIndexRef.current]);
+      nextIndex = randomOrderRef.current[currentRandomIndexRef.current];
     } else {
       // 顺序模式：按照顺序切换句子
-      setCurrentIndex((prev) => (prev + 1) % sentences.length);
+      nextIndex = (currentIndex + 1) % sentences.length;
     }
+    
+    // 更新练习进度的最后练习索引
+    setPracticeProgress(prevProgress => {
+      const currentDataSource = dataSource;
+      const totalSentences = sentences.length;
+      
+      // 确保当前数据源的进度对象存在
+      const sourceProgress = prevProgress[currentDataSource] || {
+        completedSentences: [],
+        correctSentences: [],
+        lastPracticedIndex: -1,
+        progressPercentage: 0
+      };
+      
+      return {
+        ...prevProgress,
+        [currentDataSource]: {
+          ...sourceProgress,
+          lastPracticedIndex: currentIndex
+        }
+      };
+    });
+    
+    // 设置新的当前索引
+    setCurrentIndex(nextIndex);
     
     setUserInput('')
     setResult(null)
@@ -943,24 +1090,86 @@ function App() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#495057' }}>练习状态</h3>
-                <button 
-                  onClick={resetPracticeStats}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    border: '1px solid #dc3545',
-                    backgroundColor: '#dc3545',
-                    color: '#fff',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
-                >
-                  重置
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={resetPracticeStats}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid #dc3545',
+                      backgroundColor: '#dc3545',
+                      color: '#fff',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+                  >
+                    重置统计
+                  </button>
+                  <button 
+                    onClick={() => {
+                      // 重置当前数据源的练习进度
+                      setPracticeProgress(prevProgress => ({
+                        ...prevProgress,
+                        [dataSource]: {
+                          completedSentences: [],
+                          correctSentences: [],
+                          lastPracticedIndex: -1,
+                          progressPercentage: 0
+                        }
+                      }));
+                      // 重置到第一题
+                      setCurrentIndex(0);
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid #ffc107',
+                      backgroundColor: '#ffc107',
+                      color: '#212529',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e0a800'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#ffc107'}
+                  >
+                    重置进度
+                  </button>
+                </div>
               </div>
+              
+              {/* 练习进度条 */}
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#495057' }}>当前进度</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '500', color: '#28a745' }}>
+                    {practiceProgress[dataSource]?.progressPercentage || 0}%
+                  </span>
+                </div>
+                <div style={{ 
+                  width: '100%', 
+                  height: '8px', 
+                  backgroundColor: '#e9ecef', 
+                  borderRadius: '4px', 
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ 
+                    width: `${practiceProgress[dataSource]?.progressPercentage || 0}%`, 
+                    height: '100%', 
+                    backgroundColor: '#28a745', 
+                    borderRadius: '4px',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '0.8rem', color: '#6c757d' }}>
+                  <span>已完成: {practiceProgress[dataSource]?.completedSentences?.length || 0}</span>
+                  <span>总句子: {sentences.length}</span>
+                </div>
+              </div>
+              
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>准确率</div>
@@ -1023,7 +1232,6 @@ function App() {
             {/* 按词输入部分 */}
             <form className="input-form" onSubmit={handleSubmit}>
               <label className="input-with-controls">
-                Type what you hear (one word per blank):
                 <div className="input-controls">
                   <label className="speech-rate-selector small">
                     <span>语速:</span>
