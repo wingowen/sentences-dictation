@@ -24,16 +24,38 @@ function App() {
   const [selectedArticleId, setSelectedArticleId] = useState(null)
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
   const [randomMode, setRandomMode] = useState(false)
+  const [listenMode, setListenMode] = useState(false)
   const inputRefs = useRef([])
   const autoNextTimerRef = useRef(null)
   const isFallbackInProgressRef = useRef(false)
   const randomOrderRef = useRef([])
   const currentRandomIndexRef = useRef(0)
+  const listenModeTimerRef = useRef(null)
+  const isListenModePlayingRef = useRef(false)
 
   // 初始化
   useEffect(() => {
     // 检查语音合成支持
     setSpeechSupported(isSpeechSupported())
+    // 当直接打开本地文件时，自动设置本地数据源为已选择
+    if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
+      setHasSelectedDataSource(true)
+    }
+  }, [])
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      // 清除所有定时器
+      if (autoNextTimerRef.current) {
+        clearTimeout(autoNextTimerRef.current);
+      }
+      if (listenModeTimerRef.current) {
+        clearTimeout(listenModeTimerRef.current);
+      }
+      // 取消所有朗读
+      cancelSpeech();
+    };
   }, [])
 
   // 点击外部区域关闭数据源选择器
@@ -415,6 +437,76 @@ function App() {
     }
   }
 
+  // 播放句子两次（第一次0.75倍速，第二次1倍速）
+  const playSentenceTwice = async (sentence) => {
+    try {
+      // 第一次朗读：0.75倍速
+      await speak(sentence, 0.75);
+      // 短暂停顿
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // 第二次朗读：1倍速
+      await speak(sentence, 1.0);
+    } catch (error) {
+      console.error('Error playing sentence twice:', error);
+    }
+  };
+
+  // 开始听句子模式
+  const startListenMode = () => {
+    if (!speechSupported || sentences.length === 0) return;
+
+    const listenModeLoop = async () => {
+      if (!listenMode) return;
+
+      try {
+        // 播放当前句子两次
+        await playSentenceTwice(sentences[currentIndex]);
+        // 短暂停顿后切换到下一个句子
+        listenModeTimerRef.current = setTimeout(() => {
+          // 使用现有的handleNext逻辑切换句子
+          handleNext();
+          // 继续循环
+          if (listenMode) {
+            startListenMode();
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Error in listen mode loop:', error);
+        // 即使出错也继续循环
+        if (listenMode) {
+          listenModeTimerRef.current = setTimeout(startListenMode, 1000);
+        }
+      }
+    };
+
+    isListenModePlayingRef.current = true;
+    listenModeLoop();
+  };
+
+  // 停止听句子模式
+  const stopListenMode = () => {
+    if (listenModeTimerRef.current) {
+      clearTimeout(listenModeTimerRef.current);
+      listenModeTimerRef.current = null;
+    }
+    cancelSpeech();
+    isListenModePlayingRef.current = false;
+  };
+
+  // 切换听句子模式
+  const handleListenModeToggle = (enabled) => {
+    setListenMode(enabled);
+    
+    if (enabled) {
+      // 启用听句子模式
+      setShowOriginalText(true); // 自动显示原文
+      startListenMode();
+    } else {
+      // 禁用听句子模式
+      stopListenMode();
+    }
+  };
+
   const currentDataSource = DATA_SOURCES.find(s => s.id === dataSource)
 
   const DataSourceSelectionPage = () => (
@@ -597,7 +689,7 @@ function App() {
                         const newRate = parseFloat(e.target.value);
                         setSpeechRate(newRate);
                       }}
-                      disabled={!speechSupported}
+                      disabled={!speechSupported || listenMode}
                       title="选择朗读语速"
                     >
                       <option value="0.5">0.5x (慢速)</option>
@@ -612,7 +704,7 @@ function App() {
                     type="button" 
                     className="play-button small"
                     onClick={handlePlay}
-                    disabled={!speechSupported}
+                    disabled={!speechSupported || listenMode}
                     title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
                   >
                     ▶️
@@ -622,7 +714,7 @@ function App() {
                       type="checkbox"
                       checked={autoPlay}
                       onChange={(e) => setAutoPlay(e.target.checked)}
-                      disabled={!speechSupported}
+                      disabled={!speechSupported || listenMode}
                     />
                     <span>自动朗读</span>
                   </label>
@@ -641,8 +733,18 @@ function App() {
                           setCurrentIndex(randomOrderRef.current[0]);
                         }
                       }}
+                      disabled={listenMode}
                     />
                     <span>随机模式</span>
+                  </label>
+                  <label className="listen-mode-toggle small">
+                    <input
+                      type="checkbox"
+                      checked={listenMode}
+                      onChange={(e) => handleListenModeToggle(e.target.checked)}
+                      disabled={!speechSupported}
+                    />
+                    <span>听句子模式</span>
                   </label>
                 </div>
               </label>
