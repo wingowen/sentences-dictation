@@ -15,7 +15,10 @@ const WordInputs = ({
   onToggleRandomMode,
   onToggleListenMode,
   onToggleVoiceSettings,
-  inputRefs
+  inputRefs,
+  autoNext,
+  onToggleAutoNext,
+  onSpeechRateChange
 }) => {
   // 聚焦第一个输入框
   useEffect(() => {
@@ -65,8 +68,10 @@ const WordInputs = ({
             <span>语速:</span>
             <select
               value={speechRate.toFixed(1)}
-              onChange={() => {
-                // 这里可以添加更新语速的回调
+              onChange={(e) => {
+                if (onSpeechRateChange) {
+                  onSpeechRateChange(parseFloat(e.target.value))
+                }
               }}
               disabled={!speechSupported || listenMode}
               title="选择朗读语速"
@@ -123,6 +128,14 @@ const WordInputs = ({
               disabled={!speechSupported}
             />
             <span>听句子模式</span>
+          </label>
+          <label className="auto-next-toggle small">
+            <input
+              type="checkbox"
+              checked={autoNext}
+              onChange={(e) => onToggleAutoNext(e.target.checked)}
+            />
+            <span>自动切换下一句</span>
           </label>
         </div>
       </label>

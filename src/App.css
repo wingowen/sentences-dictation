@@ -593,6 +593,32 @@ body {
   cursor: not-allowed;
 }
 
+.auto-next-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+  font-size: 1rem;
+  color: var(--dark-color);
+}
+
+.auto-next-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.auto-next-toggle.small {
+  font-size: 0.9rem;
+}
+
+.auto-next-toggle.small input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
 .speech-rate-selector {
   display: flex;
   align-items: center;

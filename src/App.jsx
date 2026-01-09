@@ -40,7 +40,7 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false)
   const [autoPlay, setAutoPlay] = useState(true)
-  const [speechRate] = useState(0.5)
+  const [speechRate, setSpeechRate] = useState(1)
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
@@ -52,6 +52,7 @@ function App() {
   const [speechService, setSpeechService] = useState('web_speech')
   const [externalVoices, setExternalVoices] = useState([])
   const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
+  const [autoNext, setAutoNext] = useState(true)
   // 练习状态
   const [practiceStats, setPracticeStats] = useState({
     totalAttempts: 0,       // 总尝试次数
@@ -664,12 +665,17 @@ function App() {
               clearTimeout(autoNextTimerRef.current)
             }
             
-            // 延迟三秒关闭弹窗并跳转到下一题，让用户看到成功提示
-            autoNextTimerRef.current = setTimeout(() => {
-              console.log('Closing modal and going to next sentence');
-              handleCloseModal()
-              autoNextTimerRef.current = null
-            }, 3000)
+            // 根据autoNext状态决定是否自动跳转到下一题
+            if (autoNext) {
+              // 延迟三秒关闭弹窗并跳转到下一题，让用户看到成功提示
+              autoNextTimerRef.current = setTimeout(() => {
+                console.log('Closing modal and going to next sentence');
+                handleCloseModal()
+                autoNextTimerRef.current = null
+              }, 3000)
+            } else {
+              console.log('Auto next disabled, user needs to click Next manually');
+            }
           } else {
             console.log('Not all words correct:', newWordInputs, currentWords);
           }
@@ -1044,6 +1050,11 @@ function App() {
     setAutoPlay(enabled);
   }, []);
   
+  // 切换自动切换下一句
+  const handleToggleAutoNext = useCallback((enabled) => {
+    setAutoNext(enabled);
+  }, []);
+  
   // 切换显示原文
   const handleToggleOriginalText = useCallback(() => {
     setShowOriginalText(!showOriginalText);
@@ -1237,6 +1248,9 @@ function App() {
               showVoiceSettings={showVoiceSettings}
               onToggleVoiceSettings={handleToggleVoiceSettings}
               inputRefs={inputRefs}
+              autoNext={autoNext}
+              onToggleAutoNext={handleToggleAutoNext}
+              onSpeechRateChange={setSpeechRate}
             />
 
             {!speechSupported && (
