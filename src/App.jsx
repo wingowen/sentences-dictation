@@ -184,17 +184,25 @@ function App() {
   // 监听练习状态变化，保存到localStorage
   useEffect(() => {
     // 保存练习状态到localStorage
-    console.log('保存练习状态到localStorage:', practiceStats);
-    localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
-    console.log('练习状态已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceStats'));
+    try {
+      console.log('保存练习状态到localStorage:', practiceStats);
+      localStorage.setItem('practiceStats', JSON.stringify(practiceStats));
+      console.log('练习状态已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceStats'));
+    } catch (error) {
+      console.error('保存练习状态到localStorage失败:', error);
+    }
   }, [practiceStats])
 
   // 监听练习进度变化，保存到localStorage
   useEffect(() => {
     // 保存练习进度到localStorage
-    console.log('保存练习进度到localStorage:', practiceProgress);
-    localStorage.setItem('practiceProgress', JSON.stringify(practiceProgress));
-    console.log('练习进度已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceProgress'));
+    try {
+      console.log('保存练习进度到localStorage:', practiceProgress);
+      localStorage.setItem('practiceProgress', JSON.stringify(practiceProgress));
+      console.log('练习进度已保存到localStorage，当前localStorage内容:', localStorage.getItem('practiceProgress'));
+    } catch (error) {
+      console.error('保存练习进度到localStorage失败:', error);
+    }
   }, [practiceProgress])
 
   // 组件卸载时清理
@@ -226,7 +234,7 @@ function App() {
       // 移除事件监听器
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [practiceStats, practiceProgress])
+  }, [])
 
   // 点击外部区域关闭数据源选择器
   useEffect(() => {
@@ -382,18 +390,32 @@ function App() {
         randomOrderRef.current = generateRandomOrder(data.length);
         console.log('生成随机顺序完成');
         
-        // 恢复练习进度
-        const sourceProgress = practiceProgress[dataSource];
-        if (sourceProgress && sourceProgress.lastPracticedIndex >= 0) {
-          // 如果有保存的进度，恢复到上次练习的位置
-          console.log('恢复练习进度，从索引', sourceProgress.lastPracticedIndex, '开始');
-          // 延迟设置索引，确保句子数据已经更新
-          setTimeout(() => {
-            setCurrentIndex(sourceProgress.lastPracticedIndex);
-          }, 0);
-        } else {
-          // 没有保存的进度，从第一题开始
-          console.log('没有保存的练习进度，从第一题开始');
+        // 恢复练习进度 - 从localStorage直接读取，避免依赖practiceProgress状态
+        try {
+          const savedProgress = localStorage.getItem('practiceProgress');
+          if (savedProgress) {
+            const parsedProgress = JSON.parse(savedProgress);
+            const sourceProgress = parsedProgress[dataSource];
+            if (sourceProgress && sourceProgress.lastPracticedIndex >= 0) {
+              // 如果有保存的进度，恢复到上次练习的位置
+              console.log('恢复练习进度，从索引', sourceProgress.lastPracticedIndex, '开始');
+              // 延迟设置索引，确保句子数据已经更新
+              setTimeout(() => {
+                setCurrentIndex(sourceProgress.lastPracticedIndex);
+              }, 0);
+            } else {
+              // 没有保存的进度，从第一题开始
+              console.log('没有保存的练习进度，从第一题开始');
+              setCurrentIndex(0);
+            }
+          } else {
+            // 没有保存的进度，从第一题开始
+            console.log('没有保存的练习进度，从第一题开始');
+            setCurrentIndex(0);
+          }
+        } catch (error) {
+          console.error('读取练习进度失败:', error);
+          // 读取失败，从第一题开始
           setCurrentIndex(0);
         }
       } else {
@@ -408,6 +430,10 @@ function App() {
         console.warn('回退到本地数据源')
         isFallbackInProgressRef.current = true
         try {
+          // 先更新数据源状态，避免触发重复加载
+          setDataSource(DATA_SOURCE_TYPES.LOCAL)
+          console.log('更新数据源为本地');
+          
           const localData = await getSentences(DATA_SOURCE_TYPES.LOCAL)
           console.log('获取本地数据成功', { localDataLength: localData.length });
           setSentences(localData)
@@ -415,28 +441,27 @@ function App() {
           // 生成随机顺序
           randomOrderRef.current = generateRandomOrder(localData.length);
           console.log('生成本地数据随机顺序完成');
-          // 更新数据源状态，但标记回退已完成，避免触发重复加载
-          setDataSource(DATA_SOURCE_TYPES.LOCAL)
-          console.log('更新数据源为本地');
-          // 在下一个事件循环中重置回退标记，确保状态更新完成
-          setTimeout(() => {
-            isFallbackInProgressRef.current = false
-            console.log('重置回退标记');
-          }, 0)
+          // 重置回退标记
+          isFallbackInProgressRef.current = false
+          console.log('重置回退标记');
         } catch (fallbackError) {
           console.error('回退到本地数据源也失败:', fallbackError)
           setSentences([])
           isFallbackInProgressRef.current = false
+          // 回退到本地数据源也失败，允许用户重新选择数据源
+          setHasSelectedDataSource(false)
         }
       } else {
         console.log('本地数据源加载失败，设置空句子');
         setSentences([])
+        // 本地数据源加载失败，允许用户重新选择数据源
+        setHasSelectedDataSource(false)
       }
     } finally {
       console.log('加载完成，设置isLoading为false');
       setIsLoading(false)
     }
-  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource, practiceProgress])
+  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource])
 
   // 加载句子数据（当数据源变化时重新加载）
   useEffect(() => {
@@ -469,6 +494,11 @@ function App() {
       // 初始化输入框引用数组
       inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
       
+      // 聚焦第一个输入框
+      setTimeout(() => {
+        inputRefs.current[0]?.focus()
+      }, 100)
+      
       // 如果自动朗读开启，则自动朗读句子
       if (autoPlay && speechSupported) {
         // 延迟一点时间，确保页面已经更新
@@ -490,6 +520,8 @@ function App() {
                   .catch(fallbackError => {
                     console.error('Fallback to web speech also failed:', fallbackError)
                   })
+                // 更新语音服务状态为Web Speech API
+                setSpeechService('web_speech')
               })
           }
         }, 300)
@@ -565,81 +597,97 @@ function App() {
       const isCorrect = compareWord(value, currentWords[index].word)
       
       if (isCorrect) {
-        // 单词正确，检查是否所有单词都正确
-        const allCorrect = checkAllWordsCorrect(newWordInputs, currentWords)
+        // 检查是否所有单词都已输入
+        const allFilled = newWordInputs.every(input => input.trim() !== '')
         
-        if (allCorrect) {
-          // 所有单词都正确，更新练习状态
-          setPracticeStats(prevStats => {
-            const newStreak = prevStats.streak + 1;
-            const newLongestStreak = Math.max(newStreak, prevStats.longestStreak);
-            const newTotalAttempts = prevStats.totalAttempts + 1;
-            const newCorrectAnswers = prevStats.correctAnswers + 1;
-            const newAccuracy = Math.round((newCorrectAnswers / newTotalAttempts) * 100);
-            
-            return {
-              ...prevStats,
-              totalAttempts: newTotalAttempts,
-              correctAnswers: newCorrectAnswers,
-              accuracy: newAccuracy,
-              streak: newStreak,
-              longestStreak: newLongestStreak
-            };
-          });
+        if (allFilled) {
+          // 所有单词都已输入，检查是否所有单词都正确
+          const allCorrect = checkAllWordsCorrect(newWordInputs, currentWords)
           
-          // 更新练习进度
-          setPracticeProgress(prevProgress => {
-            const currentDataSource = dataSource;
-            const currentIndexValue = currentIndex;
-            const totalSentences = sentences.length;
+          if (allCorrect) {
+            // 所有单词都正确，更新练习状态
+            setPracticeStats(prevStats => {
+              const newStreak = prevStats.streak + 1;
+              const newLongestStreak = Math.max(newStreak, prevStats.longestStreak);
+              const newTotalAttempts = prevStats.totalAttempts + 1;
+              const newCorrectAnswers = prevStats.correctAnswers + 1;
+              const newAccuracy = Math.round((newCorrectAnswers / newTotalAttempts) * 100);
+              
+              return {
+                ...prevStats,
+                totalAttempts: newTotalAttempts,
+                correctAnswers: newCorrectAnswers,
+                accuracy: newAccuracy,
+                streak: newStreak,
+                longestStreak: newLongestStreak
+              };
+            });
             
-            // 确保当前数据源的进度对象存在
-            const sourceProgress = prevProgress[currentDataSource] || {
-              completedSentences: [],
-              correctSentences: [],
-              lastPracticedIndex: -1,
-              progressPercentage: 0
-            };
+            // 更新练习进度
+            setPracticeProgress(prevProgress => {
+              const currentDataSource = dataSource;
+              const currentIndexValue = currentIndex;
+              const totalSentences = sentences.length;
+              
+              // 确保当前数据源的进度对象存在
+              const sourceProgress = prevProgress[currentDataSource] || {
+                completedSentences: [],
+                correctSentences: [],
+                lastPracticedIndex: -1,
+                progressPercentage: 0
+              };
+              
+              // 更新已完成和正确的句子列表
+              const updatedCompletedSentences = [...new Set([...sourceProgress.completedSentences, currentIndexValue])];
+              const updatedCorrectSentences = [...new Set([...sourceProgress.correctSentences, currentIndexValue])];
+              const updatedProgressPercentage = Math.round((updatedCompletedSentences.length / totalSentences) * 100);
+              
+              return {
+                ...prevProgress,
+                [currentDataSource]: {
+                  ...sourceProgress,
+                  completedSentences: updatedCompletedSentences,
+                  correctSentences: updatedCorrectSentences,
+                  lastPracticedIndex: currentIndexValue,
+                  progressPercentage: updatedProgressPercentage
+                }
+              };
+            });
             
-            // 更新已完成和正确的句子列表
-            const updatedCompletedSentences = [...new Set([...sourceProgress.completedSentences, currentIndexValue])];
-            const updatedCorrectSentences = [...new Set([...sourceProgress.correctSentences, currentIndexValue])];
-            const updatedProgressPercentage = Math.round((updatedCompletedSentences.length / totalSentences) * 100);
+            // 所有单词都正确，显示成功弹窗并延迟三秒自动关闭
+            console.log('All words correct, showing modal');
+            setResult('correct')
+            setShowModal(true)
             
-            return {
-              ...prevProgress,
-              [currentDataSource]: {
-                ...sourceProgress,
-                completedSentences: updatedCompletedSentences,
-                correctSentences: updatedCorrectSentences,
-                lastPracticedIndex: currentIndexValue,
-                progressPercentage: updatedProgressPercentage
-              }
-            };
-          });
-          
-          // 所有单词都正确，显示成功弹窗并自动跳转
-          setResult('correct')
-          setShowModal(true)
-          
-          // 清除之前的定时器（如果存在）
-          if (autoNextTimerRef.current) {
-            clearTimeout(autoNextTimerRef.current)
+            // 清除之前的定时器（如果存在）
+            if (autoNextTimerRef.current) {
+              clearTimeout(autoNextTimerRef.current)
+            }
+            
+            // 延迟三秒关闭弹窗并跳转到下一题，让用户看到成功提示
+            autoNextTimerRef.current = setTimeout(() => {
+              console.log('Closing modal and going to next sentence');
+              handleCloseModal()
+              autoNextTimerRef.current = null
+            }, 3000)
+          } else {
+            console.log('Not all words correct:', newWordInputs, currentWords);
           }
-          
-          // 延迟跳转到下一题，让用户看到成功提示
-          autoNextTimerRef.current = setTimeout(() => {
-            handleNext()
-            autoNextTimerRef.current = null
-          }, 1500)
         } else {
+          console.log('Not all words filled:', newWordInputs);
           // 单个单词正确，自动跳转到下一个输入框
-          if (index < wordInputs.length - 1) {
+          if (index < currentWords.length - 1) {
+            // 使用更合理的延迟，确保用户有足够的时间完成输入
             setTimeout(() => {
-              inputRefs.current[index + 1]?.focus()
-            }, 100)
+              // 再次检查输入框是否存在，避免DOM已经更新的情况
+              if (inputRefs.current[index + 1]) {
+                inputRefs.current[index + 1].focus()
+              }
+            }, 200)
           }
         }
+      } else {
+        console.log('Current word incorrect:', value, currentWords[index].word);
       }
     }
   }
@@ -673,7 +721,7 @@ function App() {
       setPracticeStats(prevStats => {
         const newTotalAttempts = prevStats.totalAttempts + 1;
         const newIncorrectAnswers = prevStats.incorrectAnswers + 1;
-        const newAccuracy = prevStats.totalAttempts > 0 
+        const newAccuracy = prevStats.correctAnswers > 0 
           ? Math.round((prevStats.correctAnswers / newTotalAttempts) * 100) 
           : 0;
         
@@ -755,6 +803,8 @@ function App() {
               .catch(fallbackError => {
                 console.error('Fallback to web speech also failed:', fallbackError)
               })
+            // 更新语音服务状态为Web Speech API
+            setSpeechService('web_speech')
           })
       }
     }
@@ -762,6 +812,8 @@ function App() {
 
   // 下一题
   const handleNext = () => {
+    console.log('handleNext called, currentIndex:', currentIndex, 'randomMode:', randomMode, 'sentences.length:', sentences.length);
+    
     // 清除自动跳转定时器
     if (autoNextTimerRef.current) {
       clearTimeout(autoNextTimerRef.current)
@@ -773,15 +825,26 @@ function App() {
     let nextIndex;
     if (randomMode) {
       // 随机模式：按照随机顺序切换句子
-      currentRandomIndexRef.current = (currentRandomIndexRef.current + 1) % sentences.length;
-      if (currentRandomIndexRef.current === 0) {
+      if (sentences.length === 0) {
+        console.log('No sentences available, returning from handleNext');
+        return;
+      }
+      const nextRandomIndex = (currentRandomIndexRef.current + 1) % sentences.length;
+      if (nextRandomIndex === 0) {
         // 如果已经遍历完所有句子，重新生成随机顺序
         randomOrderRef.current = generateRandomOrder(sentences.length);
       }
+      currentRandomIndexRef.current = nextRandomIndex;
       nextIndex = randomOrderRef.current[currentRandomIndexRef.current];
+      console.log('Next sentence (random):', nextIndex);
     } else {
       // 顺序模式：按照顺序切换句子
+      if (sentences.length === 0) {
+        console.log('No sentences available, returning from handleNext');
+        return;
+      }
       nextIndex = (currentIndex + 1) % sentences.length;
+      console.log('Next sentence (sequential):', nextIndex);
     }
     
     // 更新练习进度的最后练习索引
@@ -800,7 +863,7 @@ function App() {
         ...prevProgress,
         [currentDataSource]: {
           ...sourceProgress,
-          lastPracticedIndex: currentIndex
+          lastPracticedIndex: nextIndex
         }
       };
     });
@@ -810,11 +873,6 @@ function App() {
     
     setResult(null)
     setShowModal(false)
-    
-    // 聚焦第一个输入框
-    setTimeout(() => {
-      inputRefs.current[0]?.focus()
-    }, 100)
   }
 
   // 关闭弹窗
@@ -826,9 +884,7 @@ function App() {
     }
     
     setShowModal(false)
-    if (result === 'correct') {
-      handleNext()
-    }
+    handleNext()
   }
 
   // 切换数据源
@@ -877,21 +933,30 @@ function App() {
 
   // 开始听句子模式
   const startListenMode = useCallback(() => {
-    if (!speechSupported || sentences.length === 0) return;
+    console.log('startListenMode called, speechSupported:', speechSupported, 'sentences.length:', sentences.length, 'listenMode:', listenMode);
+    if (!speechSupported || sentences.length === 0) {
+      return;
+    }
 
     const listenModeLoop = async () => {
-      if (!listenMode) return;
+      if (!listenMode) {
+        return;
+      }
 
       try {
+        console.log('Playing sentence at index:', currentIndex);
         // 播放当前句子两次
         await playSentenceTwice(sentences[currentIndex]);
         // 短暂停顿后切换到下一个句子
         listenModeTimerRef.current = setTimeout(() => {
+          console.log('Calling handleNext in listenModeLoop');
           // 使用现有的handleNext逻辑切换句子
           handleNext();
-          // 继续循环
+          // 继续循环 - 延迟调用startListenMode，确保状态更新完成
           if (listenMode) {
-            startListenMode();
+            setTimeout(() => {
+              startListenMode();
+            }, 100); // 延迟100ms，确保currentIndex状态更新完成
           }
         }, 1000);
       } catch (error) {
@@ -905,7 +970,7 @@ function App() {
 
     isListenModePlayingRef.current = true;
     listenModeLoop();
-  }, [speechSupported, sentences, currentIndex, listenMode, playSentenceTwice, handleNext]);
+  }, [speechSupported, sentences, listenMode, playSentenceTwice]);
 
   // 停止听句子模式
   const stopListenMode = () => {
@@ -1171,6 +1236,7 @@ function App() {
               onToggleListenMode={handleListenModeToggle}
               showVoiceSettings={showVoiceSettings}
               onToggleVoiceSettings={handleToggleVoiceSettings}
+              inputRefs={inputRefs}
             />
 
             {!speechSupported && (

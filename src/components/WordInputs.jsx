@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 
 const WordInputs = ({
   wordInputs,
@@ -14,42 +14,18 @@ const WordInputs = ({
   randomMode,
   onToggleRandomMode,
   onToggleListenMode,
-  onToggleVoiceSettings
+  onToggleVoiceSettings,
+  inputRefs
 }) => {
-  const inputRefs = useRef([])
-
-  // 当输入框数量变化时，更新引用数组
-  useEffect(() => {
-    if (wordInputs.length !== inputRefs.current.length) {
-      inputRefs.current = new Array(wordInputs.length).fill(null)
-    }
-  }, [wordInputs.length])
-
   // 聚焦第一个输入框
   useEffect(() => {
     setTimeout(() => {
       inputRefs.current[0]?.focus()
     }, 100)
-  }, [wordInputs])
+  }, [wordInputs.length, inputRefs])
 
   const handleWordInputChange = (index, value) => {
     onWordInputChange(index, value)
-    
-    // 检查当前单词是否正确
-    if (value.trim() && currentWords[index]) {
-      const userWord = value
-      const correctWord = currentWords[index].word
-      const isCorrect = normalize(userWord) === normalize(correctWord)
-      
-      if (isCorrect) {
-        // 单个单词正确，自动跳转到下一个输入框
-        if (index < wordInputs.length - 1) {
-          setTimeout(() => {
-            inputRefs.current[index + 1]?.focus()
-          }, 100)
-        }
-      }
-    }
   }
 
   // 规范化处理：忽略大小写、前后空格和常见标点

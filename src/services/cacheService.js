@@ -1,56 +1,38 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// 获取当前文件的目录路径
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// 缓存目录路径
-const CACHE_DIR = path.join(path.dirname(__dirname), '.cache');
-
 // 默认缓存过期时间（毫秒）
 const DEFAULT_CACHE_TTL = 3600000; // 1小时
 
-// 确保缓存目录存在
-const ensureCacheDir = () => {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
-  }
-};
+// 检查是否在浏览器环境中
+const isBrowser = typeof window !== 'undefined' && window.localStorage;
 
 // 生成缓存键
 const generateCacheKey = (functionName, params = {}) => {
   const paramsStr = JSON.stringify(params, Object.keys(params).sort());
-  const key = `${functionName}_${Buffer.from(paramsStr).toString('base64')}`;
-  // 替换可能导致文件系统问题的字符
+  let key = `${functionName}_${btoa(paramsStr)}`;
+  // 替换可能导致localStorage问题的字符
   return key.replace(/[^a-zA-Z0-9_-]/g, '_');
-};
-
-// 生成文件路径
-const getCacheFilePath = (key) => {
-  ensureCacheDir();
-  return path.join(CACHE_DIR, `${key}.json`);
 };
 
 // 读取缓存
 const readCache = (functionName, params = {}) => {
   try {
-    const key = generateCacheKey(functionName, params);
-    const filePath = getCacheFilePath(key);
-    
-    if (!fs.existsSync(filePath)) {
+    if (!isBrowser) {
       return null;
     }
     
-    const data = fs.readFileSync(filePath, 'utf8');
-    const cache = JSON.parse(data);
+    const key = generateCacheKey(functionName, params);
+    const cacheData = localStorage.getItem(key);
+    
+    if (!cacheData) {
+      return null;
+    }
+    
+    const cache = JSON.parse(cacheData);
     
     // 检查缓存是否过期
     const now = Date.now();
     if (now - cache.timestamp > (cache.ttl || DEFAULT_CACHE_TTL)) {
       // 删除过期缓存
-      fs.unlinkSync(filePath);
+      localStorage.removeItem(key);
       return null;
     }
     
@@ -64,16 +46,18 @@ const readCache = (functionName, params = {}) => {
 // 写入缓存
 const writeCache = (functionName, data, params = {}, ttl = DEFAULT_CACHE_TTL) => {
   try {
-    const key = generateCacheKey(functionName, params);
-    const filePath = getCacheFilePath(key);
+    if (!isBrowser) {
+      return false;
+    }
     
+    const key = generateCacheKey(functionName, params);
     const cache = {
       timestamp: Date.now(),
       ttl,
       data
     };
     
-    fs.writeFileSync(filePath, JSON.stringify(cache, null, 2));
+    localStorage.setItem(key, JSON.stringify(cache));
     return true;
   } catch (error) {
     console.error('Error writing cache:', error);
@@ -84,16 +68,20 @@ const writeCache = (functionName, data, params = {}, ttl = DEFAULT_CACHE_TTL) =>
 // 清除特定函数的缓存
 const clearCache = (functionName) => {
   try {
-    ensureCacheDir();
-    const files = fs.readdirSync(CACHE_DIR);
+    if (!isBrowser) {
+      return false;
+    }
     
-    files.forEach(file => {
-      if (file.startsWith(`${functionName}_`)) {
-        const filePath = path.join(CACHE_DIR, file);
-        fs.unlinkSync(filePath);
+    // 遍历localStorage中的所有键，删除与functionName相关的缓存
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`${functionName}_`)) {
+        keysToRemove.push(key);
       }
-    });
+    }
     
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     return true;
   } catch (error) {
     console.error('Error clearing cache:', error);
@@ -104,16 +92,20 @@ const clearCache = (functionName) => {
 // 清除所有缓存
 const clearAllCache = () => {
   try {
-    ensureCacheDir();
-    const files = fs.readdirSync(CACHE_DIR);
+    if (!isBrowser) {
+      return false;
+    }
     
-    files.forEach(file => {
-      if (file.endsWith('.json')) {
-        const filePath = path.join(CACHE_DIR, file);
-        fs.unlinkSync(filePath);
+    // 遍历localStorage中的所有键，删除所有缓存
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        keysToRemove.push(key);
       }
-    });
+    }
     
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     return true;
   } catch (error) {
     console.error('Error clearing all cache:', error);
@@ -122,21 +114,16 @@ const clearAllCache = () => {
 };
 
 // 检查文件是否有变更（用于检测函数代码变更）
+// 注意：在浏览器环境中，这个函数可能无法正常工作
 const getFileHash = (filePath) => {
   try {
-    if (!fs.existsSync(filePath)) {
+    // 在浏览器环境中，返回null
+    if (isBrowser) {
       return null;
     }
     
-    const content = fs.readFileSync(filePath, 'utf8');
-    // 简单的哈希生成
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-      const char = content.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return hash.toString(16);
+    // 对于Node.js环境，可以添加fs模块的实现
+    return null;
   } catch (error) {
     console.error('Error getting file hash:', error);
     return null;

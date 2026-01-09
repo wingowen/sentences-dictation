@@ -30,6 +30,24 @@ const SPEAK_DEBOUNCE_DELAY = 300; // 防抖延迟（毫秒）
 const speechCache = new Map();
 const CACHE_EXPIRY_TIME = 3600000; // 缓存过期时间（1小时）
 
+// 清理过期缓存的函数
+const cleanupExpiredCache = () => {
+  const now = Date.now();
+  speechCache.forEach((cachedItem, cacheKey) => {
+    if (now - cachedItem.timestamp > CACHE_EXPIRY_TIME) {
+      // 释放URL对象
+      if (cachedItem.url) {
+        URL.revokeObjectURL(cachedItem.url);
+      }
+      // 删除过期缓存
+      speechCache.delete(cacheKey);
+    }
+  });
+};
+
+// 定期清理过期缓存（每10分钟执行一次）
+setInterval(cleanupExpiredCache, 10 * 60 * 1000);
+
 /**
  * 检查外部TTS服务是否可用
  * @param {string} service 服务名称
@@ -132,6 +150,12 @@ const speakWithUberduck = async (text, rate, voice = 'en-us-amy-low') => {
   
   // 创建音频对象
   const audio = new Audio(url);
+  
+  // 音频播放完成后释放URL对象
+  audio.onended = () => {
+    URL.revokeObjectURL(url);
+  };
+  
   return audio;
 };
 

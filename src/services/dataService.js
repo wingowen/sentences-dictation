@@ -3,6 +3,7 @@
 // 本地JSON文件数据源
 import localSentences from '../data/sentences.json';
 import newConcept1Sentences from '../data/new-concept-1.json';
+import cacheService from './cacheService';
 
 // 数据源类型常量
 export const DATA_SOURCE_TYPES = {
@@ -117,17 +118,32 @@ export const getNotionSentences = async () => {
  * @returns {Promise<Array>} 句子数组
  */
 export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LOCAL) => {
+  // 尝试从缓存中读取数据
+  const cachedData = cacheService.readCache('getSentencesBySource', { dataSourceType });
+  if (cachedData) {
+    return cachedData;
+  }
+  
+  let data;
   switch (dataSourceType) {
     case DATA_SOURCE_TYPES.NOTION:
-      return await getNotionSentences();
+      data = await getNotionSentences();
+      break;
     case DATA_SOURCE_TYPES.NEW_CONCEPT_1:
-      return await getNewConcept1Sentences();
+      data = await getNewConcept1Sentences();
+      break;
     case DATA_SOURCE_TYPES.NEW_CONCEPT_3:
-      return await getNewConcept3Sentences();
+      data = await getNewConcept3Sentences();
+      break;
     case DATA_SOURCE_TYPES.LOCAL:
     default:
-      return await getLocalSentences();
+      data = await getLocalSentences();
+      break;
   }
+  
+  // 缓存数据
+  cacheService.writeCache('getSentencesBySource', data, { dataSourceType });
+  return data;
 };
 
 /**
