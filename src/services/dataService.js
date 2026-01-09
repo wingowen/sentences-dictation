@@ -1,8 +1,8 @@
 // 数据服务 - 处理不同数据源的读取逻辑
 
 // 本地JSON文件数据源
-import localSentences from '../data/sentences.json';
-import newConcept1Sentences from '../data/new-concept-1.json';
+import localSentences from '../data/简单句.json';
+import newConcept1Sentences from '../data/新概念一.json';
 import cacheService from './cacheService';
 
 // 数据源类型常量
@@ -199,6 +199,43 @@ export const getNewConcept3Sentences = async () => {
       clearTimeout(timeoutId);
     }
   }
+};
+
+/**
+ * 获取本地资源列表
+ * @returns {Array} 本地资源列表
+ */
+export const getLocalResources = () => {
+  return [
+    {
+      id: 'simple',
+      name: '简单句',
+      description: '基础简单句子练习',
+      icon: '📝',
+      data: localSentences
+    },
+    {
+      id: 'new-concept-1',
+      name: '新概念一',
+      description: '新概念英语第一册句子',
+      icon: '📚',
+      data: newConcept1Sentences
+    }
+  ];
+};
+
+/**
+ * 根据本地资源ID获取句子
+ * @param {string} resourceId - 本地资源ID
+ * @returns {Promise<Array>} 句子数组
+ */
+export const getSentencesByLocalResource = async (resourceId = 'simple') => {
+  const resources = getLocalResources();
+  const resource = resources.find(r => r.id === resourceId);
+  if (resource) {
+    return Promise.resolve(resource.data);
+  }
+  return Promise.resolve(localSentences);
 };
 
 /**

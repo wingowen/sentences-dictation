@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
-import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES } from './services/dataService'
+import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
@@ -53,6 +53,8 @@ function App() {
   const [externalVoices, setExternalVoices] = useState([])
   const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
   const [autoNext, setAutoNext] = useState(true)
+  const [localResourceId, setLocalResourceId] = useState('simple')
+  const [localResources, setLocalResources] = useState([])
   // 练习状态
   const [practiceStats, setPracticeStats] = useState({
     totalAttempts: 0,       // 总尝试次数
@@ -253,6 +255,18 @@ function App() {
     }
   }, [showDataSourceSelector])
 
+  // 加载本地资源列表
+  useEffect(() => {
+    if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
+      const resources = getLocalResources();
+      setLocalResources(resources);
+      // 如果当前没有选择本地资源，默认选择第一个
+      if (!localResourceId) {
+        setLocalResourceId(resources[0]?.id || 'simple');
+      }
+    }
+  }, [dataSource])
+
   // 加载新概念三文章列表
   useEffect(() => {
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3) {
@@ -372,7 +386,12 @@ function App() {
       } else {
         // 其他数据源正常获取
         console.log('获取数据源', { dataSource });
-        data = await getSentences(dataSource);
+        if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
+          console.log('获取本地资源数据', { localResourceId });
+          data = await getSentencesByLocalResource(localResourceId);
+        } else {
+          data = await getSentences(dataSource);
+        }
         console.log('获取到数据', { dataLength: data?.length || 0 });
         
         // 对于非本地数据源，需要转换缩写
@@ -462,7 +481,7 @@ function App() {
       console.log('加载完成，设置isLoading为false');
       setIsLoading(false)
     }
-  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource])
+  }, [dataSource, selectedArticleId, newConcept3Articles, hasSelectedDataSource, localResourceId])
 
   // 加载句子数据（当数据源变化时重新加载）
   useEffect(() => {
@@ -1204,6 +1223,27 @@ function App() {
         {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Articles.length > 0 && !selectedArticleId && !isLoading && (
           <div className="article-selector-hint">
             <p>👆 请在上方选择一篇文章开始练习</p>
+          </div>
+        )}
+        
+        {/* 本地资源选择器 */}
+        {dataSource === DATA_SOURCE_TYPES.LOCAL && localResources.length > 0 && (
+          <div className="article-selector">
+            <label>
+              选择本地资源:
+              <select
+                value={localResourceId}
+                onChange={(e) => {
+                  setLocalResourceId(e.target.value);
+                }}
+              >
+                {localResources.map(resource => (
+                  <option key={resource.id} value={resource.id}>
+                    {resource.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         )}
         
