@@ -11,10 +11,17 @@ export const DATA_SOURCE_TYPES = {
   NOTION: 'notion',
   NEW_CONCEPT_1: 'new-concept-1',
   NEW_CONCEPT_3: 'new-concept-3',
+  FLASHCARDS: 'flashcards',
 };
 
 // 数据源配置
 export const DATA_SOURCES = [
+  {
+    id: DATA_SOURCE_TYPES.FLASHCARDS,
+    name: '闪卡模式',
+    description: '使用闪卡进行单词和句子学习',
+    icon: '📇',
+  },
   {
     id: DATA_SOURCE_TYPES.LOCAL,
     name: '本地数据',

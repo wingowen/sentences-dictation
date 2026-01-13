@@ -12,6 +12,7 @@ import PhoneticsSection from './components/PhoneticsSection'
 import WordInputs from './components/WordInputs'
 import VoiceSettings from './components/VoiceSettings'
 import ResultModal from './components/ResultModal'
+import FlashcardApp from './components/FlashcardApp'
 
 /**
  * 转换句子中的缩写为完整形式
@@ -55,6 +56,7 @@ function App() {
   const [autoNext, setAutoNext] = useState(true)
   const [localResourceId, setLocalResourceId] = useState('simple')
   const [localResources, setLocalResources] = useState([])
+  const [showFlashcardApp, setShowFlashcardApp] = useState(true)
   // 练习状态
   const [practiceStats, setPracticeStats] = useState({
     totalAttempts: 0,       // 总尝试次数
@@ -1103,9 +1105,17 @@ function App() {
   
   // 处理数据源选择
   const handleSelectDataSource = useCallback((sourceId) => {
-    setDataSource(sourceId);
-    setHasSelectedDataSource(true);
-    setDataSourceError(null);
+    if (sourceId === 'flashcards') {
+      // 如果选择闪卡模式，直接进入闪卡应用
+      setShowFlashcardApp(true);
+      setHasSelectedDataSource(true);
+      setDataSourceError(null);
+    } else {
+      // 其他数据源正常处理
+      setDataSource(sourceId);
+      setHasSelectedDataSource(true);
+      setDataSourceError(null);
+    }
   }, []);
   
   // 监听听句子模式状态变化
@@ -1147,47 +1157,63 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="header-left">
-          <button 
-            className="back-button"
-            onClick={() => setHasSelectedDataSource(false)}
-            title="返回数据源选择"
-          >
-            ← 返回
-          </button>
-        </div>
-        <h1>Sentence Dictation Practice</h1>
-        <div className="data-source-controls">
-          <button 
-            className="data-source-button"
-            onClick={() => setShowDataSourceSelector(!showDataSourceSelector)}
-            title="切换数据源"
-          >
-            {currentDataSource?.icon} {currentDataSource?.name || '数据源'}
-            <span className="dropdown-arrow">{showDataSourceSelector ? '▲' : '▼'}</span>
-          </button>
-          {showDataSourceSelector && (
-            <div className="data-source-selector">
-              {DATA_SOURCES.map((source) => (
-                <button
-                  key={source.id}
-                  className={`data-source-option ${dataSource === source.id ? 'active' : ''}`}
-                  onClick={() => handleDataSourceChange(source.id)}
-                  title={source.description}
-                >
-                  <span className="source-icon">{source.icon}</span>
-                  <div className="source-info">
-                    <div className="source-name">{source.name}</div>
-                    <div className="source-description">{source.description}</div>
-                  </div>
-                  {dataSource === source.id && <span className="check-mark">✓</span>}
-                </button>
-              ))}
+      {showFlashcardApp ? (
+        <FlashcardApp onBack={() => {
+          setShowFlashcardApp(false);
+          setHasSelectedDataSource(false);
+        }} />
+      ) : (
+        <>
+          <header className="app-header">
+            <div className="header-left">
+              <button 
+                className="back-button"
+                onClick={() => setHasSelectedDataSource(false)}
+                title="返回数据源选择"
+              >
+                ← 返回
+              </button>
             </div>
-          )}
-        </div>
-      </header>
+            <h1>Sentence Dictation Practice</h1>
+            <div className="app-controls">
+              <button 
+                className="flashcard-button"
+                onClick={() => setShowFlashcardApp(true)}
+                title="闪卡功能"
+              >
+                📇 闪卡
+              </button>
+              <div className="data-source-controls">
+                <button 
+                  className="data-source-button"
+                  onClick={() => setShowDataSourceSelector(!showDataSourceSelector)}
+                  title="切换数据源"
+                >
+                  {currentDataSource?.icon} {currentDataSource?.name || '数据源'}
+                  <span className="dropdown-arrow">{showDataSourceSelector ? '▲' : '▼'}</span>
+                </button>
+                {showDataSourceSelector && (
+                  <div className="data-source-selector">
+                    {DATA_SOURCES.map((source) => (
+                      <button
+                        key={source.id}
+                        className={`data-source-option ${dataSource === source.id ? 'active' : ''}`}
+                        onClick={() => handleDataSourceChange(source.id)}
+                        title={source.description}
+                      >
+                        <span className="source-icon">{source.icon}</span>
+                        <div className="source-info">
+                          <div className="source-name">{source.name}</div>
+                          <div className="source-description">{source.description}</div>
+                        </div>
+                        {dataSource === source.id && <span className="check-mark">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
       
       <main className="app-main">
         {dataSourceError && (
@@ -1326,6 +1352,8 @@ function App() {
       <footer className="app-footer">
         <p>Sentence Dictation Practice Tool</p>
       </footer>
+        </>
+      )}
     </div>
   )
 }
