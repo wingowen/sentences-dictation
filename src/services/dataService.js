@@ -4,6 +4,7 @@
 import localSentences from '../data/简单句.json';
 import newConcept1Sentences from '../data/新概念一.json';
 import cacheService from './cacheService';
+import { getAllFlashcards } from './flashcardService';
 
 // 数据源类型常量
 export const DATA_SOURCE_TYPES = {
@@ -141,6 +142,9 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
       break;
     case DATA_SOURCE_TYPES.NEW_CONCEPT_3:
       data = await getNewConcept3Sentences();
+      break;
+    case DATA_SOURCE_TYPES.FLASHCARDS:
+      data = getAllFlashcards();
       break;
     case DATA_SOURCE_TYPES.LOCAL:
     default:

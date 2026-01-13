@@ -1,12 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FlashcardManager from './FlashcardManager';
 import FlashcardLearner from './FlashcardLearner';
 import FlashcardStats from './FlashcardStats';
+import { checkAndImportDefaultFlashcards } from '../services/flashcardImportService';
 
 const FlashcardApp = ({ onBack }) => {
   const [activeView, setActiveView] = useState(null); // manager, learner, stats
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // 初始化时自动导入默认闪卡数据
+  useEffect(() => {
+    const initializeFlashcards = async () => {
+      try {
+        await checkAndImportDefaultFlashcards();
+      } catch (error) {
+        console.error('初始化闪卡数据失败:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    
+    initializeFlashcards();
+  }, []);
 
   const renderView = () => {
+    if (isInitializing) {
+      return (
+        <div className="flashcard-app">
+          <div className="app-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>闪卡功能</h2>
+          </div>
+          <div className="app-content">
+            <div className="loading">
+              <div>正在初始化闪卡数据...</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     switch (activeView) {
       case 'manager':
         return <FlashcardManager onBack={() => setActiveView(null)} />;

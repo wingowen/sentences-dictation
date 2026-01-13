@@ -3,6 +3,9 @@
 import * as flashcardService from './flashcardService';
 import * as markdownParserService from './markdownParserService';
 
+// 导入默认闪卡数据（使用 ?raw 后缀直接导入文件内容）
+import defaultFlashcardsData from '../data/FreeTime_Hobbies_Flashcards.md?raw';
+
 /**
  * Validates flashcard data
  * @param {Object} flashcard - Flashcard data to validate
@@ -206,11 +209,56 @@ export const getImportStatistics = (importResult) => {
   };
 };
 
+/**
+ * 检查是否需要导入默认闪卡数据
+ * 如果localStorage中没有闪卡数据，则自动导入默认数据
+ * @returns {Promise<Object>} 导入结果
+ */
+export const checkAndImportDefaultFlashcards = async () => {
+  try {
+    const existingFlashcards = flashcardService.getAllFlashcards();
+    
+    // 如果已经有闪卡数据，不重复导入
+    if (existingFlashcards.length > 0) {
+      return {
+        success: true,
+        message: '已有闪卡数据，跳过导入',
+        imported: 0
+      };
+    }
+    
+    // 解析默认闪卡数据
+    const parsedData = markdownParserService.parseMarkdownFlashcards(defaultFlashcardsData);
+    
+    // 导入闪卡
+    const importResult = importFlashcards(parsedData);
+    
+    if (importResult.success) {
+      console.log(`成功导入 ${importResult.imported} 张默认闪卡`);
+      return {
+        success: true,
+        message: `成功导入 ${importResult.imported} 张默认闪卡`,
+        ...importResult
+      };
+    } else {
+      throw new Error(importResult.error || '导入失败');
+    }
+  } catch (error) {
+    console.error('导入默认闪卡数据失败:', error);
+    return {
+      success: false,
+      error: error.message,
+      imported: 0
+    };
+  }
+};
+
 export default {
   validateFlashcard,
   validateFlashcards,
   importFlashcards,
   importFlashcardsFromFile,
   importFlashcardsFromFileObject,
-  getImportStatistics
+  getImportStatistics,
+  checkAndImportDefaultFlashcards
 };
