@@ -1,5 +1,7 @@
 // 外部语音服务 - 集成免费的TTS API
 
+import { debounce } from '../utils/debounce.js';
+
 // 服务配置
 const SERVICES = {
   UBERDUCK: 'uberduck',

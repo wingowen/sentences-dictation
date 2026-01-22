@@ -1,0 +1,8 @@
+{
+  "timestamp": 1769074293941,
+  "ttl": 3600000,
+  "data": {
+    "message": "Hello, cache!",
+    "timestamp": 1769074293941
+  }
+}

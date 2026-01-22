@@ -1,6 +1,7 @@
 // 发音服务 - 基于CMU发音字典获取单词音标
 
 import { dictionary } from 'cmu-pronouncing-dictionary';
+import { CONTRACTION_MAP } from '../utils/contractionMap.js';
 
 /**
  * 尝试将复合词拆分成多个部分并获取音标
@@ -69,53 +70,8 @@ export const getPhonetic = (word) => {
     return phonetic;
   }
   
-  // 处理常见缩略词
-  const contractionMap = {
-    "i'm": "i am",
-    "you're": "you are",
-    "he's": "he is",
-    "she's": "she is",
-    "it's": "it is",
-    "we're": "we are",
-    "they're": "they are",
-    "i'll": "i will",
-    "you'll": "you will",
-    "he'll": "he will",
-    "she'll": "she will",
-    "it'll": "it will",
-    "we'll": "we will",
-    "they'll": "they will",
-    "i've": "i have",
-    "you've": "you have",
-    "we've": "we have",
-    "they've": "they have",
-    "i'd": "i would",
-    "you'd": "you would",
-    "he'd": "he would",
-    "she'd": "she would",
-    "it'd": "it would",
-    "we'd": "we would",
-    "they'd": "they would",
-    "don't": "do not",
-    "doesn't": "does not",
-    "didn't": "did not",
-    "won't": "will not",
-    "wouldn't": "would not",
-    "can't": "cannot",
-    "couldn't": "could not",
-    "shouldn't": "should not",
-    "mustn't": "must not",
-    "isn't": "is not",
-    "aren't": "are not",
-    "wasn't": "was not",
-    "weren't": "were not",
-    "hasn't": "has not",
-    "haven't": "have not",
-    "hadn't": "had not"
-  };
-  
   // 检查是否是常见缩略词
-  if (contractionMap[lowerWord]) {
+  if (CONTRACTION_MAP[lowerWord]) {
     const expandedForm = contractionMap[lowerWord];
     const words = expandedForm.split(' ');
     
@@ -219,58 +175,13 @@ export const detectAndExpandContractions = (sentence) => {
     .split(/\s+/)
     .filter(word => word.length > 0);
   
-  // 常见缩略词映射
-  const contractionMap = {
-    "i'm": "i am",
-    "you're": "you are",
-    "he's": "he is",
-    "she's": "she is",
-    "it's": "it is",
-    "we're": "we are",
-    "they're": "they are",
-    "i'll": "i will",
-    "you'll": "you will",
-    "he'll": "he will",
-    "she'll": "she will",
-    "it'll": "it will",
-    "we'll": "we will",
-    "they'll": "they will",
-    "i've": "i have",
-    "you've": "you have",
-    "we've": "we have",
-    "they've": "they have",
-    "i'd": "i would",
-    "you'd": "you would",
-    "he'd": "he would",
-    "she'd": "she would",
-    "it'd": "it would",
-    "we'd": "we would",
-    "they'd": "they would",
-    "don't": "do not",
-    "doesn't": "does not",
-    "didn't": "did not",
-    "won't": "will not",
-    "wouldn't": "would not",
-    "can't": "cannot",
-    "couldn't": "could not",
-    "shouldn't": "should not",
-    "mustn't": "must not",
-    "isn't": "is not",
-    "aren't": "are not",
-    "wasn't": "was not",
-    "weren't": "were not",
-    "hasn't": "has not",
-    "haven't": "have not",
-    "hadn't": "had not"
-  };
-  
   // 检查并转换每个单词
   const result = [];
   for (const word of words) {
     const lowerWord = word.toLowerCase();
-    if (contractionMap[lowerWord]) {
+    if (CONTRACTION_MAP[lowerWord]) {
       // 缩写形式，转换为完整形式并拆分为多个单词
-      const expandedWords = contractionMap[lowerWord].split(' ');
+      const expandedWords = CONTRACTION_MAP[lowerWord].split(' ');
       expandedWords.forEach(expandedWord => {
         result.push({
           original: word,

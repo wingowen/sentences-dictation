@@ -2,84 +2,10 @@
 // 使用 Notion API 安全地获取数据，避免在前端暴露 API key
 
 import { Client } from '@notionhq/client';
-import fs from 'fs';
-import path from 'path';
+import { readCache, writeCache } from '../shared/cache.js';
 import { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } from '../shared/cors.js';
 
-// 缓存目录路径
-const CACHE_DIR = path.join(process.cwd(), '.cache');
 
-// 默认缓存过期时间（毫秒）
-const DEFAULT_CACHE_TTL = 3600000; // 1小时
-
-// 确保缓存目录存在
-const ensureCacheDir = () => {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
-  }
-};
-
-// 生成缓存键
-const generateCacheKey = (functionName, params = {}) => {
-  const paramsStr = JSON.stringify(params, Object.keys(params).sort());
-  const key = `${functionName}_${Buffer.from(paramsStr).toString('base64')}`;
-  // 替换可能导致文件系统问题的字符
-  return key.replace(/[^a-zA-Z0-9_-]/g, '_');
-};
-
-// 生成文件路径
-const getCacheFilePath = (key) => {
-  ensureCacheDir();
-  return path.join(CACHE_DIR, `${key}.json`);
-};
-
-// 读取缓存
-const readCache = (functionName, params = {}) => {
-  try {
-    const key = generateCacheKey(functionName, params);
-    const filePath = getCacheFilePath(key);
-    
-    if (!fs.existsSync(filePath)) {
-      return null;
-    }
-    
-    const data = fs.readFileSync(filePath, 'utf8');
-    const cache = JSON.parse(data);
-    
-    // 检查缓存是否过期
-    const now = Date.now();
-    if (now - cache.timestamp > (cache.ttl || DEFAULT_CACHE_TTL)) {
-      // 删除过期缓存
-      fs.unlinkSync(filePath);
-      return null;
-    }
-    
-    return cache.data;
-  } catch (error) {
-    console.error('Error reading cache:', error);
-    return null;
-  }
-};
-
-// 写入缓存
-const writeCache = (functionName, data, params = {}, ttl = DEFAULT_CACHE_TTL) => {
-  try {
-    const key = generateCacheKey(functionName, params);
-    const filePath = getCacheFilePath(key);
-    
-    const cache = {
-      timestamp: Date.now(),
-      ttl,
-      data
-    };
-    
-    fs.writeFileSync(filePath, JSON.stringify(cache, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error writing cache:', error);
-    return false;
-  }
-};
 
 export async function handler(event, context) {
   // 处理CORS预检

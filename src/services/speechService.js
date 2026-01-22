@@ -1,5 +1,7 @@
 // 语音服务 - 基于Web Speech API的语音合成功能
 
+import { debounce } from '../utils/debounce.js';
+
 // 语音合成状态管理
 let isSpeaking = false;
 let lastSpeakTime = 0;
