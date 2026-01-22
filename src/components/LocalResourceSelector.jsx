@@ -10,12 +10,12 @@ import { DATA_SOURCE_TYPES } from '../services/dataService';
  * @param {string} props.selectedResourceId - 选中的资源ID
  * @param {Function} props.onResourceChange - 资源选择回调
  */
-function LocalResourceSelector({
+const LocalResourceSelector = React.memo(({
   dataSource,
   resources,
   selectedResourceId,
   onResourceChange
-}) {
+}) => {
   // 只在本地数据源且有资源时显示
   if (dataSource !== DATA_SOURCE_TYPES.LOCAL || resources.length === 0) {
     return null;
@@ -38,6 +38,8 @@ function LocalResourceSelector({
       </label>
     </div>
   );
-}
+});
+
+LocalResourceSelector.displayName = 'LocalResourceSelector';
 
 export default LocalResourceSelector;

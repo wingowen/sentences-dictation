@@ -32,8 +32,11 @@ export function AppProvider({ children }) {
   // 输入框引用
   const inputRefs = useRef([]);
 
-  // 事件处理函数（暂时保持简单，稍后可以移动到hooks中）
-  const handleWordInputChange = (index, value) => {
+  // 标准化字符串比较
+  const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);
+
+  // 事件处理函数（使用useCallback优化性能）
+  const handleWordInputChange = useCallback((index, value) => {
     const newWordInputs = [...wordInputs];
     newWordInputs[index] = value;
     setWordInputs(newWordInputs);
@@ -52,42 +55,39 @@ export function AppProvider({ children }) {
         }, 100);
       }
     }
-  };
+  }, [wordInputs, currentWords, normalize]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
     if (wordInputs.some(input => input.trim() === '')) return;
 
     // 这里应该调用实际的提交逻辑
     // 暂时保持简单
-  };
+  }, [wordInputs]);
 
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     speechPlayback.play(currentWords.map(w => w.word).join(' '));
-  };
+  }, [speechPlayback, currentWords]);
 
-  const handleToggleAutoPlay = () => {
+  const handleToggleAutoPlay = useCallback(() => {
     setAutoPlay(!autoPlay);
-  };
+  }, [autoPlay]);
 
-  const handleToggleRandomMode = () => {
+  const handleToggleRandomMode = useCallback(() => {
     setRandomMode(!randomMode);
-  };
+  }, [randomMode]);
 
-  const handleToggleListenMode = () => {
+  const handleToggleListenMode = useCallback(() => {
     setListenMode(!listenMode);
-  };
+  }, [listenMode]);
 
-  const handleToggleVoiceSettings = () => {
+  const handleToggleVoiceSettings = useCallback(() => {
     setShowVoiceSettings(prev => !prev);
-  };
+  }, []);
 
-  const handleToggleAutoNext = () => {
+  const handleToggleAutoNext = useCallback(() => {
     setAutoNext(!autoNext);
-  };
-
-  // 标准化字符串比较
-  const normalize = (str) => str.toLowerCase().trim().replace(/[^\w]/g, '');
+  }, [autoNext]);
 
   // 使用自定义hooks
   const practiceStats = usePracticeStats();

@@ -6,17 +6,21 @@ import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvaila
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
 
 // 导入组件
+import React, { Suspense } from 'react'
 import DataSourceSelection from './components/DataSourceSelection'
 import PracticeStats from './components/PracticeStats'
 import PhoneticsSection from './components/PhoneticsSection'
 import WordInputsContext from './components/WordInputsContext'
-import VoiceSettings from './components/VoiceSettings'
-import ResultModal from './components/ResultModal'
-import FlashcardApp from './components/FlashcardApp'
+// 懒加载大型组件
+const FlashcardApp = React.lazy(() => import('./components/FlashcardApp'))
 import ArticleSelector from './components/ArticleSelector'
 import LocalResourceSelector from './components/LocalResourceSelector'
 import ArticleSelectorHint from './components/ArticleSelectorHint'
 import { AppProvider } from './contexts/AppContext'
+
+// 懒加载弹窗组件
+const VoiceSettings = React.lazy(() => import('./components/VoiceSettings'))
+const ResultModal = React.lazy(() => import('./components/ResultModal'))
 
 /**
  * 转换句子中的缩写为完整形式
@@ -1162,10 +1166,12 @@ function AppContent() {
   return (
     <div className="app">
       {showFlashcardApp ? (
-        <FlashcardApp onBack={() => {
-          setShowFlashcardApp(false);
-          setHasSelectedDataSource(false);
-        }} />
+        <Suspense fallback={<div className="loading">加载闪卡应用中...</div>}>
+          <FlashcardApp onBack={() => {
+            setShowFlashcardApp(false);
+            setHasSelectedDataSource(false);
+          }} />
+        </Suspense>
       ) : (
         <>
           <header className="app-header">
@@ -1280,27 +1286,31 @@ function AppContent() {
             )}
 
             {/* 弹窗显示结果 */}
-            <ResultModal 
-              isOpen={showModal}
-              result={result}
-              correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
-              practiceStats={practiceStats}
-              onClose={handleCloseModal}
-            />
-            
+            <Suspense fallback={<div>加载中...</div>}>
+              <ResultModal
+                isOpen={showModal}
+                result={result}
+                correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
+                practiceStats={practiceStats}
+                onClose={handleCloseModal}
+              />
+            </Suspense>
+
             {/* 语音设置独立弹窗 */}
-            <VoiceSettings 
-              isOpen={showVoiceSettings}
-              onClose={handleToggleVoiceSettings}
-              speechService={speechService}
-              onSpeechServiceChange={handleSpeechServiceChange}
-              availableVoices={availableVoices}
-              selectedVoice={selectedVoice}
-              onVoiceChange={handleVoiceChange}
-              externalVoices={externalVoices}
-              selectedExternalVoice={selectedExternalVoice}
-              onExternalVoiceChange={handleExternalVoiceChange}
-            />
+            <Suspense fallback={<div>加载中...</div>}>
+              <VoiceSettings
+                isOpen={showVoiceSettings}
+                onClose={handleToggleVoiceSettings}
+                speechService={speechService}
+                onSpeechServiceChange={handleSpeechServiceChange}
+                availableVoices={availableVoices}
+                selectedVoice={selectedVoice}
+                onVoiceChange={handleVoiceChange}
+                externalVoices={externalVoices}
+                selectedExternalVoice={selectedExternalVoice}
+                onExternalVoiceChange={handleExternalVoiceChange}
+              />
+            </Suspense>
           </>
         )}
       </main>

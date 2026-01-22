@@ -11,13 +11,13 @@ import { DATA_SOURCE_TYPES } from '../services/dataService';
  * @param {Function} props.onArticleChange - 文章选择回调
  * @param {boolean} props.isLoading - 是否正在加载
  */
-function ArticleSelector({
+const ArticleSelector = React.memo(({
   dataSource,
   articles,
   selectedArticleId,
   onArticleChange,
   isLoading
-}) {
+}) => {
   // 只在新概念三数据源且有文章时显示
   if (dataSource !== DATA_SOURCE_TYPES.NEW_CONCEPT_3 ||
       articles.length === 0) {
@@ -48,6 +48,8 @@ function ArticleSelector({
       </label>
     </div>
   );
-}
+});
+
+ArticleSelector.displayName = 'ArticleSelector';
 
 export default ArticleSelector;

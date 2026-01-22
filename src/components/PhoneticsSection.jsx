@@ -1,6 +1,6 @@
 import React from 'react'
 
-const PhoneticsSection = ({ currentWords, currentIndex, totalSentences, showOriginalText, onToggleOriginalText }) => {
+const PhoneticsSection = React.memo(({ currentWords, currentIndex, totalSentences, showOriginalText, onToggleOriginalText }) => {
   return (
     <div className="phonetics-section">
       <div className="progress small">
@@ -29,6 +29,8 @@ const PhoneticsSection = ({ currentWords, currentIndex, totalSentences, showOrig
       </div>
     </div>
   )
-}
+});
 
-export default PhoneticsSection
+PhoneticsSection.displayName = 'PhoneticsSection';
+
+export default PhoneticsSection;
