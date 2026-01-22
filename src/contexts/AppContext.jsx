@@ -6,6 +6,8 @@ import { useSpeechVoices } from '../hooks/useSpeechVoices';
 import { useSpeechPlayback } from '../hooks/useSpeechPlayback';
 import { useSentences } from '../hooks/useSentences';
 import { DATA_SOURCE_TYPES } from '../services/dataService';
+import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from '../services/speechService';
+import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from '../services/externalSpeechService';
 
 // 创建Context
 const AppContext = createContext();
@@ -29,6 +31,63 @@ export function AppProvider({ children }) {
 
   // 输入框引用
   const inputRefs = useRef([]);
+
+  // 事件处理函数（暂时保持简单，稍后可以移动到hooks中）
+  const handleWordInputChange = (index, value) => {
+    const newWordInputs = [...wordInputs];
+    newWordInputs[index] = value;
+    setWordInputs(newWordInputs);
+
+    // 检查当前单词是否正确，自动跳转
+    const userWord = value;
+    const correctWord = currentWords[index]?.word;
+
+    if (userWord.trim() && correctWord) {
+      const isCorrect = normalize(userWord) === normalize(correctWord);
+
+      if (isCorrect && index < wordInputs.length - 1) {
+        // 单词正确，跳转到下一个输入框
+        setTimeout(() => {
+          inputRefs.current[index + 1]?.focus();
+        }, 100);
+      }
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (wordInputs.some(input => input.trim() === '')) return;
+
+    // 这里应该调用实际的提交逻辑
+    // 暂时保持简单
+  };
+
+  const handlePlay = () => {
+    speechPlayback.play(currentWords.map(w => w.word).join(' '));
+  };
+
+  const handleToggleAutoPlay = () => {
+    setAutoPlay(!autoPlay);
+  };
+
+  const handleToggleRandomMode = () => {
+    setRandomMode(!randomMode);
+  };
+
+  const handleToggleListenMode = () => {
+    setListenMode(!listenMode);
+  };
+
+  const handleToggleVoiceSettings = () => {
+    setShowVoiceSettings(prev => !prev);
+  };
+
+  const handleToggleAutoNext = () => {
+    setAutoNext(!autoNext);
+  };
+
+  // 标准化字符串比较
+  const normalize = (str) => str.toLowerCase().trim().replace(/[^\w]/g, '');
 
   // 使用自定义hooks
   const practiceStats = usePracticeStats();
@@ -71,6 +130,15 @@ export function AppProvider({ children }) {
     autoNext,
     setAutoNext,
     inputRefs,
+    // 事件处理函数
+    handleWordInputChange,
+    handleSubmit,
+    handlePlay,
+    handleToggleAutoPlay,
+    handleToggleRandomMode,
+    handleToggleListenMode,
+    handleToggleVoiceSettings,
+    handleToggleAutoNext,
 
     // 派生状态
     currentWords,

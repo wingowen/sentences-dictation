@@ -1,5 +1,5 @@
 // src/components/WordInputsContext.jsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 
 /**
@@ -8,32 +8,23 @@ import { useApp } from '../contexts/AppContext';
 function WordInputsContext() {
   const {
     wordInputs,
-    setWordInputs,
     currentWords,
     listenMode,
     speechSupported,
     speechRate,
     autoPlay,
-    setAutoPlay,
     randomMode,
-    setRandomMode,
-    setListenMode,
-    setShowVoiceSettings,
-    inputRefs,
     autoNext,
-    setAutoNext,
-    setSpeechRate,
     speechPlayback,
-    // 需要的事件处理函数
-    onWordInputChange,
-    onSubmit,
-    onPlay,
-    onToggleAutoPlay,
-    onToggleRandomMode,
-    onToggleListenMode,
-    onToggleVoiceSettings,
-    onToggleAutoNext,
-    onSpeechRateChange
+    // 事件处理函数
+    handleWordInputChange,
+    handleSubmit,
+    handlePlay,
+    handleToggleAutoPlay,
+    handleToggleRandomMode,
+    handleToggleListenMode,
+    handleToggleVoiceSettings,
+    handleToggleAutoNext
   } = useApp();
 
   // 聚焦第一个输入框
@@ -43,87 +34,8 @@ function WordInputsContext() {
     }, 100);
   }, [wordInputs.length, inputRefs]);
 
-  const handleWordInputChange = (index, value) => {
-    const newWordInputs = [...wordInputs];
-    newWordInputs[index] = value;
-    setWordInputs(newWordInputs);
-
-    // 调用原始的处理函数
-    if (onWordInputChange) {
-      onWordInputChange(index, value);
-    }
-  };
-
-  const handleKeyDown = (index, e) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-
-      // 检查当前单词是否正确
-      const userWord = wordInputs[index];
-      const correctWord = currentWords[index]?.word;
-
-      if (userWord.trim() && correctWord) {
-        const isCorrect = normalize(userWord) === normalize(correctWord);
-
-        if (isCorrect && index < wordInputs.length - 1) {
-          // 单词正确，跳转到下一个输入框
-          setTimeout(() => {
-            inputRefs.current[index + 1]?.focus();
-          }, 100);
-        }
-      }
-    }
-  };
-
   // 标准化字符串比较
   const normalize = (str) => str.toLowerCase().trim().replace(/[^\w]/g, '');
-
-  const handlePlay = () => {
-    if (onPlay) {
-      onPlay();
-    } else {
-      speechPlayback.play(currentWords.map(w => w.word).join(' '));
-    }
-  };
-
-  const handleToggleAutoPlay = () => {
-    setAutoPlay(!autoPlay);
-    if (onToggleAutoPlay) onToggleAutoPlay();
-  };
-
-  const handleToggleRandomMode = () => {
-    setRandomMode(!randomMode);
-    if (onToggleRandomMode) onToggleRandomMode();
-  };
-
-  const handleToggleListenMode = () => {
-    setListenMode(!listenMode);
-    if (onToggleListenMode) onToggleListenMode();
-  };
-
-  const handleToggleVoiceSettings = () => {
-    setShowVoiceSettings(prev => !prev);
-    if (onToggleVoiceSettings) onToggleVoiceSettings();
-  };
-
-  const handleToggleAutoNext = () => {
-    setAutoNext(!autoNext);
-    if (onToggleAutoNext) onToggleAutoNext();
-  };
-
-  const handleSpeechRateChange = (rate) => {
-    setSpeechRate(rate);
-    if (onSpeechRateChange) onSpeechRateChange(rate);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (wordInputs.some(input => input.trim() === '')) return;
-
-    if (onSubmit) {
-      onSubmit(e);
-    }
-  };
 
   return (
     <div className="word-inputs-container">
@@ -210,7 +122,6 @@ function WordInputsContext() {
                 type="text"
                 value={wordInputs[index] || ''}
                 onChange={(e) => handleWordInputChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
                 className={`word-input ${
                   wordInputs[index] && wordInputs[index].trim() &&
                   normalize(wordInputs[index]) === normalize(wordData.word)
