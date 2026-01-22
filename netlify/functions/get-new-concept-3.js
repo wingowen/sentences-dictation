@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
+import { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } from '../shared/cors.js';
 
 // 缓存目录路径
 const CACHE_DIR = path.join(process.cwd(), '.cache');
@@ -81,6 +82,14 @@ const writeCache = (functionName, data, params = {}, ttl = DEFAULT_CACHE_TTL) =>
 
 // Main handler
 export async function handler(event, context) {
+  // 处理CORS预检
+  const preflightResponse = handleCorsPreflight(event);
+  if (preflightResponse) return preflightResponse;
+
+  // 验证HTTP方法
+  const methodError = validateHttpMethod(event, ['GET']);
+  if (methodError) return methodError;
+
   try {
     // URL for New Concept English 3
     const url = 'https://newconceptenglish.com/index.php?id=nce-3';
@@ -93,10 +102,7 @@ export async function handler(event, context) {
       return {
         statusCode: 200,
         body: JSON.stringify(cachedData),
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*' // Allow CORS
-        }
+        headers: CORS_HEADERS
       };
     }
     
@@ -224,10 +230,7 @@ export async function handler(event, context) {
           articles: [],
           totalArticles: 0
         }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*' // Allow CORS
-        }
+        headers: CORS_HEADERS
       };
     }
     
@@ -245,10 +248,7 @@ export async function handler(event, context) {
     return {
       statusCode: 200,
       body: JSON.stringify(result),
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*' // Allow CORS
-      }
+      headers: CORS_HEADERS
     };
     
   } catch (error) {
@@ -261,10 +261,7 @@ export async function handler(event, context) {
         success: false,
         error: error.message || 'Failed to fetch New Concept English 3 articles'
       }),
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*' // Allow CORS
-      }
+      headers: CORS_HEADERS
     };
   }
 }

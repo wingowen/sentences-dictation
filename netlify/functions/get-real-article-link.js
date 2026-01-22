@@ -3,6 +3,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
+import { validateUrl } from '../shared/url-validator.js';
+import { CORS_HEADERS } from '../shared/cors.js';
 
 // 缓存目录路径
 const CACHE_DIR = path.join(process.cwd(), '.cache');
@@ -100,7 +102,7 @@ export async function handler(event, context) {
   try {
     // Parse request body
     const { link } = JSON.parse(event.body || '{}');
-    
+
     if (!link) {
       return {
         statusCode: 400,
@@ -112,6 +114,19 @@ export async function handler(event, context) {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*' // Allow CORS
         }
+      };
+    }
+
+    // 添加URL验证
+    const validation = validateUrl(link);
+    if (!validation.isValid) {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({
+          success: false,
+          error: validation.error
+        }),
+        headers: CORS_HEADERS
       };
     }
     

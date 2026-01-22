@@ -4,6 +4,7 @@
 import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
+import { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } from '../shared/cors.js';
 
 // 缓存目录路径
 const CACHE_DIR = path.join(process.cwd(), '.cache');
@@ -81,31 +82,13 @@ const writeCache = (functionName, data, params = {}, ttl = DEFAULT_CACHE_TTL) =>
 };
 
 export async function handler(event, context) {
-  // 设置 CORS 头
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Content-Type': 'application/json',
-  };
+  // 处理CORS预检
+  const preflightResponse = handleCorsPreflight(event);
+  if (preflightResponse) return preflightResponse;
 
-  // 处理 OPTIONS 请求（CORS 预检）
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
-  }
-
-  // 只允许 GET 请求
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
-  }
+  // 验证HTTP方法
+  const methodError = validateHttpMethod(event, ['GET']);
+  if (methodError) return methodError;
 
   try {
     // 从环境变量获取 Notion API 配置
@@ -115,7 +98,7 @@ export async function handler(event, context) {
     if (!notionToken || !notionPageId) {
       return {
         statusCode: 500,
-        headers,
+        headers: CORS_HEADERS,
         body: JSON.stringify({
           error: 'Notion API configuration missing',
           message: 'Please configure NOTION_API_KEY and NOTION_PAGE_ID in Netlify environment variables',
@@ -258,7 +241,7 @@ export async function handler(event, context) {
     if (sentences.length === 0) {
       return {
         statusCode: 404,
-        headers,
+        headers: CORS_HEADERS,
         body: JSON.stringify({
           error: 'No sentences found',
           message: 'Could not extract sentences from the Notion page',
@@ -277,7 +260,7 @@ export async function handler(event, context) {
 
     return {
       statusCode: 200,
-      headers,
+      headers: CORS_HEADERS,
       body: JSON.stringify(result),
     };
   } catch (error) {
@@ -290,7 +273,7 @@ export async function handler(event, context) {
 
     return {
       statusCode: 500,
-      headers,
+      headers: CORS_HEADERS,
       body: JSON.stringify({
         error: 'Failed to fetch Notion data',
         message: errorMessage,
