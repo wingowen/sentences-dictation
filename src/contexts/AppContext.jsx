@@ -1,5 +1,5 @@
 // src/contexts/AppContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { usePracticeStats } from '../hooks/usePracticeStats';
 import { usePracticeProgress } from '../hooks/usePracticeProgress';
 import { useSpeechVoices } from '../hooks/useSpeechVoices';
@@ -26,6 +26,9 @@ export function AppProvider({ children }) {
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [speechService, setSpeechService] = useState('web_speech');
   const [autoNext, setAutoNext] = useState(true);
+
+  // 输入框引用
+  const inputRefs = useRef([]);
 
   // 使用自定义hooks
   const practiceStats = usePracticeStats();
@@ -67,6 +70,7 @@ export function AppProvider({ children }) {
     setSpeechService,
     autoNext,
     setAutoNext,
+    inputRefs,
 
     // 派生状态
     currentWords,

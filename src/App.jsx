@@ -9,10 +9,14 @@ import { parseSentenceForPhonetics, detectAndExpandContractions } from './servic
 import DataSourceSelection from './components/DataSourceSelection'
 import PracticeStats from './components/PracticeStats'
 import PhoneticsSection from './components/PhoneticsSection'
-import WordInputs from './components/WordInputs'
+import WordInputsContext from './components/WordInputsContext'
 import VoiceSettings from './components/VoiceSettings'
 import ResultModal from './components/ResultModal'
 import FlashcardApp from './components/FlashcardApp'
+import ArticleSelector from './components/ArticleSelector'
+import LocalResourceSelector from './components/LocalResourceSelector'
+import ArticleSelectorHint from './components/ArticleSelectorHint'
+import { AppProvider } from './contexts/AppContext'
 
 /**
  * 转换句子中的缩写为完整形式
@@ -27,7 +31,7 @@ const expandContractionsInSentence = (sentence) => {
   return expandedWords.join(' ')
 }
 
-function App() {
+function AppContent() {
   const [sentences, setSentences] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [wordInputs, setWordInputs] = useState([])
@@ -1222,56 +1226,28 @@ function App() {
           </div>
         )}
         
-        {/* 新概念三文章选择器 */}
-        {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Articles.length > 0 && (
-          <div className="article-selector">
-            <label>
-              选择文章:
-              <select
-                value={selectedArticleId || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedArticleId(value ? parseInt(value) : null);
-                }}
-              >
-                <option value="">请选择文章</option>
-                {newConcept3Articles.map(article => (
-                  <option key={article.id} value={article.id}>
-                    {article.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
-        
-        {/* 新概念三未选择文章时的提示 */}
-        {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Articles.length > 0 && !selectedArticleId && !isLoading && (
-          <div className="article-selector-hint">
-            <p>👆 请在上方选择一篇文章开始练习</p>
-          </div>
-        )}
-        
-        {/* 本地资源选择器 */}
-        {dataSource === DATA_SOURCE_TYPES.LOCAL && localResources.length > 0 && (
-          <div className="article-selector">
-            <label>
-              选择本地资源:
-              <select
-                value={localResourceId}
-                onChange={(e) => {
-                  setLocalResourceId(e.target.value);
-                }}
-              >
-                {localResources.map(resource => (
-                  <option key={resource.id} value={resource.id}>
-                    {resource.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
+        {/* 文章和资源选择器 */}
+        <ArticleSelector
+          dataSource={dataSource}
+          articles={newConcept3Articles}
+          selectedArticleId={selectedArticleId}
+          onArticleChange={setSelectedArticleId}
+          isLoading={isLoading}
+        />
+
+        <ArticleSelectorHint
+          dataSource={dataSource}
+          articles={newConcept3Articles}
+          selectedArticleId={selectedArticleId}
+          isLoading={isLoading}
+        />
+
+        <LocalResourceSelector
+          dataSource={dataSource}
+          resources={localResources}
+          selectedResourceId={localResourceId}
+          onResourceChange={setLocalResourceId}
+        />
         
         {/* 只有当有句子数据时才显示听写区域 */}
         {sentences.length > 0 && (
@@ -1297,27 +1273,7 @@ function App() {
             )}
 
             {/* 按词输入部分 */}
-            <WordInputs 
-              wordInputs={wordInputs}
-              currentWords={currentWords}
-              onWordInputChange={handleWordInputChange}
-              onSubmit={handleSubmit}
-              listenMode={listenMode}
-              speechSupported={speechSupported}
-              speechRate={speechRate}
-              onPlay={handlePlay}
-              autoPlay={autoPlay}
-              onToggleAutoPlay={handleAutoPlayToggle}
-              randomMode={randomMode}
-              onToggleRandomMode={handleRandomModeToggle}
-              onToggleListenMode={handleListenModeToggle}
-              showVoiceSettings={showVoiceSettings}
-              onToggleVoiceSettings={handleToggleVoiceSettings}
-              inputRefs={inputRefs}
-              autoNext={autoNext}
-              onToggleAutoNext={handleToggleAutoNext}
-              onSpeechRateChange={setSpeechRate}
-            />
+            <WordInputsContext />
 
             {!speechSupported && (
               <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
@@ -1356,6 +1312,14 @@ function App() {
       )}
     </div>
   )
+}
+
+function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
+  );
 }
 
 export default App
