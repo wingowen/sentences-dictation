@@ -37,7 +37,16 @@ export function AppProvider({ children }) {
   const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
   const practiceProgress = usePracticeProgress(sentences.currentDataSource, sentences.sentences.length);
   const speechVoices = useSpeechVoices(speechService);
-  const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate });
+  const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate }) || {
+    isPlaying: false,
+    isSupported: false,
+    currentText: '',
+    error: null,
+    play: () => {},
+    stop: () => {},
+    toggle: () => {},
+    checkSupport: () => false
+  };
 
   // 计算派生状态
   const currentWords = sentences.sentences[currentIndex]?.words || [];

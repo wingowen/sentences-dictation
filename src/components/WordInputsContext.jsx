@@ -43,13 +43,13 @@ function WordInputsContext() {
     <div className="word-inputs-container">
       {/* 控制面板 */}
       <div className="input-controls">
-        <button
-          onClick={handlePlay}
-          disabled={!speechSupported || speechPlayback.isPlaying}
-          className="play-button"
-        >
-          {speechPlayback.isPlaying ? '⏸️' : '▶️'} 播放
-        </button>
+         <button
+           onClick={handlePlay}
+           disabled={!speechSupported || !speechPlayback || speechPlayback.isPlaying}
+           className="play-button"
+         >
+           {speechPlayback?.isPlaying ? '⏸️' : '▶️'} 播放
+         </button>
 
         <label className="control-label">
           <input
