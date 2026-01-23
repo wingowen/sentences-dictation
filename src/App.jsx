@@ -318,10 +318,12 @@ function AppContent() {
       return
     }
     
-    // 如果是新概念三但未选择文章，优雅地跳过加载
+    // 如果是新概念三但未选择文章，等待用户选择文章
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) {
-      console.log('新概念三未选择文章，跳过加载');
+      console.log('新概念三未选择文章，等待用户选择');
+      // 设置为非加载状态，因为不需要加载句子，只需要等待用户选择文章
       setIsLoading(false)
+      // 清空句子，因为还未选择文章
       setSentences([])
       setDataSourceError(null)
       return
