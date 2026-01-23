@@ -1,5 +1,5 @@
 // src/contexts/AppContext.jsx
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { usePracticeStats } from '../hooks/usePracticeStats';
 import { usePracticeProgress } from '../hooks/usePracticeProgress';
 import { useSpeechVoices } from '../hooks/useSpeechVoices';
@@ -8,6 +8,7 @@ import { useSentences } from '../hooks/useSentences';
 import { DATA_SOURCE_TYPES } from '../services/dataService';
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from '../services/speechService';
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from '../services/externalSpeechService';
+import { parseSentenceForPhonetics } from '../services/pronunciationService';
 
 // 创建Context
 const AppContext = createContext();
@@ -35,7 +36,7 @@ export function AppProvider({ children }) {
   // 使用自定义hooks
   const practiceStats = usePracticeStats();
   const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
-  const practiceProgress = usePracticeProgress(sentences.currentDataSource, sentences.sentences.length);
+  const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
   const speechVoices = useSpeechVoices(speechService);
   const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate }) || {
     isPlaying: false,
@@ -48,8 +49,31 @@ export function AppProvider({ children }) {
     checkSupport: () => false
   };
 
+  // 处理句子数据，将字符串转换为带有words属性的对象
+  const processedSentences = useMemo(() => {
+    return sentences.sentences.map(sentence => {
+      if (typeof sentence === 'string') {
+        // 如果是字符串，将其解析为单词对象
+        const words = parseSentenceForPhonetics(sentence);
+        return {
+          text: sentence,
+          words: words
+        };
+      } else if (sentence && sentence.words) {
+        // 如果已经有words属性，直接使用
+        return sentence;
+      } else {
+        // 其他情况，返回空对象
+        return {
+          text: sentence || '',
+          words: []
+        };
+      }
+    });
+  }, [sentences.sentences]);
+
   // 计算派生状态
-  const currentWords = sentences.sentences[currentIndex]?.words || [];
+  const currentWords = processedSentences[currentIndex]?.words || [];
   const hasSelectedDataSource = sentences.currentDataSource !== null;
 
   // 标准化字符串比较
@@ -158,7 +182,10 @@ export function AppProvider({ children }) {
     ...practiceProgress,
     ...speechVoices,
     ...speechPlayback,
-    ...sentences
+
+    // 修改sentences以使用处理后的句子数据
+    sentences: processedSentences,
+    sentencesData: sentences // 保留原始sentences对象以防需要
   };
 
   return (
