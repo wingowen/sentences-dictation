@@ -12,10 +12,12 @@ function WordInputsContext() {
     listenMode,
     speechSupported,
     speechRate,
+    setSpeechRate,
     autoPlay,
     randomMode,
     autoNext,
     speechPlayback,
+    inputRefs,
     // 事件处理函数
     handleWordInputChange,
     handleSubmit,
@@ -93,7 +95,7 @@ function WordInputsContext() {
             max="2"
             step="0.1"
             value={speechRate}
-            onChange={(e) => handleSpeechRateChange(parseFloat(e.target.value))}
+             onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
           />
           <span>{speechRate}x</span>
         </div>
