@@ -36,7 +36,6 @@ export function AppProvider({ children }) {
   // 使用自定义hooks
   const practiceStats = usePracticeStats();
   const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
-  const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
   const speechVoices = useSpeechVoices(speechService);
   const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate }) || {
     isPlaying: false,
@@ -71,6 +70,8 @@ export function AppProvider({ children }) {
       }
     });
   }, [sentences.sentences]);
+
+  const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
 
   // 计算派生状态
   const currentWords = processedSentences[currentIndex]?.words || [];
