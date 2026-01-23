@@ -3,8 +3,12 @@
 // 本地JSON文件数据源
 import localSentences from '../data/简单句.json';
 import newConcept1Sentences from '../data/新概念一.json';
+import newConcept3Data from '../data/new-concept-3.json';
 import cacheService from './cacheService';
 import { getAllFlashcards } from './flashcardService';
+
+// 导出新概念三数据
+export { newConcept3Data };
 
 // 数据源类型常量
 export const DATA_SOURCE_TYPES = {

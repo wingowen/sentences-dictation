@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
-import newConcept3Data from '../data/new-concept-3.json'
+import { newConcept3Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
@@ -351,9 +351,8 @@ function AppContent() {
           console.log(`Loaded ${data.length} sentences from lesson: ${selectedArticle.title}`);
         } else {
           throw new Error('未找到选中的文章或文章内容');
-        }
-      }
-      } else {
+         }
+       } else {
         // 其他数据源正常获取
         console.log('获取数据源', { dataSource });
         if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
