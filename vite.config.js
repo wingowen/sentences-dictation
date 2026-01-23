@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 
@@ -53,5 +54,33 @@ export default defineConfig({
     },
     // 增加chunk大小警告限制，因为我们现在有了更好的分割
     chunkSizeWarningLimit: 600
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: true,
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        'dist/',
+        'coverage/',
+        '**/*.d.ts',
+        'cypress/',
+        '**/*.config.*',
+        'src/main.jsx',
+        'src/vite-env.d.ts'
+      ],
+      thresholds: {
+        global: {
+          branches: 70,
+          functions: 70,
+          lines: 70,
+          statements: 70
+        }
+      }
+    }
   }
 })
