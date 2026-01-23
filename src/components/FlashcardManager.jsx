@@ -16,12 +16,6 @@ const FlashcardManager = ({ onBack }) => {
     difficulty: 3
   });
 
-  // 加载闪卡和分类
-  useEffect(() => {
-    loadFlashcards();
-    loadCategories();
-  }, []);
-
   const loadFlashcards = () => {
     const allFlashcards = flashcardService.getAllFlashcards();
     setFlashcards(allFlashcards);
@@ -31,6 +25,12 @@ const FlashcardManager = ({ onBack }) => {
     const allCategories = flashcardService.getFlashcardCategories();
     setCategories(allCategories);
   };
+
+  // 加载闪卡和分类
+  useEffect(() => {
+    loadFlashcards();
+    loadCategories();
+  }, []);
 
   // 处理表单输入变化
   const handleInputChange = (e) => {

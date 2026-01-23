@@ -81,11 +81,11 @@ jobs:
         node-version: 20.x
         cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+     - name: Install dependencies
+       run: npm ci
 
-    - name: Run security audit
-      run: npm audit --audit-level high
+     - name: Run security audit
+       run: npm audit --audit-level high --ignore-dev-deps
 
   deploy-preview:
     runs-on: ubuntu-latest

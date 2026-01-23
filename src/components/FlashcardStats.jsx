@@ -6,12 +6,6 @@ const FlashcardStats = ({ onBack }) => {
   const [history, setHistory] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  // 加载统计数据和历史记录
-  useEffect(() => {
-    loadStats();
-    loadHistory();
-  }, [selectedPeriod]);
-
   const loadStats = () => {
     const flashcardStats = flashcardService.getFlashcardStats();
     setStats(flashcardStats);
@@ -19,11 +13,11 @@ const FlashcardStats = ({ onBack }) => {
 
   const loadHistory = () => {
     const allHistory = flashcardService.getLearningHistory();
-    
+
     // 根据选择的时间段过滤历史记录
     const now = new Date();
     let filteredHistory;
-    
+
     switch (selectedPeriod) {
       case 'day':
         filteredHistory = allHistory.filter(record => {
@@ -51,14 +45,20 @@ const FlashcardStats = ({ onBack }) => {
       default:
         filteredHistory = allHistory;
     }
-    
+
     // 按时间倒序排序
     filteredHistory.sort((a, b) => {
       return new Date(b.timestamp) - new Date(a.timestamp);
     });
-    
+
     setHistory(filteredHistory);
   };
+
+  // 加载统计数据和历史记录
+  useEffect(() => {
+    loadStats();
+    loadHistory();
+  }, [selectedPeriod]);
 
   // 计算时间段内的学习统计
   const getPeriodStats = () => {

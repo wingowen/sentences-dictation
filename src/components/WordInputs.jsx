@@ -56,7 +56,7 @@ const WordInputs = ({
     return str
       .toLowerCase()
       .trim()
-      .replace(/[.,!?;:"()\[\]{}_-]/g, '')
+      .replace(/[.,!?;:"()[\]{}_-]/g, '')
       .replace(/\s+/g, ' ')
   }
 

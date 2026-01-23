@@ -115,7 +115,7 @@ const clearAllCache = () => {
 
 // 检查文件是否有变更（用于检测函数代码变更）
 // 注意：在浏览器环境中，这个函数可能无法正常工作
-const getFileHash = (filePath) => {
+const getFileHash = (_filePath) => {
   try {
     // 在浏览器环境中，返回null
     if (isBrowser) {

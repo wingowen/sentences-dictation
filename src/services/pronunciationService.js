@@ -171,7 +171,7 @@ export const formatPhonetic = (arpabet) => {
 export const detectAndExpandContractions = (sentence) => {
   // 移除句子中的标点符号，保留缩略词中的单引号
   const words = sentence
-    .replace(/[.,!?;:"()\[\]{}_-]/g, '')
+    .replace(/[.,!?;:"()[\]{}_-]/g, '')
     .split(/\s+/)
     .filter(word => word.length > 0);
   

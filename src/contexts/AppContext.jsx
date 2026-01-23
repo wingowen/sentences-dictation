@@ -1,5 +1,5 @@
 // src/contexts/AppContext.jsx
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { usePracticeStats } from '../hooks/usePracticeStats';
 import { usePracticeProgress } from '../hooks/usePracticeProgress';
 import { useSpeechVoices } from '../hooks/useSpeechVoices';
@@ -31,6 +31,17 @@ export function AppProvider({ children }) {
 
   // 输入框引用
   const inputRefs = useRef([]);
+
+  // 使用自定义hooks
+  const practiceStats = usePracticeStats();
+  const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
+  const practiceProgress = usePracticeProgress(sentences.currentDataSource, sentences.sentences.length);
+  const speechVoices = useSpeechVoices(speechService);
+  const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate });
+
+  // 计算派生状态
+  const currentWords = sentences.sentences[currentIndex]?.words || [];
+  const hasSelectedDataSource = sentences.currentDataSource !== null;
 
   // 标准化字符串比较
   const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);
@@ -88,17 +99,6 @@ export function AppProvider({ children }) {
   const handleToggleAutoNext = useCallback(() => {
     setAutoNext(!autoNext);
   }, [autoNext]);
-
-  // 使用自定义hooks
-  const practiceStats = usePracticeStats();
-  const practiceProgress = usePracticeProgress(sentences.currentDataSource, sentences.sentences.length);
-  const speechVoices = useSpeechVoices(speechService);
-  const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate });
-  const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
-
-  // 计算派生状态
-  const currentWords = sentences.sentences[currentIndex]?.words || [];
-  const hasSelectedDataSource = sentences.currentDataSource !== null;
 
   // 上下文值
   const value = {

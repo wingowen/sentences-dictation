@@ -34,11 +34,6 @@ const FlashcardLearner = ({ onBack }) => {
     total: 0
   });
 
-  // 加载需要复习的闪卡
-  useEffect(() => {
-    loadFlashcards();
-  }, []);
-
   const loadFlashcards = () => {
     const dueFlashcards = flashcardService.getFlashcardsForReview();
     if (dueFlashcards.length > 0) {
@@ -61,6 +56,11 @@ const FlashcardLearner = ({ onBack }) => {
       }
     }
   };
+
+  // 加载需要复习的闪卡
+  useEffect(() => {
+    loadFlashcards();
+  }, []);
 
   // 处理用户响应
   const handleResponse = (quality) => {

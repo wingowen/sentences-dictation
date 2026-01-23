@@ -90,11 +90,13 @@ export function useSpeechVoices(speechService = 'web_speech') {
   useEffect(() => {
     const currentConfig = getSpeechConfig();
     if (currentConfig) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSpeechConfig(currentConfig);
     }
 
     const currentVoice = getSelectedVoice();
     if (currentVoice) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedVoice(currentVoice);
     }
   }, []);

@@ -49,7 +49,7 @@ function AppContent() {
   const [showModal, setShowModal] = useState(false)
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false)
   const [autoPlay, setAutoPlay] = useState(true)
-  const [speechRate, setSpeechRate] = useState(1)
+  const [speechRate, _setSpeechRate] = useState(1)
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
@@ -590,7 +590,7 @@ function AppContent() {
     return str
       .toLowerCase()
       .trim()
-      .replace(/[.,!?;:"()\[\]{}_-]/g, '')
+      .replace(/[.,!?;:"()[\]{}_-]/g, '')
       .replace(/\s+/g, ' ')
   }
 
@@ -617,7 +617,7 @@ function AppContent() {
   }
 
   // 处理单个单词输入变化
-  const handleWordInputChange = (index, value) => {
+  const _handleWordInputChange = (index, value) => {
     const newWordInputs = [...wordInputs]
     newWordInputs[index] = value
     setWordInputs(newWordInputs)
@@ -728,7 +728,7 @@ function AppContent() {
   }
 
   // 处理提交
-  const handleSubmit = (e) => {
+  const _handleSubmit = (e) => {
     e.preventDefault()
     if (wordInputs.some(input => input.trim() === '')) return
 
@@ -816,7 +816,7 @@ function AppContent() {
   }
 
   // 播放当前句子
-  const handlePlay = () => {
+  const _handlePlay = () => {
     if (speechSupported && sentences[currentIndex]) {
       const sentence = sentences[currentIndex];
       
@@ -1036,7 +1036,7 @@ function AppContent() {
   };
 
   // 切换听句子模式
-  const handleListenModeToggle = (enabled) => {
+  const _handleListenModeToggle = (enabled) => {
     setListenMode(enabled);
     
     if (!enabled) {
@@ -1062,7 +1062,7 @@ function AppContent() {
   }, [dataSource]);
   
   // 切换随机模式
-  const handleRandomModeToggle = useCallback((enabled) => {
+  const _handleRandomModeToggle = useCallback((enabled) => {
     setRandomMode(enabled);
     // 切换随机模式时重置索引
     currentRandomIndexRef.current = 0;
@@ -1075,12 +1075,12 @@ function AppContent() {
   }, [sentences.length]);
   
   // 切换自动朗读
-  const handleAutoPlayToggle = useCallback((enabled) => {
+  const _handleAutoPlayToggle = useCallback((enabled) => {
     setAutoPlay(enabled);
   }, []);
   
   // 切换自动切换下一句
-  const handleToggleAutoNext = useCallback((enabled) => {
+  const _handleToggleAutoNext = useCallback((enabled) => {
     setAutoNext(enabled);
   }, []);
   

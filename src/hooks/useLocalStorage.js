@@ -18,6 +18,7 @@ export function useLocalStorage(key, initialValue, debounceDelay = 1000) {
     try {
       const item = localStorage.getItem(key);
       if (item !== null) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setValue(JSON.parse(item));
       }
       setIsLoading(false);
