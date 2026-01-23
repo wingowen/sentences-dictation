@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
+import newConcept3Data from '../data/new-concept-3.json'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
@@ -280,35 +281,19 @@ function AppContent() {
   // 加载新概念三文章列表
   useEffect(() => {
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3) {
-      const fetchNewConcept3Articles = async () => {
-        try {
-          const functionUrl = '/.netlify/functions/get-new-concept-3';
-          const response = await fetch(functionUrl);
-          
-          // 检查响应类型
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Netlify Functions 未运行或返回了非 JSON 数据。请确保使用 `npm run netlify-dev` 启动项目。');
-          }
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.articles) {
-              setNewConcept3Articles(data.articles);
-            } else {
-              throw new Error(data.error || '获取文章列表失败');
-            }
-          } else {
-            throw new Error('Netlify Functions 在开发环境下不可用，请使用生产环境或选择其他数据源');
-          }
-        } catch (error) {
-          console.error('Error fetching New Concept 3 articles:', error);
-          setDataSourceError(error.message || '加载新概念三文章失败');
-          setNewConcept3Articles([]);
+      try {
+        // Load articles from local JSON file
+        if (newConcept3Data.success && newConcept3Data.articles) {
+          setNewConcept3Articles(newConcept3Data.articles);
+          setDataSourceError(null);
+        } else {
+          throw new Error('本地新概念三数据格式错误');
         }
-      };
-      
-      fetchNewConcept3Articles();
+      } catch (error) {
+        console.error('Error loading New Concept 3 articles:', error);
+        setDataSourceError(error.message || '加载新概念三文章失败');
+        setNewConcept3Articles([]);
+      }
     } else {
       // 切换到其他数据源时重置状态
       setNewConcept3Articles([]);
@@ -357,42 +342,17 @@ function AppContent() {
       let data;
       
       if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && selectedArticleId) {
-        // 对于新概念三，获取选中文章的链接并动态加载内容
+        // 对于新概念三，从本地数据获取选中文章的句子
         console.log('加载新概念三课程内容', { selectedArticleId });
         const selectedArticle = newConcept3Articles.find(article => article.id === selectedArticleId);
-        if (selectedArticle && selectedArticle.link) {
-          // 调用新的函数获取课程内容
-          const functionUrl = '/.netlify/functions/get-new-concept-3-lesson';
-          console.log('调用新概念三API', { functionUrl });
-          const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ link: selectedArticle.link })
-          });
-          
-          // 检查响应类型
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Netlify Functions 未运行或返回了非 JSON 数据。请确保使用 `npm run netlify-dev` 启动项目。');
-          }
-          
-          if (response.ok) {
-            const lessonData = await response.json();
-            if (lessonData.success && lessonData.sentences) {
-              // 转换所有句子中的缩写为完整形式
-              data = lessonData.sentences.map(sentence => expandContractionsInSentence(sentence));
-              console.log(`Loaded ${data.length} sentences from lesson: ${selectedArticle.title}`);
-            } else {
-              throw new Error('获取课程内容失败');
-            }
-          } else {
-            throw new Error('请求课程内容失败');
-          }
+        if (selectedArticle && selectedArticle.sentences) {
+          // 转换所有句子中的缩写为完整形式
+          data = selectedArticle.sentences.map(sentence => expandContractionsInSentence(sentence));
+          console.log(`Loaded ${data.length} sentences from lesson: ${selectedArticle.title}`);
         } else {
-          throw new Error('未找到选中的文章或文章链接');
+          throw new Error('未找到选中的文章或文章内容');
         }
+      }
       } else {
         // 其他数据源正常获取
         console.log('获取数据源', { dataSource });

@@ -12,7 +12,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "scrape:new-concept-3": "node scripts/scrape-new-concept-3.js"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
