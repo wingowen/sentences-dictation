@@ -367,6 +367,7 @@ html {
 
 .header-left {
   flex-shrink: 0;
+  align-self: center;
 }
 
 .back-button {
@@ -401,14 +402,13 @@ html {
 .data-source-controls {
   position: relative;
   display: inline-block;
-  margin-top: var(--spacing-sm);
 }
 
 .data-source-button {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 0.6rem 1.2rem;
+  padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--text-subhead);
   font-weight: var(--font-medium);
   color: var(--apple-blue);
@@ -1278,6 +1278,7 @@ html {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  align-self: center;
 }
 
 .flashcard-button {
