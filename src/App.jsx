@@ -11,6 +11,7 @@ import React, { Suspense } from 'react'
 import DataSourceSelection from './components/DataSourceSelection'
 import PracticeStats from './components/PracticeStats'
 import PhoneticsSection from './components/PhoneticsSection'
+import WordInputs from './components/WordInputs'
 import WordInputsContext from './components/WordInputsContext'
 // 懒加载大型组件
 const FlashcardApp = React.lazy(() => import('./components/FlashcardApp'))
@@ -65,7 +66,7 @@ function AppContent() {
   const [autoNext, setAutoNext] = useState(true)
   const [localResourceId, setLocalResourceId] = useState('simple')
   const [localResources, setLocalResources] = useState([])
-  const [showFlashcardApp, setShowFlashcardApp] = useState(true)
+  const [showFlashcardApp, setShowFlashcardApp] = useState(false)
   // 练习状态
   const [practiceStats, setPracticeStats] = useState({
     totalAttempts: 0,       // 总尝试次数
@@ -1240,7 +1241,26 @@ function AppContent() {
             )}
 
             {/* 按词输入部分 */}
-            <WordInputsContext />
+            <WordInputs
+              wordInputs={wordInputs}
+              currentWords={currentWords}
+              onWordInputChange={_handleWordInputChange}
+              onSubmit={_handleSubmit}
+              listenMode={listenMode}
+              speechSupported={speechSupported}
+              speechRate={speechRate}
+              onPlay={_handlePlay}
+              autoPlay={autoPlay}
+              onToggleAutoPlay={_handleAutoPlayToggle}
+              randomMode={randomMode}
+              onToggleRandomMode={_handleRandomModeToggle}
+              onToggleListenMode={_handleListenModeToggle}
+              onToggleVoiceSettings={handleToggleVoiceSettings}
+              inputRefs={inputRefs}
+              autoNext={autoNext}
+              onToggleAutoNext={_handleToggleAutoNext}
+              onSpeechRateChange={_setSpeechRate}
+            />
 
             {!speechSupported && (
               <p className="speech-warning">Speech synthesis is not supported in your browser.</p>

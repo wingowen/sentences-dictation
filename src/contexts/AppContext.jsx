@@ -77,6 +77,16 @@ export function AppProvider({ children }) {
   const currentWords = processedSentences[currentIndex]?.words || [];
   const hasSelectedDataSource = sentences.currentDataSource !== null;
 
+  // 初始化wordInputs数组，确保与currentWords长度一致
+  useEffect(() => {
+    if (currentWords.length > 0) {
+      const initialWordInputs = currentWords.map(() => '');
+      setWordInputs(initialWordInputs);
+      // 初始化输入框引用数组
+      inputRefs.current = new Array(currentWords.length).fill(null);
+    }
+  }, [currentWords.length, currentWords]);
+
   // 标准化字符串比较
   const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);
 
@@ -93,7 +103,7 @@ export function AppProvider({ children }) {
     if (userWord.trim() && correctWord) {
       const isCorrect = normalize(userWord) === normalize(correctWord);
 
-      if (isCorrect && index < wordInputs.length - 1) {
+      if (isCorrect && index < currentWords.length - 1) {
         // 单词正确，跳转到下一个输入框
         setTimeout(() => {
           inputRefs.current[index + 1]?.focus();
@@ -106,9 +116,16 @@ export function AppProvider({ children }) {
     e.preventDefault();
     if (wordInputs.some(input => input.trim() === '')) return;
 
-    // 这里应该调用实际的提交逻辑
-    // 暂时保持简单
-  }, [wordInputs]);
+    // 检查所有单词是否都正确
+    const allCorrect = wordInputs.every((input, index) => {
+      const correctWord = currentWords[index]?.word;
+      return correctWord && normalize(input) === normalize(correctWord);
+    });
+
+    // 设置结果
+    setResult(allCorrect ? 'correct' : 'incorrect');
+    setShowModal(true);
+  }, [wordInputs, currentWords, normalize]);
 
   const handlePlay = useCallback(() => {
     speechPlayback.play(currentWords.map(w => w.word).join(' '));

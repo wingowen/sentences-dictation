@@ -72,7 +72,7 @@ export const getPhonetic = (word) => {
   
   // 检查是否是常见缩略词
   if (CONTRACTION_MAP[lowerWord]) {
-    const expandedForm = contractionMap[lowerWord];
+    const expandedForm = CONTRACTION_MAP[lowerWord];
     const words = expandedForm.split(' ');
     
     // 获取展开形式中每个单词的音标
