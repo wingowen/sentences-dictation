@@ -34,7 +34,7 @@ function WordInputsContext() {
     setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 100);
-  }, [wordInputs.length, inputRefs]);
+  }, [wordInputs.length]);
 
   // 标准化字符串比较
   const normalize = (str) => str.toLowerCase().trim().replace(/[^\w]/g, '');
