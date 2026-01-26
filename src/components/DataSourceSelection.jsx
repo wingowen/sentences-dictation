@@ -9,7 +9,7 @@ const DataSourceSelection = ({ dataSourceError, onSelectDataSource }) => {
         <p>请选择您想要练习的数据源开始拼写练习</p>
         {dataSourceError && (
           <div className="data-source-error">
-            <span>⚠️ {dataSourceError}</span>
+            <span>警告: {dataSourceError}</span>
           </div>
         )}
         <div className="data-source-cards">
@@ -19,7 +19,6 @@ const DataSourceSelection = ({ dataSourceError, onSelectDataSource }) => {
               className="data-source-card"
               onClick={() => onSelectDataSource(source.id)}
             >
-              <span className="card-icon">{source.icon}</span>
               <div className="card-content">
                 <h3>{source.name}</h3>
                 <p>{source.description}</p>

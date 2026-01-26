@@ -9,6 +9,7 @@ import { DATA_SOURCE_TYPES } from '../services/dataService';
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from '../services/speechService';
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from '../services/externalSpeechService';
 import { parseSentenceForPhonetics } from '../services/pronunciationService';
+import { getTranslation, getWordTranslation } from '../services/translationService';
 
 // 创建Context
 const AppContext = createContext();
@@ -54,17 +55,42 @@ export function AppProvider({ children }) {
       if (typeof sentence === 'string') {
         // 如果是字符串，将其解析为单词对象
         const words = parseSentenceForPhonetics(sentence);
+        // 注意：getTranslation 现在是异步的，所以这里先返回 null
+        // 翻译会在实际使用时异步加载
+        const translation = null; // getTranslation(sentence);
+
+        // 为每个单词添加翻译
+        const wordsWithTranslation = words.map(word => ({
+          ...word,
+          translation: getWordTranslation(word.word)
+        }));
+
         return {
           text: sentence,
-          words: words
+          translation: translation,
+          words: wordsWithTranslation
         };
       } else if (sentence && sentence.words) {
-        // 如果已经有words属性，直接使用
-        return sentence;
+        // 如果已经有words属性，添加翻译信息
+        // 注意：getTranslation 现在是异步的，所以这里先返回 null
+        const translation = null; // getTranslation(sentence.text || sentence);
+
+        // 为每个单词添加翻译
+        const wordsWithTranslation = sentence.words.map(word => ({
+          ...word,
+          translation: getWordTranslation(word.word)
+        }));
+
+        return {
+          ...sentence,
+          translation: translation,
+          words: wordsWithTranslation
+        };
       } else {
         // 其他情况，返回空对象
         return {
           text: sentence || '',
+          translation: null,
           words: []
         };
       }
@@ -75,6 +101,7 @@ export function AppProvider({ children }) {
 
   // 计算派生状态
   const currentWords = processedSentences[currentIndex]?.words || [];
+  const currentTranslation = processedSentences[currentIndex]?.translation || '翻译暂无';
   const hasSelectedDataSource = sentences.currentDataSource !== null;
 
   // 初始化wordInputs数组，确保与currentWords长度一致
@@ -193,6 +220,7 @@ export function AppProvider({ children }) {
 
     // 派生状态
     currentWords,
+    currentTranslation,
     hasSelectedDataSource,
 
     // Hooks状态和方法

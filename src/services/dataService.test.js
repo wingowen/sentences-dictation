@@ -381,22 +381,20 @@ describe('dataService', () => {
       const resources = getLocalResources();
 
       expect(resources).toHaveLength(2);
-      expect(resources[0]).toEqual({
-        id: 'simple',
-        name: '简单句',
-        description: '基础简单句子练习',
-        icon: '📝',
-        data: [
-          { id: 1, text: 'This is a simple sentence.' },
-          { id: 2, text: 'Another simple sentence.' }
-        ]
-      });
+        expect(resources[0]).toEqual({
+          id: 'simple',
+          name: '简单句',
+          description: '基础简单句子练习',
+          data: [
+            { id: 1, text: 'This is a simple sentence.' },
+            { id: 2, text: 'Another simple sentence.' }
+          ]
+        });
 
       expect(resources[1]).toEqual({
         id: 'new-concept-1',
         name: '新概念一',
         description: '新概念英语第一册句子',
-        icon: '📚',
         data: [
           { id: 1, text: 'New Concept 1 sentence 1.' },
           { id: 2, text: 'New Concept 1 sentence 2.' }

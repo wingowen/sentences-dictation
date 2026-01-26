@@ -7,18 +7,12 @@ const WordInputs = ({
   onSubmit,
   listenMode,
   speechSupported,
-  speechRate,
   onPlay,
-  autoPlay,
-  onToggleAutoPlay,
-  randomMode,
-  onToggleRandomMode,
-  onToggleListenMode,
   onToggleVoiceSettings,
   inputRefs,
-  autoNext,
-  onToggleAutoNext,
-  onSpeechRateChange
+  onToggleSettings,
+  onNext,
+  showCounter
 }) => {
   // 聚焦第一个输入框
   useEffect(() => {
@@ -64,79 +58,41 @@ const WordInputs = ({
     <form className="input-form" onSubmit={onSubmit}>
       <label className="input-with-controls">
         <div className="input-controls">
-          <label className="speech-rate-selector small">
-            <span>语速:</span>
-            <select
-              value={speechRate.toFixed(1)}
-              onChange={(e) => {
-                if (onSpeechRateChange) {
-                  onSpeechRateChange(parseFloat(e.target.value))
-                }
-              }}
-              disabled={!speechSupported || listenMode}
-              title="选择朗读语速"
-            >
-              <option value="0.5">0.5x (慢速)</option>
-              <option value="0.75">0.75x (较慢)</option>
-              <option value="1.0">1.0x (正常)</option>
-              <option value="1.25">1.25x (较快)</option>
-              <option value="1.5">1.5x (快速)</option>
-              <option value="2.0">2.0x (很快)</option>
-            </select>
-          </label>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="play-button small"
             onClick={onPlay}
             disabled={!speechSupported || listenMode}
             title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
           >
-            ▶️
+            播放
           </button>
-          <label className="auto-play-toggle small">
-            <input
-              type="checkbox"
-              checked={autoPlay}
-              onChange={(e) => onToggleAutoPlay(e.target.checked)}
-              disabled={!speechSupported || listenMode}
-            />
-            <span>自动朗读</span>
-          </label>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="voice-settings-button small"
             onClick={onToggleVoiceSettings}
             disabled={!speechSupported}
             title="语音设置"
           >
-            🎤 语音设置
+            语音
           </button>
-          <label className="random-mode-toggle small">
-            <input
-              type="checkbox"
-              checked={randomMode}
-              onChange={(e) => onToggleRandomMode(e.target.checked)}
-              disabled={listenMode}
-            />
-            <span>随机模式</span>
-          </label>
-          <label className="listen-mode-toggle small">
-            <input
-              type="checkbox"
-              checked={listenMode}
-              onChange={(e) => onToggleListenMode(e.target.checked)}
-              disabled={!speechSupported}
-            />
-            <span>听句子模式</span>
-          </label>
-          <label className="auto-next-toggle small">
-            <input
-              type="checkbox"
-              checked={autoNext}
-              onChange={(e) => onToggleAutoNext(e.target.checked)}
-            />
-            <span>自动切换下一句</span>
-          </label>
+          <button
+            type="button"
+            className="settings-button small"
+            onClick={onToggleSettings}
+            title="设置"
+          >
+            设置
+          </button>
+          <button
+            type="button"
+            className="next-sentence-button small"
+            onClick={onNext}
+            disabled={listenMode}
+            title="切换到下一句"
+          >
+            下一句
+          </button>
         </div>
       </label>
       <div className="word-inputs">
@@ -145,23 +101,32 @@ const WordInputs = ({
           const wordLength = currentWords[index]?.word?.length || 5
           const currentInputLength = input.length || wordLength
           const maxLength = Math.max(wordLength, currentInputLength)
-          const calculatedWidth = maxLength * 1.5 + 4
-          const clampedWidth = Math.max(6, Math.min(35, calculatedWidth))
+          const calculatedWidth = maxLength * 1.2 + 2
+          const clampedWidth = Math.max(4, Math.min(40, calculatedWidth))
           const inputWidth = `${clampedWidth}ch`
-          
+          const underlinePlaceholder = '_'.repeat(wordLength)
+          // 计算已输入的字母数（排除空格）
+          const inputCharCount = input.replace(/\s/g, '').length
+
           return (
-            <input
-              key={index}
-              ref={(el) => (inputRefs.current[index] = el)}
-              type="text"
-              className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-              style={{ width: inputWidth }}
-              value={input}
-              onChange={(e) => handleWordInputChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              placeholder=""
-              autoFocus={index === 0}
-            />
+            <div key={index} className="word-input-wrapper">
+              <input
+                ref={(el) => (inputRefs.current[index] = el)}
+                type="text"
+                className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                style={{ width: inputWidth }}
+                value={input}
+                onChange={(e) => handleWordInputChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                placeholder={underlinePlaceholder}
+                autoFocus={index === 0}
+              />
+              {showCounter && (
+                <div className="word-input-counter">
+                  {inputCharCount} / {wordLength}
+                </div>
+              )}
+            </div>
           )
         })}
       </div>

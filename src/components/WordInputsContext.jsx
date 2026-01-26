@@ -48,7 +48,7 @@ function WordInputsContext() {
            disabled={!speechSupported || !speechPlayback || speechPlayback.isPlaying}
            className="play-button"
          >
-           {speechPlayback?.isPlaying ? '⏸️' : '▶️'} 播放
+            {speechPlayback?.isPlaying ? '暂停' : '播放'} 播放
          </button>
 
         <label className="control-label">
@@ -104,7 +104,7 @@ function WordInputsContext() {
           onClick={handleToggleVoiceSettings}
           className="voice-settings-button"
         >
-          🎵 语音设置
+          语音设置
         </button>
       </div>
 
@@ -115,8 +115,8 @@ function WordInputsContext() {
             <div key={index} className="word-input-group">
               <label className="word-label">
                 {wordData.word}
-                {wordData.phonetic && (
-                  <span className="phonetic">[{wordData.phonetic}]</span>
+                {wordData.translation && (
+                  <span className="translation">{wordData.translation}</span>
                 )}
               </label>
               <input

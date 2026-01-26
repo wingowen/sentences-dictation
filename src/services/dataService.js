@@ -25,31 +25,26 @@ export const DATA_SOURCES = [
     id: DATA_SOURCE_TYPES.FLASHCARDS,
     name: '闪卡模式',
     description: '使用闪卡进行单词和句子学习',
-    icon: '📇',
   },
   {
     id: DATA_SOURCE_TYPES.LOCAL,
     name: '本地数据',
     description: '使用本地 JSON 文件中的句子',
-    icon: '📁',
   },
   {
     id: DATA_SOURCE_TYPES.NOTION,
     name: 'Notion',
     description: '从 Notion 页面动态获取句子',
-    icon: '📝',
   },
   {
     id: DATA_SOURCE_TYPES.NEW_CONCEPT_1,
     name: '新概念一',
     description: '使用新概念英语第一册的句子',
-    icon: '📚',
   },
   {
     id: DATA_SOURCE_TYPES.NEW_CONCEPT_3,
     name: '新概念三',
     description: '从网页动态获取新概念英语第三册文章',
-    icon: '📖',
   },
 ];
 
@@ -226,14 +221,12 @@ export const getLocalResources = () => {
       id: 'simple',
       name: '简单句',
       description: '基础简单句子练习',
-      icon: '📝',
       data: localSentences
     },
     {
       id: 'new-concept-1',
       name: '新概念一',
       description: '新概念英语第一册句子',
-      icon: '📚',
       data: newConcept1Sentences
     }
   ];

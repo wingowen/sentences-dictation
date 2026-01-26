@@ -60,25 +60,25 @@ const FlashcardApp = ({ onBack }) => {
             </div>
             <div className="app-content">
               <div className="feature-grid">
-                <div 
+                <div
                   className="feature-card"
                   onClick={() => setActiveView('manager')}
                 >
-                  <h3>📝 闪卡管理</h3>
+                  <h3>闪卡管理</h3>
                   <p>创建、编辑和管理你的闪卡</p>
                 </div>
-                <div 
+                <div
                   className="feature-card"
                   onClick={() => setActiveView('learner')}
                 >
-                  <h3>🎓 闪卡学习</h3>
+                  <h3>闪卡学习</h3>
                   <p>使用间隔重复算法进行高效学习</p>
                 </div>
-                <div 
+                <div
                   className="feature-card"
                   onClick={() => setActiveView('stats')}
                 >
-                  <h3>📊 学习统计</h3>
+                  <h3>学习统计</h3>
                   <p>查看学习进度和历史记录</p>
                 </div>
               </div>

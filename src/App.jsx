@@ -5,6 +5,7 @@ import { newConcept3Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
+import { getTranslation, getWordTranslation, TRANSLATION_PROVIDERS, setTranslationProvider } from './services/translationService'
 
 // 导入组件
 import React, { Suspense } from 'react'
@@ -23,6 +24,7 @@ import { AppProvider } from './contexts/AppContext'
 // 懒加载弹窗组件
 const VoiceSettings = React.lazy(() => import('./components/VoiceSettings'))
 const ResultModal = React.lazy(() => import('./components/ResultModal'))
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
 
 /**
  * 转换句子中的缩写为完整形式
@@ -47,8 +49,19 @@ function AppContent() {
   const [dataSource, setDataSource] = useState(DATA_SOURCE_TYPES.LOCAL)
   const [dataSourceError, setDataSourceError] = useState(null)
   const [currentWords, setCurrentWords] = useState([])
+  const [currentTranslation, setCurrentTranslation] = useState('翻译暂无')
   const [showOriginalText, setShowOriginalText] = useState(false)
+  const [showCounter, setShowCounter] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [translationProvider, setTranslationProviderState] = useState(TRANSLATION_PROVIDERS.MYMEMORY)
+  const [translationConfig, setTranslationConfig] = useState({
+    googleApiKey: '',
+    deeplApiKey: '',
+    libreApiUrl: 'https://libretranslate.com/translate',
+    baiduAppId: '',
+    baiduSecretKey: ''
+  })
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false)
   const [autoPlay, setAutoPlay] = useState(true)
   const [speechRate, _setSpeechRate] = useState(1)
@@ -469,11 +482,20 @@ function AppContent() {
 
   // 当当前句子变化时，更新单词和音标
   useEffect(() => {
-    if (sentences[currentIndex]) {
-      const sentence = sentences[currentIndex]
-      // 解析句子，获取单词和音标
-      const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
-      setCurrentWords(wordsWithPhonetics)
+    const loadCurrentSentence = async () => {
+      if (sentences[currentIndex]) {
+        const sentence = sentences[currentIndex]
+        // 解析句子，获取单词和音标
+        const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+        // 为每个单词添加翻译
+        const wordsWithTranslation = wordsWithPhonetics.map(word => ({
+          ...word,
+          translation: getWordTranslation(word.word)
+        }))
+        setCurrentWords(wordsWithTranslation)
+        // 获取句子翻译（现在支持在线翻译）
+        const translation = await getTranslation(sentence, translationProvider, translationConfig)
+        setCurrentTranslation(translation || '翻译暂无')
       
       // 初始化按词输入数组
       const initialWordInputs = wordsWithPhonetics.map(() => '')
@@ -486,39 +508,42 @@ function AppContent() {
       // 初始化输入框引用数组
       inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
       
-      // 聚焦第一个输入框
-      setTimeout(() => {
-        inputRefs.current[0]?.focus()
-      }, 100)
-      
-      // 如果自动朗读开启，则自动朗读句子
-      if (autoPlay && speechSupported) {
-        // 延迟一点时间，确保页面已经更新
+        // 聚焦第一个输入框
         setTimeout(() => {
-          // 根据当前选择的语音服务使用相应的speak函数
-          if (speechService === 'web_speech') {
-            cancelSpeech() // 取消之前的朗读
-            speak(sentence, speechRate).catch(error => {
-              console.error('Error speaking:', error)
-            })
-          } else if (speechService === 'uberduck') {
-            externalCancelSpeech() // 取消之前的朗读
-            externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
-              .catch(error => {
-                console.error('Error speaking with external service:', error)
-                // 如果外部服务失败，尝试回退到Web Speech API
-                cancelSpeech()
-                speak(sentence, speechRate)
-                  .catch(fallbackError => {
-                    console.error('Fallback to web speech also failed:', fallbackError)
-                  })
-                // 更新语音服务状态为Web Speech API
-                setSpeechService('web_speech')
+          inputRefs.current[0]?.focus()
+        }, 100)
+
+        // 如果自动朗读开启，则自动朗读句子
+        if (autoPlay && speechSupported) {
+          // 延迟一点时间，确保页面已经更新
+          setTimeout(() => {
+            // 根据当前选择的语音服务使用相应的speak函数
+            if (speechService === 'web_speech') {
+              cancelSpeech() // 取消之前的朗读
+              speak(sentence, speechRate).catch(error => {
+                console.error('Error speaking:', error)
               })
-          }
-        }, 300)
+            } else if (speechService === 'uberduck') {
+              externalCancelSpeech() // 取消之前的朗读
+              externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
+                .catch(error => {
+                  console.error('Error speaking with external service:', error)
+                  // 如果外部服务失败，尝试回退到Web Speech API
+                  cancelSpeech()
+                  speak(sentence, speechRate)
+                    .catch(fallbackError => {
+                      console.error('Fallback to web speech also failed:', fallbackError)
+                    })
+                  // 更新语音服务状态为Web Speech API
+                  setSpeechService('web_speech')
+                })
+            }
+          }, 300)
+        }
       }
-    }
+    };
+
+    loadCurrentSentence();
   }, [currentIndex, sentences, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService])
 
   // 获取转换后的完整句子
@@ -1050,7 +1075,28 @@ function AppContent() {
   const handleToggleOriginalText = useCallback(() => {
     setShowOriginalText(!showOriginalText);
   }, [showOriginalText]);
-  
+
+  // 切换计数器显示
+  const handleToggleShowCounter = useCallback(() => {
+    setShowCounter(!showCounter);
+  }, [showCounter]);
+
+  // 切换设置弹窗
+  const handleToggleSettings = useCallback(() => {
+    setShowSettings(!showSettings);
+  }, [showSettings]);
+
+  // 切换翻译服务提供商
+  const handleTranslationProviderChange = useCallback((provider) => {
+    setTranslationProviderState(provider);
+    setTranslationProvider(provider);
+  }, []);
+
+  // 更新翻译配置
+  const handleTranslationConfigChange = useCallback((config) => {
+    setTranslationConfig(config);
+  }, []);
+
   // 切换语音设置弹窗
   const handleToggleVoiceSettings = useCallback(() => {
     setShowVoiceSettings(!showVoiceSettings);
@@ -1229,14 +1275,15 @@ function AppContent() {
               onResetProgress={resetPracticeProgress}
             />
             
-            {/* 音标显示部分 */}
-            {currentWords.length > 0 && (
-              <PhoneticsSection 
-                currentWords={currentWords}
+             {/* 音标显示部分 */}
+            {sentences.length > 0 && (
+              <PhoneticsSection
+                sentences={sentences}
                 currentIndex={currentIndex}
                 totalSentences={sentences.length}
                 showOriginalText={showOriginalText}
                 onToggleOriginalText={handleToggleOriginalText}
+                currentTranslation={currentTranslation}
               />
             )}
 
@@ -1248,18 +1295,12 @@ function AppContent() {
               onSubmit={_handleSubmit}
               listenMode={listenMode}
               speechSupported={speechSupported}
-              speechRate={speechRate}
               onPlay={_handlePlay}
-              autoPlay={autoPlay}
-              onToggleAutoPlay={_handleAutoPlayToggle}
-              randomMode={randomMode}
-              onToggleRandomMode={_handleRandomModeToggle}
-              onToggleListenMode={_handleListenModeToggle}
               onToggleVoiceSettings={handleToggleVoiceSettings}
               inputRefs={inputRefs}
-              autoNext={autoNext}
-              onToggleAutoNext={_handleToggleAutoNext}
-              onSpeechRateChange={_setSpeechRate}
+              onToggleSettings={handleToggleSettings}
+              onNext={handleNext}
+              showCounter={showCounter}
             />
 
             {!speechSupported && (
@@ -1290,6 +1331,31 @@ function AppContent() {
                 externalVoices={externalVoices}
                 selectedExternalVoice={selectedExternalVoice}
                 onExternalVoiceChange={handleExternalVoiceChange}
+              />
+            </Suspense>
+
+            {/* 设置弹窗 */}
+            <Suspense fallback={<div>加载中...</div>}>
+              <SettingsModal
+                isOpen={showSettings}
+                onClose={handleToggleSettings}
+                autoPlay={autoPlay}
+                onToggleAutoPlay={_handleAutoPlayToggle}
+                randomMode={randomMode}
+                onToggleRandomMode={_handleRandomModeToggle}
+                listenMode={listenMode}
+                onToggleListenMode={_handleListenModeToggle}
+                autoNext={autoNext}
+                onToggleAutoNext={_handleToggleAutoNext}
+                showCounter={showCounter}
+                onToggleShowCounter={handleToggleShowCounter}
+                speechRate={speechRate}
+                onSpeechRateChange={_setSpeechRate}
+                speechSupported={speechSupported}
+                translationProvider={translationProvider}
+                onTranslationProviderChange={handleTranslationProviderChange}
+                translationConfig={translationConfig}
+                onTranslationConfigChange={handleTranslationConfigChange}
               />
             </Suspense>
           </>

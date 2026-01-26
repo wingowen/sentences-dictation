@@ -26,7 +26,7 @@ const ArticleSelectorHint = React.memo(({
 
   return (
     <div className="article-selector-hint">
-      <p>👆 请在上方选择一篇文章开始练习</p>
+      <p>请在上方选择一篇文章开始练习</p>
     </div>
   );
 });

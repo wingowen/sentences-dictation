@@ -135,7 +135,7 @@ const FlashcardManager = ({ onBack }) => {
         <h2>闪卡管理</h2>
         <div className="header-buttons">
           <button className="import-button-header" onClick={handleImportClick}>
-            📥 导入
+            导入
           </button>
           <button className="create-button" onClick={handleCreate}>
             + 创建闪卡
