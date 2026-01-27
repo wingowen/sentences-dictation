@@ -81,18 +81,42 @@ export const getNotionSentences = async () => {
     // 设置超时
     timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
     
+    console.log('Fetching Notion sentences from:', functionUrl);
+    
     const response = await fetch(functionUrl, {
       signal: controller.signal,
     });
     
-    // 检查响应类型
+    // 检查响应类型 - 添加详细诊断信息
     const contentType = response.headers.get('content-type');
+    const responseStatus = response.status;
+    const responseStatusText = response.statusText;
+    
+    console.log('Notion Function response:', {
+      status: responseStatus,
+      statusText: responseStatusText,
+      contentType: contentType,
+      url: functionUrl,
+      ok: response.ok
+    });
+    
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('Netlify Functions 未运行或返回了非 JSON 数据。请确保使用 `npm run netlify-dev` 启动项目。');
+      // 获取原始响应文本用于诊断
+      const responseText = await response.text().catch(() => '无法读取响应内容');
+      console.error('Non-JSON response received:', {
+        status: responseStatus,
+        contentType: contentType,
+        responseText: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
+      });
+      throw new Error(`Netlify Functions 返回了非 JSON 数据 (${responseStatus} ${responseStatusText})。请确保使用 \`npm run netlify-dev\` 启动项目。`);
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('Notion Function HTTP error:', {
+        status: responseStatus,
+        errorData: errorData
+      });
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
     
@@ -103,6 +127,7 @@ export const getNotionSentences = async () => {
       throw new Error(data.message || data.error);
     }
     
+    console.log('Successfully fetched', data.sentences?.length || 0, 'sentences from Notion');
     return data.sentences || [];
   } catch (error) {
     if (error.name === 'AbortError') {
