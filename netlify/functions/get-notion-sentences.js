@@ -2,7 +2,7 @@
 // 使用 Notion API 安全地获取数据，避免在前端暴露 API key
 
 import { Client } from '@notionhq/client';
-import { readCache, writeCache } from '../shared/cache.js';
+import { readCache, writeCache, generateCacheKey } from '../shared/cache.js';
 import { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } from '../shared/cors.js';
 
 
