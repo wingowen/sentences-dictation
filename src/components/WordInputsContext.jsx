@@ -25,7 +25,6 @@ function WordInputsContext() {
     handleToggleAutoPlay,
     handleToggleRandomMode,
     handleToggleListenMode,
-    handleToggleVoiceSettings,
     handleToggleAutoNext
   } = useApp();
 
@@ -101,7 +100,7 @@ function WordInputsContext() {
         </div>
 
         <button
-          onClick={handleToggleVoiceSettings}
+          onClick={handleToggleSettings}
           className="voice-settings-button"
         >
           语音设置

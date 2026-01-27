@@ -22,7 +22,6 @@ import ArticleSelectorHint from './components/ArticleSelectorHint'
 import { AppProvider } from './contexts/AppContext'
 
 // 懒加载弹窗组件
-const VoiceSettings = React.lazy(() => import('./components/VoiceSettings'))
 const ResultModal = React.lazy(() => import('./components/ResultModal'))
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
 
@@ -72,7 +71,6 @@ function AppContent() {
   const [listenMode, setListenMode] = useState(false)
   const [availableVoices, setAvailableVoices] = useState([])
   const [selectedVoice, setSelectedVoice] = useState(null)
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false)
   const [speechService, setSpeechService] = useState('web_speech')
   const [externalVoices, setExternalVoices] = useState([])
   const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
@@ -1097,10 +1095,7 @@ function AppContent() {
     setTranslationConfig(config);
   }, []);
 
-  // 切换语音设置弹窗
-  const handleToggleVoiceSettings = useCallback(() => {
-    setShowVoiceSettings(!showVoiceSettings);
-  }, [showVoiceSettings]);
+
   
   // 切换语音服务
   const handleSpeechServiceChange = useCallback((newService) => {
@@ -1296,68 +1291,61 @@ function AppContent() {
               listenMode={listenMode}
               speechSupported={speechSupported}
               onPlay={_handlePlay}
-              onToggleVoiceSettings={handleToggleVoiceSettings}
+
               inputRefs={inputRefs}
-              onToggleSettings={handleToggleSettings}
-              onNext={handleNext}
-              showCounter={showCounter}
-            />
+                  onToggleSettings={handleToggleSettings}
+                  onNext={handleNext}
+                  showCounter={showCounter}
+                />
 
-            {!speechSupported && (
-              <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
-            )}
+               {!speechSupported && (
+                 <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
+               )}
 
-            {/* 弹窗显示结果 */}
-            <Suspense fallback={<div>加载中...</div>}>
-              <ResultModal
-                isOpen={showModal}
-                result={result}
-                correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
-                practiceStats={practiceStats}
-                onClose={handleCloseModal}
-              />
-            </Suspense>
+               {/* 弹窗显示结果 */}
+                <Suspense fallback={<div>加载中...</div>}>
+                  <ResultModal
+                    isOpen={showModal}
+                    result={result}
+                    correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
+                    practiceStats={practiceStats}
+                    onClose={handleCloseModal}
+                  />
+                </Suspense>
 
-            {/* 语音设置独立弹窗 */}
-            <Suspense fallback={<div>加载中...</div>}>
-              <VoiceSettings
-                isOpen={showVoiceSettings}
-                onClose={handleToggleVoiceSettings}
-                speechService={speechService}
-                onSpeechServiceChange={handleSpeechServiceChange}
-                availableVoices={availableVoices}
-                selectedVoice={selectedVoice}
-                onVoiceChange={handleVoiceChange}
-                externalVoices={externalVoices}
-                selectedExternalVoice={selectedExternalVoice}
-                onExternalVoiceChange={handleExternalVoiceChange}
-              />
-            </Suspense>
-
-            {/* 设置弹窗 */}
-            <Suspense fallback={<div>加载中...</div>}>
-              <SettingsModal
-                isOpen={showSettings}
-                onClose={handleToggleSettings}
-                autoPlay={autoPlay}
-                onToggleAutoPlay={_handleAutoPlayToggle}
-                randomMode={randomMode}
-                onToggleRandomMode={_handleRandomModeToggle}
-                listenMode={listenMode}
-                onToggleListenMode={_handleListenModeToggle}
-                autoNext={autoNext}
-                onToggleAutoNext={_handleToggleAutoNext}
-                showCounter={showCounter}
-                onToggleShowCounter={handleToggleShowCounter}
-                speechRate={speechRate}
-                onSpeechRateChange={_setSpeechRate}
-                speechSupported={speechSupported}
-                translationProvider={translationProvider}
-                onTranslationProviderChange={handleTranslationProviderChange}
-                translationConfig={translationConfig}
-                onTranslationConfigChange={handleTranslationConfigChange}
-              />
-            </Suspense>
+                {/* 设置弹窗 */}
+                <Suspense fallback={<div>加载中...</div>}>
+                  <SettingsModal
+                    isOpen={showSettings}
+                    onClose={handleToggleSettings}
+                    autoPlay={autoPlay}
+                    onToggleAutoPlay={_handleAutoPlayToggle}
+                    randomMode={randomMode}
+                    onToggleRandomMode={_handleRandomModeToggle}
+                    listenMode={listenMode}
+                    onToggleListenMode={_handleListenModeToggle}
+                    autoNext={autoNext}
+                    onToggleAutoNext={_handleToggleAutoNext}
+                    showCounter={showCounter}
+                    onToggleShowCounter={handleToggleShowCounter}
+                    speechRate={speechRate}
+                    onSpeechRateChange={_setSpeechRate}
+                    speechSupported={speechSupported}
+                    translationProvider={translationProvider}
+                    onTranslationProviderChange={handleTranslationProviderChange}
+                    translationConfig={translationConfig}
+                    onTranslationConfigChange={handleTranslationConfigChange}
+                    // 新增语音设置参数
+                    availableVoices={availableVoices}
+                    selectedVoice={selectedVoice}
+                    onVoiceChange={handleVoiceChange}
+                    speechService={speechService}
+                    onSpeechServiceChange={handleSpeechServiceChange}
+                    externalVoices={externalVoices}
+                    selectedExternalVoice={selectedExternalVoice}
+                    onExternalVoiceChange={handleExternalVoiceChange}
+                  />
+                </Suspense>
           </>
         )}
       </main>

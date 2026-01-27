@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import HintButton from './HintButton'
 
 const WordInputs = ({
   wordInputs,
@@ -8,12 +9,22 @@ const WordInputs = ({
   listenMode,
   speechSupported,
   onPlay,
-  onToggleVoiceSettings,
   inputRefs,
   onToggleSettings,
   onNext,
   showCounter
 }) => {
+  const [focusedInputIndex, setFocusedInputIndex] = useState(0)
+
+
+  // 调试：打印 currentWords 的变化
+  useEffect(() => {
+    console.log('=== WordInputs Debug ===')
+    console.log('currentWords:', currentWords)
+    console.log('currentWords.length:', currentWords?.length)
+    console.log('focusedInputIndex:', focusedInputIndex)
+    console.log('wordInputs:', wordInputs)
+  }, [currentWords, focusedInputIndex, wordInputs])
   // 聚焦第一个输入框
   useEffect(() => {
     setTimeout(() => {
@@ -21,9 +32,17 @@ const WordInputs = ({
     }, 100)
   }, [wordInputs.length, inputRefs])
 
-  const handleWordInputChange = (index, value) => {
-    onWordInputChange(index, value)
-  }
+   const handleWordInputChange = (index, value) => {
+     onWordInputChange(index, value)
+   }
+
+   const handleInputFocus = (index) => {
+     setFocusedInputIndex(index)
+   }
+
+    const handleInputBlur = () => {
+      // 输入框失去焦点时的处理逻辑
+    }
 
   const handleKeyDown = (index, e) => {
     if (e.key === ' ' || e.key === 'Enter') {
@@ -67,15 +86,7 @@ const WordInputs = ({
           >
             播放
           </button>
-          <button
-            type="button"
-            className="voice-settings-button small"
-            onClick={onToggleVoiceSettings}
-            disabled={!speechSupported}
-            title="语音设置"
-          >
-            语音
-          </button>
+
           <button
             type="button"
             className="settings-button small"
@@ -84,15 +95,22 @@ const WordInputs = ({
           >
             设置
           </button>
-          <button
-            type="button"
-            className="next-sentence-button small"
-            onClick={onNext}
-            disabled={listenMode}
-            title="切换到下一句"
-          >
-            下一句
-          </button>
+           <button
+             type="button"
+             className="next-sentence-button small"
+             onClick={onNext}
+             disabled={listenMode}
+             title="切换到下一句"
+           >
+             下一句
+           </button>
+           
+           {/* 全局提示按钮 */}
+            <HintButton
+              hintText={currentWords.length > 0 ? currentWords[focusedInputIndex]?.word : '暂无提示'}
+              position="right"
+              className="hint-button-wrapper"
+            />
         </div>
       </label>
       <div className="word-inputs">
@@ -108,26 +126,28 @@ const WordInputs = ({
           // 计算已输入的字母数（排除空格）
           const inputCharCount = input.replace(/\s/g, '').length
 
-          return (
-            <div key={index} className="word-input-wrapper">
-              <input
-                ref={(el) => (inputRefs.current[index] = el)}
-                type="text"
-                className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-                style={{ width: inputWidth }}
-                value={input}
-                onChange={(e) => handleWordInputChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                placeholder={underlinePlaceholder}
-                autoFocus={index === 0}
-              />
-              {showCounter && (
-                <div className="word-input-counter">
-                  {inputCharCount} / {wordLength}
-                </div>
-              )}
-            </div>
-          )
+           return (
+             <div key={index} className="word-input-wrapper">
+               <input
+                 ref={(el) => (inputRefs.current[index] = el)}
+                 type="text"
+                 className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                 style={{ width: inputWidth }}
+                 value={input}
+                 onChange={(e) => handleWordInputChange(index, e.target.value)}
+                 onKeyDown={(e) => handleKeyDown(index, e)}
+                 onFocus={() => handleInputFocus(index)}
+                 onBlur={handleInputBlur}
+                 placeholder={underlinePlaceholder}
+                 autoFocus={index === 0}
+               />
+               {showCounter && (
+                 <div className="word-input-counter">
+                   {inputCharCount} / {wordLength}
+                 </div>
+               )}
+             </div>
+           )
         })}
       </div>
     </form>

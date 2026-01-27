@@ -27,7 +27,6 @@ export function AppProvider({ children }) {
   const [speechRate, setSpeechRate] = useState(1);
   const [randomMode, setRandomMode] = useState(false);
   const [listenMode, setListenMode] = useState(false);
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [speechService, setSpeechService] = useState('web_speech');
   const [autoNext, setAutoNext] = useState(true);
 
@@ -170,9 +169,7 @@ export function AppProvider({ children }) {
     setListenMode(!listenMode);
   }, [listenMode]);
 
-  const handleToggleVoiceSettings = useCallback(() => {
-    setShowVoiceSettings(prev => !prev);
-  }, []);
+
 
   const handleToggleAutoNext = useCallback(() => {
     setAutoNext(!autoNext);
@@ -201,8 +198,7 @@ export function AppProvider({ children }) {
     setRandomMode,
     listenMode,
     setListenMode,
-    showVoiceSettings,
-    setShowVoiceSettings,
+
     speechService,
     setSpeechService,
     autoNext,
@@ -215,7 +211,7 @@ export function AppProvider({ children }) {
     handleToggleAutoPlay,
     handleToggleRandomMode,
     handleToggleListenMode,
-    handleToggleVoiceSettings,
+
     handleToggleAutoNext,
 
     // 派生状态

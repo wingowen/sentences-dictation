@@ -1152,6 +1152,115 @@ html {
   color: var(--apple-green);
 }
 
+/* 提示按钮样式 */
+.hint-button-wrapper {
+  margin-left: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.hint-button {
+  padding: 0.3rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--gray-500);
+}
+
+.hint-button:hover {
+  background-color: rgba(0, 122, 255, 0.1);
+  color: var(--apple-blue);
+  transform: scale(1.1);
+}
+
+/* 小气泡提示样式 */
+.hint-tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  min-width: max-content;
+  max-width: 12rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-caption-1);
+  color: var(--white);
+  background-color: var(--gray-900);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp 0.2s ease-out forwards;
+}
+
+.hint-tooltip::before {
+  content: '';
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: var(--gray-900);
+  transform: rotate(45deg);
+}
+
+.hint-tooltip.top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-0.5rem);
+}
+
+.hint-tooltip.top::before {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%) rotate(45deg);
+}
+
+.hint-tooltip.bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
+}
+
+.hint-tooltip.bottom::before {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(50%) rotate(45deg);
+}
+
+.hint-tooltip.left {
+  right: 100%;
+  top: 50%;
+  transform: translateX(-0.5rem) translateY(-50%);
+}
+
+.hint-tooltip.left::before {
+  left: 100%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%) rotate(45deg);
+}
+
+.hint-tooltip.right {
+  left: 100%;
+  top: 50%;
+  transform: translateX(0.5rem) translateY(-50%);
+}
+
+.hint-tooltip.right::before {
+  right: 100%;
+  top: 50%;
+  transform: translateX(50%) translateY(-50%) rotate(45deg);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .show-counter-toggle {
   display: flex;
   align-items: center;

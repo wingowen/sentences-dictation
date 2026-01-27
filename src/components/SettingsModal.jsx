@@ -20,7 +20,16 @@ const SettingsModal = ({
   translationProvider,
   onTranslationProviderChange,
   translationConfig,
-  onTranslationConfigChange
+  onTranslationConfigChange,
+  // 新增语音设置参数
+  availableVoices,
+  selectedVoice,
+  onVoiceChange,
+  speechService,
+  onSpeechServiceChange,
+  externalVoices,
+  selectedExternalVoice,
+  onExternalVoiceChange
 }) => {
   const [activeTab, setActiveTab] = useState('speech')
 
@@ -59,50 +68,83 @@ const SettingsModal = ({
 
         {/* Tab 内容 */}
         <div className="settings-tab-content">
-          {activeTab === 'speech' && (
-            <div className="settings-panel">
-              <div className="settings-section">
-                <h3>语音设置</h3>
+               {activeTab === 'speech' && (
+                 <div className="settings-panel">
+                   <div className="settings-section">
+                     <h3>语音设置</h3>
 
-                <label className="settings-option">
-                  <span className="settings-label">语速:</span>
-                  <select
-                    value={speechRate.toFixed(1)}
-                    onChange={(e) => onSpeechRateChange(parseFloat(e.target.value))}
-                    disabled={!speechSupported || listenMode}
-                    className="settings-select"
-                  >
-                    <option value="0.5">0.5x (慢速)</option>
-                    <option value="0.75">0.75x (较慢)</option>
-                    <option value="1.0">1.0x (正常)</option>
-                    <option value="1.25">1.25x (较快)</option>
-                    <option value="1.5">1.5x (快速)</option>
-                    <option value="2.0">2.0x (很快)</option>
-                  </select>
-                </label>
+                     <label className="settings-option">
+                       <span className="settings-label">语速:</span>
+                       <select
+                         value={speechRate.toFixed(1)}
+                         onChange={(e) => onSpeechRateChange(parseFloat(e.target.value))}
+                         disabled={!speechSupported || listenMode}
+                         className="settings-select"
+                       >
+                         <option value="0.5">0.5x (慢速)</option>
+                         <option value="0.75">0.75x (较慢)</option>
+                         <option value="1.0">1.0x (正常)</option>
+                         <option value="1.25">1.25x (较快)</option>
+                         <option value="1.5">1.5x (快速)</option>
+                         <option value="2.0">2.0x (很快)</option>
+                       </select>
+                     </label>
 
-                <label className="settings-option">
-                  <input
-                    type="checkbox"
-                    checked={autoPlay}
-                    onChange={(e) => onToggleAutoPlay(e.target.checked)}
-                    disabled={!speechSupported || listenMode}
-                  />
-                  <span>自动朗读</span>
-                </label>
+                     <label className="settings-option">
+                       <input
+                         type="checkbox"
+                         checked={autoPlay}
+                         onChange={(e) => onToggleAutoPlay(e.target.checked)}
+                         disabled={!speechSupported || listenMode}
+                       />
+                       <span>自动朗读</span>
+                     </label>
 
-                <label className="settings-option">
-                  <input
-                    type="checkbox"
-                    checked={listenMode}
-                    onChange={(e) => onToggleListenMode(e.target.checked)}
-                    disabled={!speechSupported}
-                  />
-                  <span>听句子模式</span>
-                </label>
-              </div>
-            </div>
-          )}
+                     <label className="settings-option">
+                       <span className="settings-label">语音选择:</span>
+                       {speechService === 'web_speech' ? (
+                         <select
+                           value={selectedVoice ? selectedVoice.name : ''}
+                           onChange={(e) => {
+                             const selectedVoiceName = e.target.value;
+                             const voice = availableVoices.find(v => v.name === selectedVoiceName);
+                             if (voice) {
+                               onVoiceChange(voice);
+                             }
+                           }}
+                           disabled={!speechSupported}
+                           className="settings-select"
+                         >
+                           {availableVoices.map((voice) => (
+                             <option key={voice.name} value={voice.name}>
+                               {voice.name} ({voice.lang})
+                             </option>
+                           ))}
+                         </select>
+                       ) : (
+                         <select
+                           value={selectedExternalVoice ? selectedExternalVoice.name : ''}
+                           onChange={(e) => {
+                             const selectedVoiceName = e.target.value;
+                             const voice = externalVoices.find(v => v.name === selectedVoiceName);
+                             if (voice) {
+                               onExternalVoiceChange(voice);
+                             }
+                           }}
+                           disabled={!speechSupported}
+                           className="settings-select"
+                         >
+                           {externalVoices.map((voice) => (
+                             <option key={voice.name} value={voice.name}>
+                               {voice.displayName}
+                             </option>
+                           ))}
+                         </select>
+                       )}
+                     </label>
+                   </div>
+                 </div>
+               )}
 
           {activeTab === 'practice' && (
             <div className="settings-panel">

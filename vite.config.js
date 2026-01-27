@@ -34,13 +34,12 @@ export default defineConfig({
             './src/hooks/usePracticeProgress.js'
           ],
           // UI组件相关
-          'ui': [
-            './src/components/ResultModal.jsx',
-            './src/components/VoiceSettings.jsx',
-            './src/components/DataSourceSelection.jsx',
-            './src/components/PracticeStats.jsx',
-            './src/components/PhoneticsSection.jsx'
-          ],
+           'ui': [
+             './src/components/ResultModal.jsx',
+             './src/components/DataSourceSelection.jsx',
+             './src/components/PracticeStats.jsx',
+             './src/components/PhoneticsSection.jsx'
+           ],
           // 工具库
           'utils': [
             './src/utils/contractionMap.js',
