@@ -103,6 +103,9 @@ function AppContent() {
   const currentRandomIndexRef = useRef(0)
   const listenModeTimerRef = useRef(null)
   const isListenModePlayingRef = useRef(false)
+  
+  // 句子数据缓存 - 预计算每个句子的解析结果，避免切换时重复计算
+  const [sentenceCache, setSentenceCache] = useState({})
 
   // 初始化
   useEffect(() => {
@@ -341,6 +344,7 @@ function AppContent() {
       setIsLoading(false)
       // 清空句子，因为还未选择文章
       setSentences([])
+      setSentenceCache({})  // 清除缓存
       setDataSourceError(null)
       return
     }
@@ -392,6 +396,23 @@ function AppContent() {
       if (data && data.length > 0) {
         console.log('设置句子数据', { dataLength: data.length });
         setSentences(data)
+        
+        // 预计算所有句子的解析数据 - 避免切换时重复计算
+        console.log('开始预计算句子数据');
+        const cache = {};
+        data.forEach((sentence, index) => {
+          const wordsWithPhonetics = parseSentenceForPhonetics(sentence);
+          cache[index] = {
+            wordsWithPhonetics,
+            wordsWithTranslation: wordsWithPhonetics.map(word => ({
+              ...word,
+              translation: getWordTranslation(word.word)
+            }))
+          };
+        });
+        setSentenceCache(cache);
+        console.log('预计算句子数据完成', { cacheSize: Object.keys(cache).length });
+        
         setDataSourceError(null)
         // 生成随机顺序
         randomOrderRef.current = generateRandomOrder(data.length);
@@ -444,6 +465,7 @@ function AppContent() {
           const localData = await getSentences(DATA_SOURCE_TYPES.LOCAL)
           console.log('获取本地数据成功', { localDataLength: localData.length });
           setSentences(localData)
+          setSentenceCache({})  // 清除缓存
           setDataSourceError(`数据源加载失败，已切换到本地数据: ${error.message}`)
           // 生成随机顺序
           randomOrderRef.current = generateRandomOrder(localData.length);
@@ -454,6 +476,7 @@ function AppContent() {
         } catch (fallbackError) {
           console.error('回退到本地数据源也失败:', fallbackError)
           setSentences([])
+          setSentenceCache({})  // 清除缓存
           isFallbackInProgressRef.current = false
           // 回退到本地数据源也失败，允许用户重新选择数据源
           setHasSelectedDataSource(false)
@@ -461,6 +484,7 @@ function AppContent() {
       } else {
         console.log('本地数据源加载失败，设置空句子');
         setSentences([])
+        setSentenceCache({})  // 清除缓存
         // 本地数据源加载失败，允许用户重新选择数据源
         setHasSelectedDataSource(false)
       }
@@ -487,37 +511,48 @@ function AppContent() {
     const loadCurrentSentence = async () => {
       if (sentences[currentIndex]) {
         const sentence = sentences[currentIndex]
-        // 解析句子，获取单词和音标
-        const wordsWithPhonetics = parseSentenceForPhonetics(sentence)
-        // 为每个单词添加翻译
-        const wordsWithTranslation = wordsWithPhonetics.map(word => ({
-          ...word,
-          translation: getWordTranslation(word.word)
-        }))
+        
+        // 优先使用预计算的缓存数据
+        let wordsWithPhonetics, wordsWithTranslation
+        
+        if (sentenceCache[currentIndex]) {
+          // 使用预计算的数据
+          wordsWithPhonetics = sentenceCache[currentIndex].wordsWithPhonetics
+          wordsWithTranslation = sentenceCache[currentIndex].wordsWithTranslation
+        } else {
+          // 回退到实时计算
+          wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+          wordsWithTranslation = wordsWithPhonetics.map(word => ({
+            ...word,
+            translation: getWordTranslation(word.word)
+          }))
+        }
+        
         setCurrentWords(wordsWithTranslation)
-        // 获取句子翻译（现在支持在线翻译）
+        
+        // 获取句子翻译（异步，不阻塞 UI）
         const translation = await getTranslation(sentence, translationProvider, translationConfig)
         setCurrentTranslation(translation || '翻译暂无')
-      
-      // 初始化按词输入数组
-      const initialWordInputs = wordsWithPhonetics.map(() => '')
-      setWordInputs(initialWordInputs)
-      
-      // 重置弹窗状态
-      setShowModal(false)
-      setResult(null)
-      
-      // 初始化输入框引用数组
-      inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
-      
+       
+        // 初始化按词输入数组
+        const initialWordInputs = wordsWithPhonetics.map(() => '')
+        setWordInputs(initialWordInputs)
+        
+        // 重置弹窗状态
+        setShowModal(false)
+        setResult(null)
+        
+        // 初始化输入框引用数组
+        inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
+        
         // 聚焦第一个输入框
         setTimeout(() => {
           inputRefs.current[0]?.focus()
-        }, 100)
+        }, 50)
 
         // 如果自动朗读开启，则自动朗读句子
         if (autoPlay && speechSupported) {
-          // 延迟一点时间，确保页面已经更新
+          // 减少延迟时间
           setTimeout(() => {
             // 根据当前选择的语音服务使用相应的speak函数
             if (speechService === 'web_speech') {
@@ -540,13 +575,13 @@ function AppContent() {
                   setSpeechService('web_speech')
                 })
             }
-          }, 300)
+          }, 100)
         }
       }
     };
 
     loadCurrentSentence();
-  }, [currentIndex, sentences, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService])
+  }, [currentIndex, sentences, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService, sentenceCache])
 
   // 获取转换后的完整句子
   const getExpandedSentence = (sentence) => {
