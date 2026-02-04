@@ -81,7 +81,7 @@ function AppContent() {
   const [localResources, setLocalResources] = useState([])
   const [showFlashcardApp, setShowFlashcardApp] = useState(false)
   // 练习模式：'standard' 标准模式，'immersive' 沉浸式模式
-  const [practiceMode, setPracticeMode] = useState('standard')
+  const [practiceMode, setPracticeMode] = useState('immersive')
   // 练习状态
   const [practiceStats, setPracticeStats] = useState({
     totalAttempts: 0,       // 总尝试次数
