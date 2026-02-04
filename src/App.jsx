@@ -1293,8 +1293,16 @@ function AppContent() {
           </div>
         )}
         
-        {/* 文章和资源选择器 - 沉浸式模式下隐藏 */}
-        {practiceMode !== 'immersive' && (
+        {/* 文章选择器 - 新概念3需要选择文章 */}
+        {practiceMode === 'immersive' && dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 ? (
+          <ArticleSelector
+            dataSource={dataSource}
+            articles={newConcept3Articles}
+            selectedArticleId={selectedArticleId}
+            onArticleChange={setSelectedArticleId}
+            isLoading={isLoading}
+          />
+        ) : practiceMode !== 'immersive' && (
           <>
             <ArticleSelector
               dataSource={dataSource}
