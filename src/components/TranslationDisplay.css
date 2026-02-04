@@ -1,0 +1,77 @@
+/* TranslationDisplay.css - 翻译显示组件样式 */
+
+/* 主容器 */
+.translation-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  max-width: 600px;
+  width: 100%;
+}
+
+/* 翻译文本 */
+.translation-text {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--text-color, #1c1c1e);
+  line-height: 1.5;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* 占位符 */
+.translation-placeholder {
+  font-size: 1.25rem;
+  color: var(--text-muted, #8e8e93);
+  font-style: italic;
+}
+
+/* 播放按钮 */
+.translation-play-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-100, #e5e5ea);
+  color: var(--text-color, #1c1c1e);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.translation-play-button:hover {
+  background: var(--apple-blue, #007aff);
+  color: white;
+  transform: scale(1.05);
+}
+
+.translation-play-button:active {
+  transform: scale(0.95);
+}
+
+.translation-play-button.playing {
+  background: var(--apple-blue, #007aff);
+  color: white;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .translation-text {
+    font-size: 1.375rem;
+  }
+
+  .translation-display {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .translation-text {
+    font-size: 1.25rem;
+  }
+}

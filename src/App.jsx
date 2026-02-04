@@ -24,6 +24,8 @@ import { AppProvider } from './contexts/AppContext'
 // 懒加载弹窗组件
 const ResultModal = React.lazy(() => import('./components/ResultModal'))
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
+// 沉浸式拼写模式
+const ImmersiveSpelling = React.lazy(() => import('./components/ImmersiveSpelling'))
 
 /**
  * 转换句子中的缩写为完整形式
@@ -78,6 +80,8 @@ function AppContent() {
   const [localResourceId, setLocalResourceId] = useState('simple')
   const [localResources, setLocalResources] = useState([])
   const [showFlashcardApp, setShowFlashcardApp] = useState(false)
+  // 练习模式：'standard' 标准模式，'immersive' 沉浸式模式
+  const [practiceMode, setPracticeMode] = useState('standard')
   // 练习状态
   const [practiceStats, setPracticeStats] = useState({
     totalAttempts: 0,       // 总尝试次数
@@ -1179,55 +1183,74 @@ function AppContent() {
         <>
           <header className="app-header">
             <div className="header-left">
-              <button 
-                className="back-button"
-                onClick={() => setHasSelectedDataSource(false)}
-                title="返回数据源选择"
-              >
-                ← 返回
-              </button>
-            </div>
-            <h1>Sentence Dictation Practice</h1>
-            <div className="app-controls">
-              <button 
-                className="flashcard-button"
-                onClick={() => setShowFlashcardApp(true)}
-                title="闪卡功能"
-              >
-                📇 闪卡
-              </button>
-              <div className="data-source-controls">
+              {/* 沉浸式模式下隐藏返回按钮 */}
+              {practiceMode !== 'immersive' && (
                 <button 
-                  className="data-source-button"
-                  onClick={() => setShowDataSourceSelector(!showDataSourceSelector)}
-                  title="切换数据源"
+                  className="back-button"
+                  onClick={() => setHasSelectedDataSource(false)}
+                  title="返回数据源选择"
                 >
-                  {currentDataSource?.icon} {currentDataSource?.name || '数据源'}
-                  <span className="dropdown-arrow">{showDataSourceSelector ? '▲' : '▼'}</span>
+                  ← 返回
                 </button>
-                {showDataSourceSelector && (
-                  <div className="data-source-selector">
-                    {DATA_SOURCES.map((source) => (
-                      <button
-                        key={source.id}
-                        className={`data-source-option ${dataSource === source.id ? 'active' : ''}`}
-                        onClick={() => handleDataSourceChange(source.id)}
-                        title={source.description}
-                      >
-                        <span className="source-icon">{source.icon}</span>
-                        <div className="source-info">
-                          <div className="source-name">{source.name}</div>
-                          <div className="source-description">{source.description}</div>
-                        </div>
-                        {dataSource === source.id && <span className="check-mark">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
+            </div>
+            {/* 沉浸式模式下隐藏标题 */}
+            {practiceMode !== 'immersive' && (
+              <h1>Sentence Dictation Practice</h1>
+            )}
+            <div className="app-controls">
+              <button
+                className={`immersive-mode-button ${practiceMode === 'immersive' ? 'active' : ''}`}
+                onClick={() => setPracticeMode(practiceMode === 'standard' ? 'immersive' : 'standard')}
+                title={practiceMode === 'immersive' ? '切换到标准模式' : '切换到沉浸式模式'}
+              >
+                {practiceMode === 'immersive' ? '📖 标准' : '🌊 沉浸'}
+              </button>
+              {/* 沉浸式模式下隐藏闪卡按钮 */}
+              {practiceMode !== 'immersive' && (
+                <button
+                  className="flashcard-button"
+                  onClick={() => setShowFlashcardApp(true)}
+                  title="闪卡功能"
+                >
+                  📇 闪卡
+                </button>
+              )}
+              {/* 沉浸式模式下隐藏数据源选择器 */}
+              {practiceMode !== 'immersive' && (
+                <div className="data-source-controls">
+                  <button 
+                    className="data-source-button"
+                    onClick={() => setShowDataSourceSelector(!showDataSourceSelector)}
+                    title="切换数据源"
+                  >
+                    {currentDataSource?.icon} {currentDataSource?.name || '数据源'}
+                    <span className="dropdown-arrow">{showDataSourceSelector ? '▲' : '▼'}</span>
+                  </button>
+                  {showDataSourceSelector && (
+                    <div className="data-source-selector">
+                      {DATA_SOURCES.map((source) => (
+                        <button
+                          key={source.id}
+                          className={`data-source-option ${dataSource === source.id ? 'active' : ''}`}
+                          onClick={() => handleDataSourceChange(source.id)}
+                          title={source.description}
+                        >
+                          <span className="source-icon">{source.icon}</span>
+                          <div className="source-info">
+                            <div className="source-name">{source.name}</div>
+                            <div className="source-description">{source.description}</div>
+                          </div>
+                          {dataSource === source.id && <span className="check-mark">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </header>
-      
+       
       <main className="app-main">
         {dataSourceError && (
           <div className="data-source-warning">
@@ -1235,43 +1258,49 @@ function AppContent() {
           </div>
         )}
         
-        {/* 文章和资源选择器 */}
-        <ArticleSelector
-          dataSource={dataSource}
-          articles={newConcept3Articles}
-          selectedArticleId={selectedArticleId}
-          onArticleChange={setSelectedArticleId}
-          isLoading={isLoading}
-        />
+        {/* 文章和资源选择器 - 沉浸式模式下隐藏 */}
+        {practiceMode !== 'immersive' && (
+          <>
+            <ArticleSelector
+              dataSource={dataSource}
+              articles={newConcept3Articles}
+              selectedArticleId={selectedArticleId}
+              onArticleChange={setSelectedArticleId}
+              isLoading={isLoading}
+            />
 
-        <ArticleSelectorHint
-          dataSource={dataSource}
-          articles={newConcept3Articles}
-          selectedArticleId={selectedArticleId}
-          isLoading={isLoading}
-        />
+            <ArticleSelectorHint
+              dataSource={dataSource}
+              articles={newConcept3Articles}
+              selectedArticleId={selectedArticleId}
+              isLoading={isLoading}
+            />
 
-        <LocalResourceSelector
-          dataSource={dataSource}
-          resources={localResources}
-          selectedResourceId={localResourceId}
-          onResourceChange={setLocalResourceId}
-        />
+            <LocalResourceSelector
+              dataSource={dataSource}
+              resources={localResources}
+              selectedResourceId={localResourceId}
+              onResourceChange={setLocalResourceId}
+            />
+          </>
+        )}
         
         {/* 只有当有句子数据时才显示听写区域 */}
         {sentences.length > 0 && (
           <>
-            {/* 练习状态面板 */}
-            <PracticeStats 
-              stats={practiceStats}
-              progress={practiceProgress}
-              dataSource={dataSource}
-              onResetStats={resetPracticeStats}
-              onResetProgress={resetPracticeProgress}
-            />
+            {/* 练习状态面板 - 沉浸式模式下隐藏 */}
+            {practiceMode !== 'immersive' && (
+              <PracticeStats 
+                stats={practiceStats}
+                progress={practiceProgress}
+                dataSource={dataSource}
+                onResetStats={resetPracticeStats}
+                onResetProgress={resetPracticeProgress}
+              />
+            )}
             
-             {/* 音标显示部分 */}
-            {sentences.length > 0 && (
+             {/* 音标显示部分 - 沉浸式模式下隐藏 */}
+            {practiceMode !== 'immersive' && (
               <PhoneticsSection
                 sentences={sentences}
                 currentIndex={currentIndex}
@@ -1282,77 +1311,147 @@ function AppContent() {
               />
             )}
 
-            {/* 按词输入部分 */}
-            <WordInputs
-              wordInputs={wordInputs}
-              currentWords={currentWords}
-              onWordInputChange={_handleWordInputChange}
-              onSubmit={_handleSubmit}
-              listenMode={listenMode}
-              speechSupported={speechSupported}
-              onPlay={_handlePlay}
+            {/* 沉浸式拼写模式 */}
+            {practiceMode === 'immersive' ? (
+              <Suspense fallback={<div className="loading">加载沉浸式模式中...</div>}>
+                <ImmersiveSpelling
+                  translation={currentTranslation}
+                  currentWords={currentWords}
+                  onComplete={(correct) => {
+                    if (correct) {
+                      // 正确：更新练习状态
+                      setPracticeStats(prevStats => {
+                        const newStreak = prevStats.streak + 1;
+                        const newLongestStreak = Math.max(newStreak, prevStats.longestStreak);
+                        const newTotalAttempts = prevStats.totalAttempts + 1;
+                        const newCorrectAnswers = prevStats.correctAnswers + 1;
+                        const newAccuracy = Math.round((newCorrectAnswers / newTotalAttempts) * 100);
 
-              inputRefs={inputRefs}
-                  onToggleSettings={handleToggleSettings}
-                  onNext={handleNext}
-                  showCounter={showCounter}
+                        return {
+                          ...prevStats,
+                          totalAttempts: newTotalAttempts,
+                          correctAnswers: newCorrectAnswers,
+                          accuracy: newAccuracy,
+                          streak: newStreak,
+                          longestStreak: newLongestStreak
+                        };
+                      });
+
+                      // 更新练习进度
+                      setPracticeProgress(prevProgress => {
+                        const currentDataSource = dataSource;
+                        const currentIndexValue = currentIndex;
+                        const totalSentences = sentences.length;
+
+                        const sourceProgress = prevProgress[currentDataSource] || {
+                          completedSentences: [],
+                          correctSentences: [],
+                          lastPracticedIndex: -1,
+                          progressPercentage: 0
+                        };
+
+                        const updatedCompletedSentences = [...new Set([...sourceProgress.completedSentences, currentIndexValue])];
+                        const updatedCorrectSentences = [...new Set([...sourceProgress.correctSentences, currentIndexValue])];
+                        const updatedProgressPercentage = Math.round((updatedCompletedSentences.length / totalSentences) * 100);
+
+                        return {
+                          ...prevProgress,
+                          [currentDataSource]: {
+                            ...sourceProgress,
+                            completedSentences: updatedCompletedSentences,
+                            correctSentences: updatedCorrectSentences,
+                            lastPracticedIndex: currentIndexValue,
+                            progressPercentage: updatedProgressPercentage
+                          }
+                        };
+                      });
+
+                      // 延迟跳转到下一题
+                      if (autoNext) {
+                        setTimeout(() => {
+                          handleNext();
+                        }, 1000);
+                      }
+                    }
+                  }}
                 />
+              </Suspense>
+            ) : (
+              /* 标准按词输入部分 */
+              <WordInputs
+                wordInputs={wordInputs}
+                currentWords={currentWords}
+                onWordInputChange={_handleWordInputChange}
+                onSubmit={_handleSubmit}
+                listenMode={listenMode}
+                speechSupported={speechSupported}
+                onPlay={_handlePlay}
+                inputRefs={inputRefs}
+                onToggleSettings={handleToggleSettings}
+                onNext={handleNext}
+                showCounter={showCounter}
+              />
+            )}
 
-               {!speechSupported && (
-                 <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
-               )}
+            {/* 语音警告 */}
+            {!speechSupported && (
+              <p className="speech-warning">Speech synthesis is not supported in your browser.</p>
+            )}
 
-               {/* 弹窗显示结果 */}
-                <Suspense fallback={<div>加载中...</div>}>
-                  <ResultModal
-                    isOpen={showModal}
-                    result={result}
-                    correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
-                    practiceStats={practiceStats}
-                    onClose={handleCloseModal}
-                  />
-                </Suspense>
+            {/* 弹窗显示结果 */}
+            <Suspense fallback={<div>加载中...</div>}>
+              <ResultModal
+                isOpen={showModal}
+                result={result}
+                correctSentence={sentences[currentIndex] ? getExpandedSentence(sentences[currentIndex]) : ''}
+                practiceStats={practiceStats}
+                onClose={handleCloseModal}
+              />
+            </Suspense>
 
-                {/* 设置弹窗 */}
-                <Suspense fallback={<div>加载中...</div>}>
-                  <SettingsModal
-                    isOpen={showSettings}
-                    onClose={handleToggleSettings}
-                    autoPlay={autoPlay}
-                    onToggleAutoPlay={_handleAutoPlayToggle}
-                    randomMode={randomMode}
-                    onToggleRandomMode={_handleRandomModeToggle}
-                    listenMode={listenMode}
-                    onToggleListenMode={_handleListenModeToggle}
-                    autoNext={autoNext}
-                    onToggleAutoNext={_handleToggleAutoNext}
-                    showCounter={showCounter}
-                    onToggleShowCounter={handleToggleShowCounter}
-                    speechRate={speechRate}
-                    onSpeechRateChange={_setSpeechRate}
-                    speechSupported={speechSupported}
-                    translationProvider={translationProvider}
-                    onTranslationProviderChange={handleTranslationProviderChange}
-                    translationConfig={translationConfig}
-                    onTranslationConfigChange={handleTranslationConfigChange}
-                    // 新增语音设置参数
-                    availableVoices={availableVoices}
-                    selectedVoice={selectedVoice}
-                    onVoiceChange={handleVoiceChange}
-                    speechService={speechService}
-                    onSpeechServiceChange={handleSpeechServiceChange}
-                    externalVoices={externalVoices}
-                    selectedExternalVoice={selectedExternalVoice}
-                    onExternalVoiceChange={handleExternalVoiceChange}
-                  />
-                </Suspense>
+            {/* 设置弹窗 */}
+            <Suspense fallback={<div>加载中...</div>}>
+              <SettingsModal
+                isOpen={showSettings}
+                onClose={handleToggleSettings}
+                autoPlay={autoPlay}
+                onToggleAutoPlay={_handleAutoPlayToggle}
+                randomMode={randomMode}
+                onToggleRandomMode={_handleRandomModeToggle}
+                listenMode={listenMode}
+                onToggleListenMode={_handleListenModeToggle}
+                autoNext={autoNext}
+                onToggleAutoNext={_handleToggleAutoNext}
+                showCounter={showCounter}
+                onToggleShowCounter={handleToggleShowCounter}
+                speechRate={speechRate}
+                onSpeechRateChange={_setSpeechRate}
+                speechSupported={speechSupported}
+                translationProvider={translationProvider}
+                onTranslationProviderChange={handleTranslationProviderChange}
+                translationConfig={translationConfig}
+                onTranslationConfigChange={handleTranslationConfigChange}
+                // 新增语音设置参数
+                availableVoices={availableVoices}
+                selectedVoice={selectedVoice}
+                onVoiceChange={handleVoiceChange}
+                speechService={speechService}
+                onSpeechServiceChange={handleSpeechServiceChange}
+                externalVoices={externalVoices}
+                selectedExternalVoice={selectedExternalVoice}
+                onExternalVoiceChange={handleExternalVoiceChange}
+              />
+            </Suspense>
           </>
         )}
       </main>
-      
-      <footer className="app-footer">
-        <p>Sentence Dictation Practice Tool</p>
-      </footer>
+       
+      {/* 页脚 - 沉浸式模式下隐藏 */}
+      {practiceMode !== 'immersive' && (
+        <footer className="app-footer">
+          <p>Sentence Dictation Practice Tool</p>
+        </footer>
+      )}
         </>
       )}
     </div>

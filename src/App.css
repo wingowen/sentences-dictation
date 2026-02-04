@@ -726,8 +726,8 @@ html {
 }
 
 .play-button.small {
-  padding: 0.5rem 1rem;
-  font-size: var(--text-subhead);
+  padding: 0.4rem 0.8rem;
+  font-size: var(--text-caption-1);
   min-width: auto;
   border-radius: var(--radius-full);
   background: var(--gradient-primary);
@@ -3703,4 +3703,375 @@ button:focus-visible:not(:disabled) {
   .manager-header h2 {
     font-size: var(--text-title-2);
   }
+}
+
+/* ============================================
+   PRACTICE STATS SECTION - Apple Design Style
+   ============================================ */
+
+.practice-stats-section {
+  padding: var(--spacing-lg);
+  background: var(--gradient-card);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.practice-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.practice-stats-title {
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: var(--font-semibold);
+  color: var(--text-color);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.practice-stats-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* Reset buttons */
+.reset-stats-button,
+.reset-progress-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--text-caption-1);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+  border: none;
+}
+
+.reset-stats-button {
+  background: var(--gradient-danger);
+  color: var(--white);
+  box-shadow: var(--shadow-red);
+}
+
+.reset-stats-button:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.35);
+}
+
+.reset-stats-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.reset-progress-button {
+  background: var(--gradient-secondary);
+  color: var(--white);
+  box-shadow: var(--shadow-orange);
+}
+
+.reset-progress-button:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.35);
+}
+
+.reset-progress-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Progress bar container */
+.practice-progress-container {
+  margin-bottom: var(--spacing-lg);
+}
+
+.practice-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xs);
+}
+
+.practice-progress-label {
+  font-size: var(--text-subhead);
+  color: var(--text-color);
+  font-weight: var(--font-medium);
+}
+
+.practice-progress-value {
+  font-size: var(--text-subhead);
+  font-weight: var(--font-semibold);
+  color: var(--success-color);
+}
+
+.practice-progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.practice-progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-success);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-spring);
+  box-shadow: 0 0 10px rgba(52, 199, 89, 0.4);
+}
+
+.practice-progress-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--spacing-xs);
+  font-size: var(--text-caption-1);
+  color: var(--text-muted);
+}
+
+/* Stats grid */
+.practice-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.practice-stat-item {
+  text-align: center;
+  padding: var(--spacing-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.practice-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--apple-blue);
+}
+
+.practice-stat-label {
+  font-size: var(--text-caption-1);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--spacing-xs);
+}
+
+.practice-stat-value {
+  font-size: var(--text-title-3);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* Stat value colors */
+.practice-stat-value.accuracy {
+  color: var(--success-color);
+}
+
+.practice-stat-value.streak {
+  color: var(--apple-teal);
+}
+
+.practice-stat-value.longest-streak {
+  color: var(--secondary-color);
+}
+
+.practice-stat-value.total {
+  color: var(--text-color);
+}
+
+.practice-stat-value.correct {
+  color: var(--success-color);
+}
+
+.practice-stat-value.incorrect {
+  color: var(--danger-color);
+}
+
+/* Responsive adjustments for practice stats */
+@media (max-width: 768px) {
+  .practice-stats-section {
+    padding: var(--spacing-md);
+  }
+
+  .practice-stats-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .practice-stats-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .practice-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .practice-stat-item {
+    padding: var(--spacing-xs);
+  }
+
+  .practice-stat-value {
+    font-size: var(--text-headline);
+  }
+}
+
+@media (max-width: 480px) {
+  .practice-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .reset-stats-button,
+  .reset-progress-button {
+    padding: 0.25rem 0.5rem;
+    font-size: var(--text-caption-2);
+  }
+}
+
+/* ============================================
+   RESULT MODAL STATS - Apple Design Style
+   ============================================ */
+
+.modal-stats-container {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-stats-title {
+  font-size: var(--text-subhead);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-color);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.modal-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.modal-stat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.modal-stat-label {
+  font-size: var(--text-caption-1);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+}
+
+.modal-stat-value {
+  font-size: var(--text-caption-1);
+  font-weight: var(--font-semibold);
+  color: var(--text-color);
+}
+
+.modal-stat-value.accuracy {
+  color: var(--success-color);
+}
+
+.modal-stat-value.streak {
+  color: var(--apple-teal);
+}
+
+.modal-stat-value.total {
+  color: var(--text-color);
+}
+
+.modal-stat-value.correct {
+  color: var(--success-color);
+}
+
+.modal-stat-value.incorrect {
+  color: var(--danger-color);
+}
+
+/* Responsive adjustments for modal stats */
+@media (max-width: 480px) {
+  .modal-stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+
+  .modal-stats-container {
+    padding: var(--spacing-sm);
+  }
+}
+
+/* Immersive Mode Toggle Button */
+.immersive-mode-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--text-caption-1);
+  font-weight: var(--font-medium);
+  color: var(--text-color);
+  background-color: var(--gray-100);
+  border: 1.5px solid var(--gray-300);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.immersive-mode-button:hover {
+  background-color: var(--gray-200);
+  border-color: var(--gray-400);
+  transform: translateY(-1px);
+}
+
+.immersive-mode-button:active {
+  transform: translateY(0);
+}
+
+.immersive-mode-button.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-blue);
+}
+
+.immersive-mode-button.active:hover {
+  background: var(--primary-gradient-hover);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+}
+
+/* Responsive for immersive mode button */
+@media (max-width: 480px) {
+  .immersive-mode-button {
+    padding: var(--spacing-xs) var(--spacing-xs);
+    font-size: 10px;
+  }
+}
+
+/* 沉浸式模式下的头部样式 */
+.app-header:has(.immersive-mode-button.active) {
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 60px;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: none;
+}
+
+.app-header:has(.immersive-mode-button.active) .app-controls {
+  width: 100%;
+  justify-content: center;
+}
+
+/* 沉浸式模式下主内容区样式 */
+.app-main:has(.immersive-spelling) {
+  padding: 0;
+  max-width: 100%;
 }

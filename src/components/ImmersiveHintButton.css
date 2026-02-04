@@ -1,0 +1,92 @@
+/* ImmersiveHintButton.css - 沉浸式提示按钮样式 */
+
+/* 主容器 */
+.immersive-hint-button-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 提示按钮 */
+.immersive-hint-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-200, #e5e5ea);
+  color: var(--gray-600, #636366);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.immersive-hint-button:hover:not(.disabled) {
+  background: var(--apple-blue, #007aff);
+  color: white;
+  transform: scale(1.05);
+}
+
+.immersive-hint-button:active:not(.disabled) {
+  transform: scale(0.95);
+}
+
+.immersive-hint-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 气泡提示 */
+.hint-tooltip.immersive-tooltip {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 1rem;
+  background: var(--gray-900, #2c2c2e);
+  color: white;
+  font-size: 0.9375rem;
+  font-family: var(--font-family-mono, monospace);
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  animation: tooltipFadeIn 0.2s ease;
+}
+
+.hint-tooltip.immersive-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--gray-900, #2c2c2e);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+  .immersive-hint-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .hint-tooltip.immersive-tooltip {
+    bottom: 56px;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
