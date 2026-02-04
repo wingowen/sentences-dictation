@@ -11,12 +11,13 @@ import './ImmersiveSpelling.css'
 const ImmersiveSpelling = ({
   translation,
   currentWords = [],
+  sentenceIndex = 0,
   onComplete
 }) => {
   const [wordInputs, setWordInputs] = useState([])
   const [focusedIndex, setFocusedIndex] = useState(0)
   const inputRefs = useRef([])
-  const initializedRef = useRef(false)
+  const lastSentenceIndexRef = useRef(-1)
 
   // 规范化处理：忽略大小写、前后空格和常见标点
   const normalize = useCallback((str) => {
@@ -43,17 +44,17 @@ const ImmersiveSpelling = ({
 
   // 初始化单词输入数组
   useEffect(() => {
-    if (currentWords.length > 0 && !initializedRef.current) {
-      // 使用 setTimeout 延迟初始化，避免在 effect 中直接调用 setState
+    // 当句子索引变化时，重置所有状态
+    if (currentWords.length > 0 && sentenceIndex !== lastSentenceIndexRef.current) {
       const timer = setTimeout(() => {
         setWordInputs(new Array(currentWords.length).fill(''))
         setFocusedIndex(0)
         inputRefs.current = new Array(currentWords.length).fill(null)
-        initializedRef.current = true
+        lastSentenceIndexRef.current = sentenceIndex
       }, 0)
       return () => clearTimeout(timer)
     }
-  }, [currentWords.length])
+  }, [currentWords.length, sentenceIndex])
 
   // 聚焦第一个输入框
   useEffect(() => {

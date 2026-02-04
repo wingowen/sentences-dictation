@@ -1360,6 +1360,7 @@ function AppContent() {
                 <ImmersiveSpelling
                   translation={currentTranslation}
                   currentWords={currentWords}
+                  sentenceIndex={currentIndex}
                   onComplete={(correct) => {
                     if (correct) {
                       // 正确：更新练习状态
