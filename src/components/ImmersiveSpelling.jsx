@@ -16,6 +16,7 @@ const ImmersiveSpelling = ({
 }) => {
   const [wordInputs, setWordInputs] = useState([])
   const [focusedIndex, setFocusedIndex] = useState(0)
+  const [isCompleted, setIsCompleted] = useState(false)
   const inputRefs = useRef([])
   const lastSentenceIndexRef = useRef(-1)
 
@@ -49,6 +50,7 @@ const ImmersiveSpelling = ({
       const timer = setTimeout(() => {
         setWordInputs(new Array(currentWords.length).fill(''))
         setFocusedIndex(0)
+        setIsCompleted(false)
         inputRefs.current = new Array(currentWords.length).fill(null)
         lastSentenceIndexRef.current = sentenceIndex
         
@@ -134,15 +136,24 @@ const ImmersiveSpelling = ({
     if (wordInputs.length === currentWords.length && currentWords.length > 0) {
       const allCorrect = checkAllWordsComplete(wordInputs, currentWords)
       
-      if (allCorrect) {
-        // 延迟调用完成回调
+      if (allCorrect && !isCompleted) {
+        // 显示完成动画
         const timer = setTimeout(() => {
+          setIsCompleted(true)
+        }, 0)
+        
+        // 动画结束后切换下一句
+        const nextTimer = setTimeout(() => {
           onComplete?.(true)
-        }, 500)
-        return () => clearTimeout(timer)
+        }, 800)
+        
+        return () => {
+          clearTimeout(timer)
+          clearTimeout(nextTimer)
+        }
       }
     }
-  }, [wordInputs, currentWords, checkAllWordsComplete, onComplete])
+  }, [wordInputs, currentWords, checkAllWordsComplete, isCompleted, onComplete])
 
   // 获取当前提示文本
   const getHintText = () => {
@@ -158,15 +169,27 @@ const ImmersiveSpelling = ({
     return `${maxLength * 1.2 + 2}ch`
   }
 
-    return (
-      <div className="immersive-spelling">
-        {/* 中文翻译显示 */}
-        <TranslationDisplay
-          translation={translation}
-        />
+  return (
+    <div className="immersive-spelling">
+      {/* 中文翻译显示 */}
+      <TranslationDisplay
+        translation={translation}
+      />
+
+      {/* 鼓励动画 */}
+      {isCompleted && (
+        <div className="completion-celebration">
+          <div className="checkmark-circle">
+            <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+              <circle className="checkmark-circle-bg" cx="26" cy="26" r="25" fill="none"/>
+              <path className="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* 单词输入区 */}
-      <div className="immersive-word-inputs">
+      <div className={`immersive-word-inputs ${isCompleted ? 'completed' : ''}`}>
         {wordInputs.map((input, index) => {
           const isCorrect = input.trim() && currentWords[index] && 
             checkWordCorrect(input, currentWords[index].word)

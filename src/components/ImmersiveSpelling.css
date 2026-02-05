@@ -65,6 +65,78 @@
   color: var(--success-color, #34c759);
 }
 
+/* 完成后隐藏输入区 */
+.immersive-word-inputs.completed {
+  opacity: 0;
+  transform: scale(1.1);
+  transition: all 0.3s ease;
+}
+
+/* 鼓励动画 - 完成庆祝 */
+.completion-celebration {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  animation: celebratePop 0.6s ease-out;
+}
+
+.checkmark-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 4;
+  stroke: #34c759;
+  stroke-miterlimit: 10;
+  box-shadow: 0 6px 20px rgba(52, 199, 89, 0.3);
+}
+
+.checkmark-circle-bg {
+  stroke: #34c759;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3;
+  stroke-miterlimit: 10;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+.checkmark-check {
+  stroke: #34c759;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-miterlimit: 10;
+}
+
+@keyframes celebratePop {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
 /* 控制区 */
 .immersive-controls {
   display: flex;
