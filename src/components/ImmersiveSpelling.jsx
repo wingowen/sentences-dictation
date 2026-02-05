@@ -51,20 +51,34 @@ const ImmersiveSpelling = ({
         setFocusedIndex(0)
         inputRefs.current = new Array(currentWords.length).fill(null)
         lastSentenceIndexRef.current = sentenceIndex
+        
+        // 聚焦第一个输入框并重置光标位置
+        setTimeout(() => {
+          const firstInput = inputRefs.current[0]
+          if (firstInput) {
+            firstInput.focus()
+            // 重置光标到开头
+            firstInput.setSelectionRange(0, 0)
+          }
+        }, 10)
       }, 0)
       return () => clearTimeout(timer)
     }
   }, [currentWords.length, sentenceIndex])
 
-  // 聚焦第一个输入框
+  // 确保输入框渲染后光标在开头
   useEffect(() => {
-    if (wordInputs.length > 0 && inputRefs.current[0]) {
+    if (wordInputs.length > 0 && wordInputs.every(v => v === '') && inputRefs.current[0]) {
       const timer = setTimeout(() => {
-        inputRefs.current[0]?.focus()
-      }, 100)
+        const firstInput = inputRefs.current[0]
+        if (firstInput) {
+          firstInput.focus()
+          firstInput.setSelectionRange(0, 0)
+        }
+      }, 50)
       return () => clearTimeout(timer)
     }
-  }, [wordInputs.length])
+  }, [wordInputs])
 
   // 处理单个单词输入变化
   const handleWordInputChange = (index, value) => {
