@@ -38,9 +38,9 @@ export async function handler(event, context) {
     
     if (cachedData) {
       console.log('Using cached Notion data');
-      return {
+    return {
         statusCode: 200,
-        headers,
+        headers: CORS_HEADERS,
         body: JSON.stringify(cachedData),
       };
     }

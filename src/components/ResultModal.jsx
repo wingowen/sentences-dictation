@@ -14,31 +14,28 @@ const ResultModal = ({ isOpen, result, correctSentence, practiceStats, onClose }
             Correct sentence: <strong>{correctSentence}</strong>
           </p>
           {/* 显示练习状态更新 */}
-          <div style={{ 
-            marginTop: '15px', 
-            padding: '10px', 
-            backgroundColor: '#f8f9fa', 
-            borderRadius: '6px', 
-            border: '1px solid #dee2e6'
-          }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>练习状态</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>准确率:</span>
-                <span style={{ marginLeft: '5px', fontWeight: '500', color: '#28a745' }}>{practiceStats.accuracy}%</span>
+          <div className="modal-stats-container">
+            <div className="modal-stats-title">练习状态</div>
+            <div className="modal-stats-grid">
+              <div className="modal-stat-row">
+                <span className="modal-stat-label">准确率:</span>
+                <span className="modal-stat-value accuracy">{practiceStats.accuracy}%</span>
               </div>
-              <div>
-                <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>连续正确:</span>
-                <span style={{ marginLeft: '5px', fontWeight: '500', color: '#17a2b8' }}>{practiceStats.streak}</span>
+              <div className="modal-stat-row">
+                <span className="modal-stat-label">连续正确:</span>
+                <span className="modal-stat-value streak">{practiceStats.streak}</span>
               </div>
-              <div>
-                <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>总尝试:</span>
-                <span style={{ marginLeft: '5px', fontWeight: '500', color: '#495057' }}>{practiceStats.totalAttempts}</span>
+              <div className="modal-stat-row">
+                <span className="modal-stat-label">总尝试:</span>
+                <span className="modal-stat-value total">{practiceStats.totalAttempts}</span>
               </div>
-              <div>
-                <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>正确/错误:</span>
-                <span style={{ marginLeft: '5px', fontWeight: '500', color: '#28a745' }}>{practiceStats.correctAnswers}</span>
-                <span style={{ marginLeft: '5px', fontWeight: '500', color: '#dc3545' }}>/{practiceStats.incorrectAnswers}</span>
+              <div className="modal-stat-row">
+                <span className="modal-stat-label">正确/错误:</span>
+                <span>
+                  <span className="modal-stat-value correct">{practiceStats.correctAnswers}</span>
+                  <span className="modal-stat-value" style={{ margin: '0 2px', color: 'var(--text-muted)' }}>/</span>
+                  <span className="modal-stat-value incorrect">{practiceStats.incorrectAnswers}</span>
+                </span>
               </div>
             </div>
           </div>
