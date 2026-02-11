@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 export function useArticles(params?: Record<string, any>) {
   return useQuery({
     queryKey: ['articles', params],
-    queryFn: () => articlesApi.list(params).then((res) => res.data),
+    queryFn: () => articlesApi.list(params),  // axios interceptor already returns response.data
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -13,7 +13,7 @@ export function useArticles(params?: Record<string, any>) {
 export function useArticle(id: number) {
   return useQuery({
     queryKey: ['articles', id],
-    queryFn: () => articlesApi.get(id).then((res) => res.data),
+    queryFn: () => articlesApi.get(id),  // axios interceptor already returns response.data
     enabled: !!id,
   });
 }
@@ -25,6 +25,7 @@ export function useCreateArticle() {
     mutationFn: (data: CreateArticleData) => articlesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
       toast.success('文章创建成功');
     },
     onError: (error: any) => {
@@ -42,6 +43,7 @@ export function useUpdateArticle() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['articles', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
       toast.success('文章更新成功');
     },
     onError: (error: any) => {
@@ -57,6 +59,7 @@ export function useDeleteArticle() {
     mutationFn: (id: number) => articlesApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
       toast.success('文章删除成功');
     },
     onError: (error: any) => {

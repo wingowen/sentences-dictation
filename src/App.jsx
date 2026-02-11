@@ -19,6 +19,7 @@ const FlashcardApp = React.lazy(() => import('./components/FlashcardApp'))
 import ArticleSelector from './components/ArticleSelector'
 import LocalResourceSelector from './components/LocalResourceSelector'
 import ArticleSelectorHint from './components/ArticleSelectorHint'
+import SupabaseSelector from './components/SupabaseSelector'
 import { AppProvider } from './contexts/AppContext'
 
 // 懒加载弹窗组件
@@ -340,11 +341,19 @@ function AppContent() {
     // 如果是新概念三但未选择文章，等待用户选择文章
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) {
       console.log('新概念三未选择文章，等待用户选择');
-      // 设置为非加载状态，因为不需要加载句子，只需要等待用户选择文章
       setIsLoading(false)
-      // 清空句子，因为还未选择文章
       setSentences([])
-      setSentenceCache({})  // 清除缓存
+      setSentenceCache({})
+      setDataSourceError(null)
+      return
+    }
+    
+    // 如果是在线课程(Supabase)但未选择文章，等待用户选择文章
+    if (dataSource === DATA_SOURCE_TYPES.SUPABASE) {
+      console.log('在线课程数据源，等待用户通过选择器加载句子');
+      setIsLoading(false)
+      setSentences([])
+      setSentenceCache({})
       setDataSourceError(null)
       return
     }
@@ -500,10 +509,17 @@ function AppContent() {
     if (isFallbackInProgressRef.current) {
       return
     }
+    // SUPABASE 数据源不需要自动加载句子，由 SupabaseSelector 组件手动触发
+    if (dataSource === DATA_SOURCE_TYPES.SUPABASE) {
+      setIsLoading(false)
+      setSentences([])
+      return
+    }
     // 只有在用户已经选择数据源后才加载数据
     if (hasSelectedDataSource) {
       loadSentences()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSource, selectedArticleId, hasSelectedDataSource, loadSentences])
 
   // 当当前句子变化时，更新单词和音标
@@ -528,7 +544,9 @@ function AppContent() {
           }))
         }
         
+        // 重置状态并设置新数据
         setCurrentWords(wordsWithTranslation)
+        setCurrentTranslation('翻译暂无') // 先设置为默认值，避免闪烁
         
         // 获取句子翻译（异步，不阻塞 UI）
         const translation = await getTranslation(sentence, translationProvider, translationConfig)
@@ -545,37 +563,45 @@ function AppContent() {
         // 初始化输入框引用数组
         inputRefs.current = new Array(wordsWithPhonetics.length).fill(null)
         
-        // 聚焦第一个输入框
+        // 聚焦第一个输入框 - 确保在下一个事件循环中执行
         setTimeout(() => {
-          inputRefs.current[0]?.focus()
-        }, 50)
+          if (inputRefs.current[0]) {
+            inputRefs.current[0].focus()
+            // 重置光标到开头
+            inputRefs.current[0].setSelectionRange(0, 0)
+          }
+        }, 100)
 
         // 如果自动朗读开启，则自动朗读句子
         if (autoPlay && speechSupported) {
-          // 减少延迟时间
+          // 增加延迟确保所有状态稳定
           setTimeout(() => {
-            // 根据当前选择的语音服务使用相应的speak函数
-            if (speechService === 'web_speech') {
-              cancelSpeech() // 取消之前的朗读
-              speak(sentence, speechRate).catch(error => {
-                console.error('Error speaking:', error)
-              })
-            } else if (speechService === 'uberduck') {
-              externalCancelSpeech() // 取消之前的朗读
-              externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
-                .catch(error => {
-                  console.error('Error speaking with external service:', error)
-                  // 如果外部服务失败，尝试回退到Web Speech API
-                  cancelSpeech()
-                  speak(sentence, speechRate)
-                    .catch(fallbackError => {
-                      console.error('Fallback to web speech also failed:', fallbackError)
-                    })
-                  // 更新语音服务状态为Web Speech API
-                  setSpeechService('web_speech')
+            try {
+              // 根据当前选择的语音服务使用相应的speak函数
+              if (speechService === 'web_speech') {
+                cancelSpeech() // 取消之前的朗读
+                speak(sentence, speechRate).catch(error => {
+                  console.error('Error speaking:', error)
                 })
+              } else if (speechService === 'uberduck') {
+                externalCancelSpeech() // 取消之前的朗读
+                externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
+                  .catch(error => {
+                    console.error('Error speaking with external service:', error)
+                    // 如果外部服务失败，尝试回退到Web Speech API
+                    cancelSpeech()
+                    speak(sentence, speechRate)
+                      .catch(fallbackError => {
+                        console.error('Fallback to web speech also failed:', fallbackError)
+                      })
+                    // 更新语音服务状态为Web Speech API
+                    setSpeechService('web_speech')
+                  })
+              }
+            } catch (error) {
+              console.error('Speech playback error:', error)
             }
-          }, 100)
+          }, 200) // 增加延迟确保状态稳定
         }
       }
     };
@@ -871,7 +897,7 @@ function AppContent() {
 
   // 下一题
   const handleNext = () => {
-    console.log('handleNext called, currentIndex:', currentIndex, 'randomMode:', randomMode, 'sentences.length:', sentences.length);
+    console.log('[handleNext] 函数被调用, currentIndex:', currentIndex, 'randomMode:', randomMode, 'sentences.length:', sentences.length);
     
     // 清除自动跳转定时器
     if (autoNextTimerRef.current) {
@@ -885,7 +911,7 @@ function AppContent() {
     if (randomMode) {
       // 随机模式：按照随机顺序切换句子
       if (sentences.length === 0) {
-        console.log('No sentences available, returning from handleNext');
+        console.log('[handleNext] 没有可用的句子，返回');
         return;
       }
       const nextRandomIndex = (currentRandomIndexRef.current + 1) % sentences.length;
@@ -895,16 +921,20 @@ function AppContent() {
       }
       currentRandomIndexRef.current = nextRandomIndex;
       nextIndex = randomOrderRef.current[currentRandomIndexRef.current];
-      console.log('Next sentence (random):', nextIndex);
+      console.log('[handleNext] 下一个句子 (随机模式):', nextIndex);
     } else {
       // 顺序模式：按照顺序切换句子
       if (sentences.length === 0) {
-        console.log('No sentences available, returning from handleNext');
+        console.log('[handleNext] 没有可用的句子，返回');
         return;
       }
       nextIndex = (currentIndex + 1) % sentences.length;
-      console.log('Next sentence (sequential):', nextIndex);
+      console.log('[handleNext] 下一个句子 (顺序模式):', nextIndex, '(从', currentIndex, '切换到', nextIndex, ')');
     }
+    
+    // 重置当前状态，确保切换更流畅
+    setResult(null)
+    setShowModal(false)
     
     // 更新练习进度的最后练习索引
     setPracticeProgress(prevProgress => {
@@ -927,11 +957,9 @@ function AppContent() {
       };
     });
     
-    // 设置新的当前索引
+    // 直接设置新的当前索引（移除 setTimeout）
+    console.log('[handleNext] 更新 currentIndex:', nextIndex);
     setCurrentIndex(nextIndex);
-    
-    setResult(null)
-    setShowModal(false)
   }
 
   // 关闭弹窗
@@ -1168,7 +1196,17 @@ function AppContent() {
     }
   }, []);
   
-  // 监听听句子模式状态变化
+  // 处理从 SupabaseSelector 加载的句子
+  const handleSupabaseSentencesLoad = useCallback((loadedSentences) => {
+    console.log('[App] 收到 Supabase 句子:', loadedSentences?.length);
+    setSentences(loadedSentences);
+    setCurrentIndex(0);
+    setDataSourceError(null);
+  }, []);
+  
+  const handleSupabaseError = useCallback((error) => {
+    setDataSourceError(error);
+  }, []);
   useEffect(() => {
     if (listenMode) {
       // 启用听句子模式
@@ -1190,7 +1228,7 @@ function AppContent() {
     )
   }
 
-  if (isLoading) {
+  if (isLoading && dataSource !== DATA_SOURCE_TYPES.SUPABASE) {
     return (
       <div className="loading">
         <div>Loading sentences...</div>
@@ -1200,7 +1238,12 @@ function AppContent() {
   }
 
   if (sentences.length === 0 && !dataSourceError) {
-    if (dataSource !== DATA_SOURCE_TYPES.NEW_CONCEPT_3 || selectedArticleId) {
+    // 对于需要选择文章的数据源，不显示错误，而是显示选择器
+    const needsArticleSelection = 
+      (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) ||
+      dataSource === DATA_SOURCE_TYPES.SUPABASE;
+    
+    if (!needsArticleSelection) {
       return <div className="error">No sentences available. Please check your data source.</div>
     }
   }
@@ -1302,6 +1345,14 @@ function AppContent() {
             onArticleChange={setSelectedArticleId}
             isLoading={isLoading}
           />
+        ) : practiceMode === 'immersive' && dataSource === DATA_SOURCE_TYPES.SUPABASE ? (
+          <SupabaseSelector
+            dataSource={dataSource}
+            onSentencesLoad={handleSupabaseSentencesLoad}
+            onError={handleSupabaseError}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+          />
         ) : practiceMode !== 'immersive' && (
           <>
             <ArticleSelector
@@ -1325,6 +1376,15 @@ function AppContent() {
               selectedResourceId={localResourceId}
               onResourceChange={setLocalResourceId}
             />
+
+            {/* Supabase 选择器 - 按标签筛选文章 */}
+            <SupabaseSelector
+            dataSource={dataSource}
+            onSentencesLoad={handleSupabaseSentencesLoad}
+            onError={handleSupabaseError}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+          />
           </>
         )}
         
@@ -1362,6 +1422,7 @@ function AppContent() {
                   currentWords={currentWords}
                   sentenceIndex={currentIndex}
                   onComplete={(correct) => {
+                    console.log('[App.jsx] onComplete 回调被调用, correct:', correct, 'autoNext:', autoNext);
                     if (correct) {
                       // 正确：更新练习状态
                       setPracticeStats(prevStats => {
@@ -1412,10 +1473,16 @@ function AppContent() {
 
                       // 延迟跳转到下一题
                       if (autoNext) {
+                        console.log('[App.jsx] 准备调用 handleNext...');
                         setTimeout(() => {
+                          console.log('[App.jsx] 调用 handleNext...');
                           handleNext();
-                        }, 1000);
+                        }, 500); // 减少延迟时间，提高响应速度
+                      } else {
+                        console.log('[App.jsx] autoNext 为 false，不调用 handleNext');
                       }
+                    } else {
+                      console.log('[App.jsx] correct 为 false，不处理');
                     }
                   }}
                 />

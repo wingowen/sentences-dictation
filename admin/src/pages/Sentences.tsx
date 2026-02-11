@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { MoreHorizontal, Search, Filter } from 'lucide-react';
+import { MoreHorizontal, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -26,14 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { articlesApi } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { LoadingPage, LoadingCard } from '@/components/ui/loading';
+import { LoadingPage } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { formatDate, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function SentencesPage() {
@@ -43,7 +41,7 @@ export function SentencesPage() {
   const [editSentence, setEditSentence] = useState<any>(null);
   const [batchExtensions, setBatchExtensions] = useState('');
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['sentences-list', articleId],
     queryFn: async () => {
       if (articleId) {
@@ -72,7 +70,7 @@ export function SentencesPage() {
 
   const sentences = articleId
     ? data?.data?.article?.sentences || []
-    : data?.data?.articles?.flatMap((a: any) =>
+    : data?.data?.items?.flatMap((a: any) =>
         a.sentences?.map((s: any) => ({ ...s, article_title: a.title })) || []
       ) || [];
 
@@ -255,10 +253,12 @@ export function SentencesPage() {
           title="暂无句子"
           description={articleId ? '该文章暂无句子' : '请先创建文章和句子'}
           action={
-            !articleId && {
-              label: '创建文章',
-              onClick: () => {},
-            }
+            !articleId
+              ? {
+                  label: '创建文章',
+                  onClick: () => {},
+                }
+              : undefined
           }
         />
       ) : (

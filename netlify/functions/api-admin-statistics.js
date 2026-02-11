@@ -27,11 +27,10 @@ async function getStatistics(event) {
     // 2. 按来源类型统计
     const { data: bySourceType } = await supabaseAdmin
       .from('articles')
-      .select('source_type')
-      .count();
-    
+      .select('source_type');
+
     const sourceTypeCounts = {};
-    bySourceType.forEach(item => {
+    bySourceType?.forEach(item => {
       sourceTypeCounts[item.source_type] = (sourceTypeCounts[item.source_type] || 0) + 1;
     });
     

@@ -17,6 +17,7 @@ export const DATA_SOURCE_TYPES = {
   NEW_CONCEPT_1: 'new-concept-1',
   NEW_CONCEPT_3: 'new-concept-3',
   FLASHCARDS: 'flashcards',
+  SUPABASE: 'supabase',
 };
 
 // 数据源配置
@@ -30,6 +31,11 @@ export const DATA_SOURCES = [
     id: DATA_SOURCE_TYPES.LOCAL,
     name: '本地数据',
     description: '使用本地 JSON 文件中的句子',
+  },
+  {
+    id: DATA_SOURCE_TYPES.SUPABASE,
+    name: '在线课程',
+    description: '从数据库获取课程文章进行练习',
   },
   {
     id: DATA_SOURCE_TYPES.NOTION,
@@ -147,6 +153,106 @@ export const getNotionSentences = async () => {
 };
 
 /**
+ * 从 Supabase 获取标签列表
+ * @returns {Promise<Array>} 标签数组
+ */
+export const getSupabaseTags = async () => {
+  const controller = new AbortController();
+  let timeoutId = null;
+  
+  try {
+    const functionUrl = '/.netlify/functions/get-supabase-content?action=tags';
+    timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(functionUrl, { signal: controller.signal });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.tags || [];
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('请求超时，请检查网络连接');
+    }
+    console.error('Error fetching Supabase tags:', error);
+    throw error;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
+};
+
+/**
+ * 从 Supabase 按标签获取文章列表
+ * @param {number|null} tagId - 标签ID（可选）
+ * @returns {Promise<Array>} 文章数组
+ */
+export const getSupabaseArticles = async (tagId = null) => {
+  const controller = new AbortController();
+  let timeoutId = null;
+  
+  try {
+    const functionUrl = tagId 
+      ? `/.netlify/functions/get-supabase-content?tag_id=${tagId}`
+      : '/.netlify/functions/get-supabase-content';
+    timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(functionUrl, { signal: controller.signal });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.articles || [];
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('请求超时，请检查网络连接');
+    }
+    console.error('Error fetching Supabase articles:', error);
+    throw error;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
+};
+
+/**
+ * 从 Supabase 获取文章句子
+ * @param {number} articleId - 文章ID
+ * @returns {Promise<Array>} 句子数组
+ */
+export const getSupabaseSentences = async (articleId) => {
+  const controller = new AbortController();
+  let timeoutId = null;
+  
+  try {
+    const functionUrl = `/.netlify/functions/get-supabase-content?action=sentences&article_id=${articleId}`;
+    timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(functionUrl, { signal: controller.signal });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.sentences || [];
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('请求超时，请检查网络连接');
+    }
+    console.error('Error fetching Supabase sentences:', error);
+    throw error;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
+};
+
+/**
  * 根据数据源类型获取句子
  * @param {string} dataSourceType - 数据源类型 (DATA_SOURCE_TYPES)
  * @returns {Promise<Array>} 句子数组
@@ -171,6 +277,11 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
       break;
     case DATA_SOURCE_TYPES.FLASHCARDS:
       data = getAllFlashcards();
+      break;
+    case DATA_SOURCE_TYPES.SUPABASE:
+      // Supabase 数据源需要先选择文章，这里返回空数组
+      // 实际句子通过 getSupabaseSentences 获取
+      data = [];
       break;
     case DATA_SOURCE_TYPES.LOCAL:
     default:

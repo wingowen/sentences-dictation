@@ -19,6 +19,7 @@ const ImmersiveSpelling = ({
   const [isCompleted, setIsCompleted] = useState(false)
   const inputRefs = useRef([])
   const lastSentenceIndexRef = useRef(-1)
+  const isCompletedRef = useRef(false) // 使用 ref 追踪完成状态，避免 useEffect 依赖问题
 
   // 规范化处理：忽略大小写、前后空格和常见标点
   const normalize = useCallback((str) => {
@@ -32,15 +33,24 @@ const ImmersiveSpelling = ({
   // 检查单个单词是否正确
   const checkWordCorrect = useCallback((userWord, correctWord) => {
     if (!userWord || !correctWord) return false
-    return normalize(userWord) === normalize(correctWord)
+    const normalizedUser = normalize(userWord)
+    const normalizedCorrect = normalize(correctWord)
+    const result = normalizedUser === normalizedCorrect
+    console.log(`[checkWordCorrect] 用户="${userWord}"(规范化为"${normalizedUser}") vs 正确="${correctWord}"(规范化为"${normalizedCorrect}") = ${result}`)
+    return result
   }, [normalize])
 
   // 检查是否所有单词都正确完成
   const checkAllWordsComplete = useCallback((inputs, words) => {
-    if (inputs.length !== words.length) return false
-    return inputs.every((input, index) => 
+    if (inputs.length !== words.length) {
+      console.log(`[checkAllWordsComplete] 长度不匹配: inputs.length=${inputs.length}, words.length=${words.length}`)
+      return false
+    }
+    const results = inputs.map((input, index) => 
       checkWordCorrect(input, words[index]?.word)
     )
+    console.log(`[checkAllWordsComplete] 每个单词的检查结果:`, results)
+    return results.every(r => r)
   }, [checkWordCorrect])
 
   // 初始化单词输入数组
@@ -51,6 +61,7 @@ const ImmersiveSpelling = ({
         setWordInputs(new Array(currentWords.length).fill(''))
         setFocusedIndex(0)
         setIsCompleted(false)
+        isCompletedRef.current = false // 同时重置 ref
         inputRefs.current = new Array(currentWords.length).fill(null)
         lastSentenceIndexRef.current = sentenceIndex
         
@@ -62,7 +73,7 @@ const ImmersiveSpelling = ({
             // 重置光标到开头
             firstInput.setSelectionRange(0, 0)
           }
-        }, 10)
+        }, 50) // 增加延迟确保DOM已更新
       }, 0)
       return () => clearTimeout(timer)
     }
@@ -84,16 +95,23 @@ const ImmersiveSpelling = ({
 
   // 处理单个单词输入变化
   const handleWordInputChange = (index, value) => {
+    console.log(`[ImmersiveSpelling] 输入变化: 索引=${index}, 值="${value}"`)
+    
     setWordInputs(prev => {
-      return [...prev.slice(0, index), value, ...prev.slice(index + 1)]
+      const newInputs = [...prev.slice(0, index), value, ...prev.slice(index + 1)]
+      console.log(`[ImmersiveSpelling] 更新后的wordInputs:`, newInputs)
+      return newInputs
     })
 
     // 检查当前单词是否正确，正确则跳转
     const userWord = value
     const correctWord = currentWords[index]?.word
     
+    console.log(`[ImmersiveSpelling] 单词检查: 用户="${userWord}", 正确="${correctWord}"`)
+    
     if (userWord.trim() && correctWord) {
       const isCorrect = checkWordCorrect(userWord, correctWord)
+      console.log(`[ImmersiveSpelling] 单词正确性: ${isCorrect}`)
       
       if (isCorrect && index < wordInputs.length - 1) {
         setTimeout(() => {
@@ -136,24 +154,33 @@ const ImmersiveSpelling = ({
     if (wordInputs.length === currentWords.length && currentWords.length > 0) {
       const allCorrect = checkAllWordsComplete(wordInputs, currentWords)
       
-      if (allCorrect && !isCompleted) {
-        // 显示完成动画
-        const timer = setTimeout(() => {
-          setIsCompleted(true)
-        }, 0)
+      // 调试日志
+      console.log('[ImmersiveSpelling] 状态检查:')
+      console.log('  wordInputs:', wordInputs)
+      console.log('  currentWords:', currentWords.map(w => w.word))
+      console.log('  allCorrect:', allCorrect)
+      console.log('  isCompleted:', isCompletedRef.current)
+      
+      // 使用 ref 检查完成状态，避免依赖 isCompleted 导致定时器被清除
+      if (allCorrect && !isCompletedRef.current) {
+        console.log('[ImmersiveSpelling] 所有单词正确！触发切换...')
         
-        // 动画结束后切换下一句
+        // 标记为已完成（同时更新 ref 和 state）
+        isCompletedRef.current = true
+        setIsCompleted(true)
+        
+        // 使用更短的延迟来切换下一句，但确保UI有反馈
         const nextTimer = setTimeout(() => {
+          console.log('[ImmersiveSpelling] 调用onComplete回调...')
           onComplete?.(true)
-        }, 800)
+        }, 300) // 减少到300ms
         
         return () => {
-          clearTimeout(timer)
           clearTimeout(nextTimer)
         }
       }
     }
-  }, [wordInputs, currentWords, checkAllWordsComplete, isCompleted, onComplete])
+  }, [wordInputs, currentWords, checkAllWordsComplete, onComplete]) // 移除 isCompleted 依赖
 
   // 获取当前提示文本
   const getHintText = () => {

@@ -4,11 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatNumber } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 export function StatisticsPage() {
-  const { data: stats, isLoading, error } = useStatistics();
+  const queryClient = useQueryClient();
+  const { data: stats, isLoading, error, refetch } = useStatistics();
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['statistics'] });
+    refetch();
+  };
 
   if (isLoading) return <LoadingPage />;
   if (error || !stats?.success) {
@@ -23,10 +32,22 @@ export function StatisticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="统计分析"
-        description="数据统计与可视化"
-      />
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title="统计分析"
+          description="数据统计与可视化"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          刷新
+        </Button>
+      </div>
 
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -101,7 +122,7 @@ export function StatisticsPage() {
                       `${name} ${(percent * 100).toFixed(0)}%`
                     }
                   >
-                    {(by_source_type || []).map((_, index) => (
+                    {(by_source_type || []).map((_item: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

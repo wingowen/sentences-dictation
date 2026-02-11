@@ -68,7 +68,7 @@ export function ArticlesPage() {
     }
   };
 
-  const articles = data?.data?.articles || [];
+  const articles = data?.data?.items || [];
   const pagination = data?.data?.pagination;
 
   const sourceTypeLabels: Record<string, string> = {

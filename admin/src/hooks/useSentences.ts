@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 export function useSentences(params?: Record<string, any>) {
   return useQuery({
     queryKey: ['sentences', params],
-    queryFn: () => sentencesApi.get(params.id).then((res) => res.data),
+    queryFn: () => sentencesApi.get(params?.id),  // axios interceptor already returns response.data
     enabled: !!params?.id,
   });
 }
@@ -13,7 +13,7 @@ export function useSentences(params?: Record<string, any>) {
 export function useSentence(id: number) {
   return useQuery({
     queryKey: ['sentences', id],
-    queryFn: () => sentencesApi.get(id).then((res) => res.data),
+    queryFn: () => sentencesApi.get(id),  // axios interceptor already returns response.data
     enabled: !!id,
   });
 }

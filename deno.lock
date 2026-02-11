@@ -13,6 +13,7 @@
       "dependencies": [
         "npm:@eslint/js@^9.39.1",
         "npm:@notionhq/client@^2.2.15",
+        "npm:@supabase/supabase-js@^2.45.0",
         "npm:@testing-library/jest-dom@^6.9.1",
         "npm:@testing-library/react@^16.3.2",
         "npm:@testing-library/user-event@^14.6.1",
@@ -29,9 +30,10 @@
         "npm:globals@^16.5.0",
         "npm:jest-environment-jsdom@^30.2.0",
         "npm:jsdom@^27.4.0",
-        "npm:netlify-cli@^23.13.1",
+        "npm:netlify-cli@^23.13.5",
         "npm:react-dom@^19.2.0",
         "npm:react@^19.2.0",
+        "npm:supabase@^2.75.5",
         "npm:vite@^7.2.4",
         "npm:vitest@^4.0.18"
       ]

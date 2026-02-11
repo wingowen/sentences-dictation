@@ -23,20 +23,23 @@ function success(data = null, message = '操作成功') {
  */
 function paginate(items, total, page, limit) {
   const totalPages = Math.ceil(total / limit);
-  
+
   return {
-    success: true,
-    data: {
-      items,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total: Number(total),
-        total_pages: totalPages,
-        has_next: page < totalPages,
-        has_prev: page > 1
+    statusCode: 200,
+    body: JSON.stringify({
+      success: true,
+      data: {
+        items,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: Number(total),
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1
+        }
       }
-    }
+    })
   };
 }
 

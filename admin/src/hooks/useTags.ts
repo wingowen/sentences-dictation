@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 export function useTags() {
   return useQuery({
     queryKey: ['tags'],
-    queryFn: () => tagsApi.list().then((res) => res.data),
+    queryFn: () => tagsApi.list(),  // axios interceptor already returns response.data
     staleTime: 10 * 60 * 1000, // 10 分钟
   });
 }

@@ -9,13 +9,14 @@ import { useAuthStore } from '@/stores/auth';
 const API_BASE = import.meta.env?.VITE_API_URL || '/.netlify/functions';
 
 // Auth API - 独立 endpoint
-const AUTH_URL = `${API_BASE}/auth`;
+const AUTH_URL = `${API_BASE.replace('/api', '')}/auth`;
 
 // Admin APIs - 独立 endpoint (Netlify functions use hyphen for subdirectories)
-const ARTICLES_URL = `${API_BASE}/api-admin-articles`;
-const SENTENCES_URL = `${API_BASE}/api-admin-sentences`;
-const TAGS_URL = `${API_BASE}/api-admin-tags`;
-const STATISTICS_URL = `${API_BASE}/api-admin-statistics`;
+const NETLIFY_FUNCTIONS = API_BASE.replace('/api', '');
+const ARTICLES_URL = `${NETLIFY_FUNCTIONS}/api-admin-articles`;
+const SENTENCES_URL = `${NETLIFY_FUNCTIONS}/api-admin-sentences`;
+const TAGS_URL = `${NETLIFY_FUNCTIONS}/api-admin-tags`;
+const STATISTICS_URL = `${NETLIFY_FUNCTIONS}/api-admin-statistics`;
 
 const api = axios.create({
   timeout: 30000,
