@@ -1,6 +1,7 @@
-// 语音服务 - 集成Edge TTS和Web Speech API的语音合成功能
+// 语音服务 - KittenTTS本地 → Edge TTS在线 → Web Speech API 三级降级
 
 import { speak as edgeSpeak, isEdgeTtsAvailable, cancelSpeech as edgeCancelSpeech } from './edgeTtsService.js';
+import { speak as kittenSpeak, isKittenTtsAvailable, cancelSpeech as kittenCancelSpeech } from './kittenTtsService.js';
 
 // import { debounce } from '../utils/debounce.js'; // Not currently used
 
@@ -110,18 +111,27 @@ const clearSpeechTasks = () => {
  * @returns {Promise<void>} - 朗读完成的Promise
  */
 export const speak = async (text, rate = 1.0) => {
-  // Try Edge TTS first (high quality)
+  // 1. Try KittenTTS first (local, best quality, 25MB model)
+  try {
+    if (await isKittenTtsAvailable()) {
+      await kittenSpeak(text, rate);
+      return;
+    }
+  } catch (error) {
+    console.warn('KittenTTS failed, trying Edge TTS:', error.message);
+  }
+
+  // 2. Try Edge TTS (online, good quality)
   if (isEdgeTtsAvailable()) {
     try {
       await edgeSpeak(text, rate);
       return;
     } catch (error) {
       console.warn('Edge TTS failed, falling back to Web Speech API:', error.message);
-      // Fall through to Web Speech API
     }
   }
 
-  // Fallback to Web Speech API
+  // 3. Fallback to Web Speech API (browser built-in)
   return new Promise((resolve, reject) => {
     if (!isSpeechSupported()) {
       reject(new Error('Speech synthesis is not supported in this browser.'));
@@ -186,7 +196,8 @@ export const speak = async (text, rate = 1.0) => {
  * 取消当前所有语音朗读
  */
 export const cancelSpeech = () => {
-  // Cancel both Edge TTS and Web Speech API
+  // Cancel all TTS services
+  kittenCancelSpeech();
   edgeCancelSpeech();
   clearSpeechTasks();
 };
