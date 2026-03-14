@@ -29,7 +29,9 @@ const SettingsModal = ({
   onSpeechServiceChange,
   externalVoices,
   selectedExternalVoice,
-  onExternalVoiceChange
+  onExternalVoiceChange,
+  kittenTtsUrl,
+  onKittenTtsUrlChange
 }) => {
   const [activeTab, setActiveTab] = useState('speech')
 
@@ -145,6 +147,26 @@ const SettingsModal = ({
                    </div>
                  </div>
                )}
+                    
+                    {/* KittenTTS 本地服务器配置 */}
+                    <div className="settings-section">
+                      <div className="settings-section-title">🐱 KittenTTS 本地语音</div>
+                      <label className="settings-option">
+                        <span className="settings-label">服务器地址:</span>
+                        <input
+                          type="text"
+                          className="settings-input"
+                          value={kittenTtsUrl || ''}
+                          onChange={(e) => onKittenTtsUrlChange(e.target.value)}
+                          placeholder="http://127.0.0.1:8765"
+                        />
+                      </label>
+                      <div className="settings-hint">
+                        本地: http://127.0.0.1:8765<br/>
+                        内网穿透: https://你的穿透地址.ngrok.io<br/>
+                        启动: python3 scripts/kitten_tts_server.py
+                      </div>
+                    </div>
 
           {activeTab === 'practice' && (
             <div className="settings-panel">

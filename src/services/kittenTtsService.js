@@ -1,7 +1,23 @@
 // KittenTTS 本地服务 - 调用本地 Python 服务器
 // 模型仅 25MB，无需 GPU，音质远超 Web Speech API
 
-const KITTEN_TTS_URL = 'http://127.0.0.1:8765';
+let KITTEN_TTS_URL = localStorage.getItem('kittenTtsUrl') || 'http://127.0.0.1:8765';
+
+/**
+ * 设置 KittenTTS 服务器地址
+ * @param {string} url - 服务器地址，如 'http://127.0.0.1:8765' 或 'https://xxx.ngrok.io'
+ */
+export const setKittenTtsUrl = (url) => {
+  KITTEN_TTS_URL = url.replace(/\/$/, ''); // 去除尾部斜杠
+  localStorage.setItem('kittenTtsUrl', KITTEN_TTS_URL);
+  isServerAvailable = null; // 重置检测状态
+  lastHealthCheck = 0;
+};
+
+/**
+ * 获取当前 KittenTTS 服务器地址
+ */
+export const getKittenTtsUrl = () => KITTEN_TTS_URL;
 const CACHE_MAX_SIZE = 100;
 
 // 音频缓存

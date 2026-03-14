@@ -5,6 +5,7 @@ import { newConcept3Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
 
 import { preloadSentence } from './services/edgeTtsService';
+import { setKittenTtsUrl, getKittenTtsUrl } from './services/kittenTtsService';
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
 import { getTranslation, getWordTranslation, TRANSLATION_PROVIDERS, setTranslationProvider } from './services/translationService'
@@ -75,6 +76,7 @@ function AppContent() {
   const [availableVoices, setAvailableVoices] = useState([])
   const [selectedVoice, setSelectedVoice] = useState(null)
   const [speechService, setSpeechService] = useState('web_speech')
+  const [kittenTtsUrl, setKittenTtsUrlState] = useState(() => getKittenTtsUrl())
   const [externalVoices, setExternalVoices] = useState([])
   const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
   const [autoNext, setAutoNext] = useState(true)
@@ -1178,6 +1180,12 @@ function AppContent() {
     setCurrentService(newService);
   }, []);
   
+  // 更新 KittenTTS 服务器地址
+  const handleKittenTtsUrlChange = useCallback((url) => {
+    setKittenTtsUrlState(url);
+    setKittenTtsUrl(url);
+  }, []);
+  
   // 切换语音
   const handleVoiceChange = useCallback((voice) => {
     setSelectedVoice(voice);
@@ -1440,6 +1448,8 @@ function AppContent() {
                 externalVoices={externalVoices}
                 selectedExternalVoice={selectedExternalVoice}
                 onExternalVoiceChange={handleExternalVoiceChange}
+                kittenTtsUrl={kittenTtsUrl}
+                onKittenTtsUrlChange={handleKittenTtsUrlChange}
               />
             </Suspense>
           </>
