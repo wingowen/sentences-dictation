@@ -1,6 +1,8 @@
-// 语音服务 - 基于Web Speech API的语音合成功能
+// 语音服务 - 集成Edge TTS和Web Speech API的语音合成功能
 
-import { debounce } from '../utils/debounce.js';
+import { speak as edgeSpeak, isEdgeTtsAvailable, cancelSpeech as edgeCancelSpeech } from './edgeTtsService.js';
+
+// import { debounce } from '../utils/debounce.js'; // Not currently used
 
 // 语音合成状态管理
 let isSpeaking = false;
@@ -21,6 +23,14 @@ let speechConfig = {
  */
 export const isSpeechSupported = () => {
   return 'speechSynthesis' in window;
+};
+
+/**
+ * 检查Edge TTS服务是否可用
+ * @returns {boolean} Edge TTS是否可用
+ */
+export const isEdgeTtsServiceAvailable = () => {
+  return isEdgeTtsAvailable();
 };
 
 /**
@@ -99,7 +109,19 @@ const clearSpeechTasks = () => {
  * @param {number} rate - 语速 (0.1 - 10, 默认 1.0)
  * @returns {Promise<void>} - 朗读完成的Promise
  */
-export const speak = (text, rate = 1.0) => {
+export const speak = async (text, rate = 1.0) => {
+  // Try Edge TTS first (high quality)
+  if (isEdgeTtsAvailable()) {
+    try {
+      await edgeSpeak(text, rate);
+      return;
+    } catch (error) {
+      console.warn('Edge TTS failed, falling back to Web Speech API:', error.message);
+      // Fall through to Web Speech API
+    }
+  }
+
+  // Fallback to Web Speech API
   return new Promise((resolve, reject) => {
     if (!isSpeechSupported()) {
       reject(new Error('Speech synthesis is not supported in this browser.'));
@@ -164,8 +186,12 @@ export const speak = (text, rate = 1.0) => {
  * 取消当前所有语音朗读
  */
 export const cancelSpeech = () => {
+  // Cancel both Edge TTS and Web Speech API
+  edgeCancelSpeech();
   clearSpeechTasks();
 };
+
+
 
 /**
  * 检查是否正在朗读

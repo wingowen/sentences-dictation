@@ -3,6 +3,8 @@ import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
 import { newConcept3Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
+
+import { preloadSentence } from './services/edgeTtsService';
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
 import { getTranslation, getWordTranslation, TRANSLATION_PROVIDERS, setTranslationProvider } from './services/translationService'
@@ -955,9 +957,17 @@ function AppContent() {
       };
     });
     
+    // 预加载下一句的音频（Edge TTS）
+    if (sentences[nextIndex]) {
+      preloadSentence(sentences[nextIndex], speechRate);
+    }
+
     // 直接设置新的当前索引（移除 setTimeout）
     console.log('[handleNext] 更新 currentIndex:', nextIndex);
     setCurrentIndex(nextIndex);
+
+    // 确保状态更新后立即预加载
+    // (Preloading is already done above before state update)
   }
 
   // 关闭弹窗
