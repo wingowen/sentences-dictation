@@ -17,13 +17,23 @@ export function useSpeechPlayback(speechService = 'web_speech', options = {}) {
 
   // 播放状态引用
   const isPlayingRef = useRef(false);
+  
+  // 缓存 speechSynthesis 实例 (web_speech)
+  const synthesisRef = useRef(null);
 
   // 检查语音支持
   const checkSupport = useCallback(() => {
     const supported = isSpeechSupported();
     setIsSupported(supported);
+    if (supported && speechService === 'web_speech') {
+      // 提前初始化并预热 speechSynthesis，减少首次延迟
+      const synthesis = window.speechSynthesis;
+      synthesisRef.current = synthesis;
+      // 预加载语音列表（触发浏览器异步加载）
+      synthesis.getVoices();
+    }
     return supported;
-  }, []);
+  }, [speechService]);
 
   // 开始播放
   const play = useCallback(async (text, playOptions = {}) => {
@@ -43,7 +53,10 @@ export function useSpeechPlayback(speechService = 'web_speech', options = {}) {
       };
 
       if (speechService === 'web_speech') {
-        await speak(text, mergedOptions.rate || 1.0);
+        // 使用缓存的 speechSynthesis 实例
+        const synthesis = synthesisRef.current || window.speechSynthesis;
+        if (!synthesis) throw new Error('speechSynthesis not available');
+        await speak(text, { ...mergedOptions, synthesis });
       } else if (speechService === 'uberduck') {
         await externalSpeak(text, mergedOptions.rate || 1.0, mergedOptions.voice);
       }

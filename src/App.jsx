@@ -27,6 +27,8 @@ const ResultModal = React.lazy(() => import('./components/ResultModal'))
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
 // 沉浸式拼写模式
 const ImmersiveSpelling = React.lazy(() => import('./components/ImmersiveSpelling'))
+// 优化后的练习页面
+const PracticePage = React.lazy(() => import('./components/practice/PracticePage'))
 
 /**
  * 转换句子中的缩写为完整形式
@@ -1414,13 +1416,33 @@ function AppContent() {
               />
             )}
 
-            {/* 沉浸式拼写模式 */}
+            {/* 优化后的练习页面（桌面端优先） */}
             {practiceMode === 'immersive' ? (
-              <Suspense fallback={<div className="loading">加载沉浸式模式中...</div>}>
-                <ImmersiveSpelling
+              <Suspense fallback={<div className="loading">加载练习页面中...</div>}>
+                <PracticePage
                   translation={currentTranslation}
                   currentWords={currentWords}
                   sentenceIndex={currentIndex}
+                  totalSentences={sentences.length}
+                  showOriginalText={showOriginalText}
+                  originalSentence={sentences[currentIndex] || ''}
+                  practiceStats={practiceStats}
+                  practiceProgress={practiceProgress}
+                  dataSource={dataSource}
+                  autoNext={autoNext}
+                  autoPlay={autoPlay}
+                  speechSupported={speechSupported}
+                  onToggleOriginalText={handleToggleOriginalText}
+                  onPlayAudio={() => {
+                    if (speechSupported && sentences[currentIndex]) {
+                      cancelSpeech()
+                      speak(sentences[currentIndex], speechRate)
+                    }
+                  }}
+                  onBack={() => setHasSelectedDataSource(false)}
+                  onNext={handleNext}
+                  onResetStats={resetPracticeStats}
+                  onResetProgress={resetPracticeProgress}
                   onComplete={(correct) => {
                     console.log('[App.jsx] onComplete 回调被调用, correct:', correct, 'autoNext:', autoNext);
                     if (correct) {
@@ -1477,7 +1499,7 @@ function AppContent() {
                         setTimeout(() => {
                           console.log('[App.jsx] 调用 handleNext...');
                           handleNext();
-                        }, 500); // 减少延迟时间，提高响应速度
+                        }, 500);
                       } else {
                         console.log('[App.jsx] autoNext 为 false，不调用 handleNext');
                       }

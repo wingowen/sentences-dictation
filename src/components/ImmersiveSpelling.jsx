@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import TranslationDisplay from './TranslationDisplay'
 import ImmersiveHintButton from './ImmersiveHintButton'
+import { debounce } from '../utils/debounce'
 import './ImmersiveSpelling.css'
 
 /**
@@ -93,8 +94,8 @@ const ImmersiveSpelling = ({
     }
   }, [wordInputs])
 
-  // 处理单个单词输入变化
-  const handleWordInputChange = (index, value) => {
+  // 处理单个单词输入变化（防抖，减少重渲染）
+  const handleWordInputChange = useCallback(debounce((index, value) => {
     console.log(`[ImmersiveSpelling] 输入变化: 索引=${index}, 值="${value}"`)
     
     setWordInputs(prev => {
@@ -121,7 +122,7 @@ const ImmersiveSpelling = ({
         }, 100)
       }
     }
-  }
+  }, 150), [checkWordCorrect, wordInputs.length])
 
   // 处理按键事件
   const handleKeyDown = (index, e) => {
@@ -239,10 +240,12 @@ const ImmersiveSpelling = ({
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onFocus={() => handleInputFocus(index)}
                 placeholder={placeholder}
-                autoFocus={index === 0}
+                autoFocus={index === 0 && wordInputs.every(v => v === '')}
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck="false"
+                aria-label={`单词 ${index + 1} 输入框`}
+                role="textbox"
               />
             </div>
           )
