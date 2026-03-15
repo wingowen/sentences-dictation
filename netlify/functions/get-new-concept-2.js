@@ -45,7 +45,7 @@ export async function handler(event, context) {
     // Extract articles - specifically targeting the courselist-table
     const articles = [];
     
-    console.log('Starting to extract New Concept 3 articles...');
+    console.log('Starting to extract New Concept 2 articles...');
     
     // Strategy 1: Target the specific courselist-table
     const courseListTable = $('#courselist-table');
@@ -69,7 +69,7 @@ export async function handler(event, context) {
           console.log(`Lesson link URL: ${linkUrl}`);
           
           // Parse the lesson information
-          const match = linkText.match(/^(3-\d{3})\s+(.*)$/);
+          const match = linkText.match(/^(2-\d{3})\s+(.*)$/);
           if (match) {
             const lessonId = match[1];
             const lessonTitle = match[2];
@@ -109,7 +109,7 @@ export async function handler(event, context) {
           if (sentences.length > 0) {
             articles.push({
               id: 1,
-              title: 'New Concept 3 Content',
+              title: 'New Concept 2 Content',
               sentences: sentences
             });
             console.log('Added general content article');
@@ -122,7 +122,7 @@ export async function handler(event, context) {
     
     // Remove any articles that appear to be non-lesson content
     const filteredArticles = articles.filter(article => {
-      // For New Concept 3 lessons, we don't check sentences length
+      // For New Concept 2 lessons, we don't check sentences length
       // because content will be fetched from the link later
       const hasQualityContent = true;
       
@@ -135,7 +135,7 @@ export async function handler(event, context) {
                              !article.title.toLowerCase().includes('menu') &&
                              !article.title.toLowerCase().includes('导航');
       
-      // For New Concept 3, we only need valid title and link
+      // For New Concept 2, we only need valid title and link
       const hasValidLink = article.link && article.link.length > 0;
       const hasValidTitle = article.title && article.title.length > 5;
       
