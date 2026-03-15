@@ -17,6 +17,37 @@ export const isSpeechSupported = () => {
 };
 
 /**
+ * 浏览器原生 SpeechSynthesis 回退
+ * @param {string} text
+ * @param {number} rate
+ * @returns {Promise<void>}
+ */
+const speakWithBrowserSpeech = (text, rate = 1.0) => {
+  if (!('speechSynthesis' in window)) {
+    throw new Error('SpeechSynthesis is not available');
+  }
+
+  const SynthesisUtterance = window.SpeechSynthesisUtterance;
+  if (typeof SynthesisUtterance !== 'function') {
+    throw new Error('SpeechSynthesisUtterance is not available');
+  }
+
+  const synthesis = window.speechSynthesis;
+  const utterance = new SynthesisUtterance(text);
+  utterance.rate = rate;
+
+  return new Promise((resolve, reject) => {
+    utterance.onend = () => resolve();
+    utterance.onerror = (event) => {
+      reject(new Error(event?.error || 'SpeechSynthesis failed'));
+    };
+
+    synthesis.cancel();
+    synthesis.speak(utterance);
+  });
+};
+
+/**
  * 朗读指定文本
  * @param {string} text - 要朗读的文本
  * @param {number} rate - 语速（Edge TTS 暂不支持变速）
@@ -40,8 +71,15 @@ export const speak = async (text, rate = 1.0, sentenceId = null) => {
   try {
     await edgeSpeak(text, rate);
   } catch (error) {
-    console.error('[speechService] Edge TTS 也失败了:', error.message);
-    throw error;
+    console.warn('[speechService] Edge TTS 失败，降级到浏览器 SpeechSynthesis:', error.message);
+
+    try {
+      await speakWithBrowserSpeech(text, rate);
+      return;
+    } catch (fallbackError) {
+      console.error('[speechService] 浏览器 SpeechSynthesis 也失败了:', fallbackError.message);
+      throw error;
+    }
   }
 };
 
@@ -51,6 +89,9 @@ export const speak = async (text, rate = 1.0, sentenceId = null) => {
 export const cancelSpeech = () => {
   preloadedCancelSpeech();
   edgeCancelSpeech();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
 };
 
 /**

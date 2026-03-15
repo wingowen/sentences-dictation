@@ -578,9 +578,10 @@ function AppContent() {
         // 如果自动朗读开启，则自动朗读句子
         if (autoPlay && speechSupported) {
           const sid = sentenceIds[currentIndex] || null;
+          const text = typeof sentence === 'object' ? sentence.text : sentence;
           setTimeout(() => {
             cancelSpeech()
-            speak(sentence, speechRate, sid).catch(error => {
+            speak(text, speechRate, sid).catch(error => {
               console.error('Error speaking:', error)
             })
           }, 300)
@@ -851,9 +852,10 @@ function AppContent() {
   const _handlePlay = () => {
     if (speechSupported && sentences[currentIndex]) {
       const sentence = sentences[currentIndex];
+      const text = typeof sentence === 'object' ? sentence.text : sentence;
       const sid = sentenceIds[currentIndex] || null;
       cancelSpeech()
-      speak(sentence, speechRate, sid)
+      speak(text, speechRate, sid)
         .catch(error => {
           console.error('Error speaking:', error)
         })
