@@ -51,6 +51,7 @@ function AppContent() {
   const [dataSource, setDataSource] = useState(DATA_SOURCE_TYPES.LOCAL)
   const [dataSourceError, setDataSourceError] = useState(null)
   const [currentWords, setCurrentWords] = useState([])
+  const [currentTranslation, setCurrentTranslation] = useState('')
   // translation removed
   const [showOriginalText, setShowOriginalText] = useState(false)
   const [showCounter, setShowCounter] = useState(true)
@@ -1278,7 +1279,7 @@ function AppContent() {
                 totalSentences={sentences.length}
                 showOriginalText={showOriginalText}
                 onToggleOriginalText={handleToggleOriginalText}
-                // translation feature removed
+                currentTranslation={currentTranslation}
               />
             
             {/* 标准按词输入部分 */}

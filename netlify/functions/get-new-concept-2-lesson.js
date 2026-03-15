@@ -111,9 +111,10 @@ export async function handler(event, context) {
 
     const chineseParagraph = chineseParts.join('');
 
-    // Split English into sentences
+    // Split English into sentences (handle text with/without spaces after periods)
     const englishSentences = englishParagraph
-      .split(/(?<=[.!?])\s+/)
+      .replace(/([.!?])\s*([A-Z'"])/g, '$1\n$2')
+      .split('\n')
       .map(s => s.trim())
       .filter(s => s.length > 10 && /[a-zA-Z]/.test(s));
 
