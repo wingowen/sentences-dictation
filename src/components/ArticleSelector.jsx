@@ -32,18 +32,21 @@ const ArticleSelector = React.memo(({
           value={selectedArticleId || ''}
           onChange={(e) => {
             const value = e.target.value;
-            onArticleChange(value ? parseInt(value) : null);
+            onArticleChange(value || null);
           }}
           disabled={isLoading}
         >
           <option value="">
             {isLoading ? '加载中...' : '请选择文章'}
           </option>
-          {articles.map(article => (
-            <option key={article.id} value={article.id}>
-              {article.title}
-            </option>
-          ))}
+          {articles.map(article => {
+            const id = article.lesson_id || article.id;
+            return (
+              <option key={id} value={id}>
+                {article.title}
+              </option>
+            );
+          })}
         </select>
       </label>
     </div>

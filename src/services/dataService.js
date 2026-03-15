@@ -4,6 +4,7 @@
 import localSentences from '../data/简单句.json';
 import newConcept1Sentences from '../data/新概念一.json';
 import newConcept3Data from '../data/new-concept-3.json';
+import newConcept2Data from '../data/new-concept-2.json';
 import cacheService from './cacheService';
 import { getAllFlashcards } from './flashcardService';
 
@@ -306,45 +307,25 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
  * 从 Netlify Function 获取新概念二句子
  * @returns {Promise<Array>} 句子数组
  */
+// 导出新概念二数据
+export { newConcept2Data };
+
 export const getNewConcept2Sentences = async () => {
-  const controller = new AbortController();
-  let timeoutId = null;
-  try {
-    const functionUrl = '/.netlify/functions/get-new-concept-2';
-    timeoutId = setTimeout(() => controller.abort(), 15000);
-    const response = await fetch(functionUrl, { signal: controller.signal });
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('新概念二数据源暂不可用');
-    }
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    if (!data.success || !data.articles || data.articles.length === 0) {
-      throw new Error('获取新概念二文章失败或无数据');
-    }
-    return data.articles.flatMap(article =>
+  // 从本地 JSON 获取文章列表（和 NCE3 一样）
+  if (newConcept2Data.success && newConcept2Data.articles) {
+    return newConcept2Data.articles.flatMap(article =>
       (article.sentences || []).map((sentence, index) => ({
         text: sentence.text || sentence,
         translation: sentence.translation || '',
-        id: `nce2-${article.id || article.title}-${index}`,
+        id: `nce2-${article.lesson_id || article.title}-${index}`,
         words: (sentence.text || sentence).split(/\s+/).map(word => ({
           word: word.replace(/[^a-zA-Z']/g, ''),
           original: word
         }))
       }))
     ).filter(s => s.text && s.text.trim().length > 0);
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error('请求超时，请检查网络连接');
-    }
-    console.error('Error fetching NCE2 sentences:', error);
-    throw error;
-  } finally {
-    if (timeoutId !== null) clearTimeout(timeoutId);
   }
+  throw new Error('新概念二本地数据格式错误');
 };
 
 export const getNewConcept3Sentences = async () => {

@@ -1,0 +1,77 @@
+{
+  "articles": [
+    {
+      "lesson_id": "2-001",
+      "title": "A private conversation",
+      "question": "Why did the writer complain to the people behind him?为什么作者抱怨他后面的人？",
+      "sentences": [
+        {
+          "text": "Last week I went to the theatre.",
+          "translation": "上周我去了剧院。"
+        },
+        {
+          "text": "I had a very good seat.",
+          "translation": "我有一个非常好的座位。"
+        },
+        {
+          "text": "The play was very interesting.",
+          "translation": "这出戏非常有趣。"
+        },
+        {
+          "text": "I did not enjoy it.",
+          "translation": "我不喜欢它。"
+        },
+        {
+          "text": "A young man and a young woman were sitting behind me.",
+          "translation": "一个男青年和一个女青年坐在我身后。"
+        },
+        {
+          "text": "They were talking loudly.",
+          "translation": "他们大声说话。"
+        },
+        {
+          "text": "I got very angry.",
+          "translation": "我得到非常生气。"
+        },
+        {
+          "text": "I could not hear the actors.",
+          "translation": "我听不到演员的声音。"
+        },
+        {
+          "text": "I turned round.",
+          "translation": "我转过身来。"
+        },
+        {
+          "text": "I looked at the man and the woman angrily.",
+          "translation": "我愤怒地看着男人和女人。"
+        },
+        {
+          "text": "They did not pay any attention.",
+          "translation": "他们没有理会。"
+        },
+        {
+          "text": "In the end, I could not bear it.",
+          "translation": "最后，我受不了了。"
+        },
+        {
+          "text": "I turned round again.",
+          "translation": "我又转过身来。"
+        },
+        {
+          "text": "'I can't hear a word!' I said angrily.",
+          "translation": "（我什么也听不见！ “我生气地说。"
+        },
+        {
+          "text": "'It's none of your business,' the young man said rudely.",
+          "translation": "“这不关你的事，”年轻人粗鲁地说。"
+        },
+        {
+          "text": "'This is a private conversation!'",
+          "translation": "（这是私人谈话！ ）"
+        }
+      ],
+      "original_chinese": "上星期我去看戏。我的座位很好，戏很有意思，但我却无法欣赏。一青年男子与一青年女子坐在我的身后，大声地说着话。我非常生气，因为我听不见演员在说什么。我回过头去怒视着那一男一女，他们却毫不理会。最后，我忍不住了，又一次回过头去，生气地说：“我一个字也听不见了！”。“不关你的事，”那男的毫不客气地说，“这是私人间的谈话！”地址： 38.190.226.110",
+      "review_issues": []
+    }
+  ]
+}

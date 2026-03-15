@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
-import { newConcept3Data } from './services/dataService'
+import { newConcept3Data, newConcept2Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
 import { preloadSentence } from './services/speechService';
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
@@ -255,28 +255,25 @@ function AppContent() {
     }
   }, [dataSource])
 
-  // 加载新概念二文章列表
+  // 加载新概念二文章列表（从本地 JSON）
   useEffect(() => {
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2) {
-      const loadArticles = async () => {
-        try {
-          const res = await fetch('/.netlify/functions/get-new-concept-2');
-          const data = await res.json();
-          if (data.success && data.articles) {
-            setNewConcept2Articles(data.articles);
-            setDataSourceError(null);
-          } else {
-            throw new Error(data.error || '获取新概念二文章列表失败');
-          }
-        } catch (error) {
-          console.error('Error loading NCE2 articles:', error);
-          setDataSourceError(error.message);
-          setNewConcept2Articles([]);
+      try {
+        if (newConcept2Data.success && newConcept2Data.articles) {
+          setNewConcept2Articles(newConcept2Data.articles);
+          setDataSourceError(null);
+        } else {
+          throw new Error('本地新概念二数据格式错误');
         }
-      };
-      loadArticles();
+      } catch (error) {
+        console.error('Error loading NCE2 articles:', error);
+        setDataSourceError(error.message);
+        setNewConcept2Articles([]);
+      }
     } else {
       setNewConcept2Articles([]);
+      setSelectedArticleId(null);
+      setDataSourceError(null);
     }
   }, [dataSource])
 
@@ -355,24 +352,14 @@ function AppContent() {
           throw new Error('未找到选中的文章或文章内容');
          }
        } else if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && selectedArticleId) {
-        // 对于新概念二，从 Netlify Function 获取选中文章的句子
+        // 对于新概念二，从本地 JSON 获取选中文章的句子
         console.log('加载新概念二课程内容', { selectedArticleId });
-        const selectedArticle = newConcept2Articles.find(article => article.id === selectedArticleId);
-        if (selectedArticle && selectedArticle.link) {
-          const res = await fetch('/.netlify/functions/get-new-concept-2-lesson', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ link: selectedArticle.link })
-          });
-          const lessonData = await res.json();
-          if (lessonData.success && lessonData.sentences && lessonData.sentences.length > 0) {
-            data = lessonData.sentences.map(sentence => expandContractionsInSentence(sentence));
-            console.log(`Loaded ${data.length} sentences from NCE2 lesson: ${selectedArticle.title}`);
-          } else {
-            throw new Error(lessonData.error || '获取新概念二课程内容失败');
-          }
+        const selectedArticle = newConcept2Articles.find(article => article.lesson_id === selectedArticleId);
+        if (selectedArticle && selectedArticle.sentences) {
+          data = selectedArticle.sentences.map(sentence => expandContractionsInSentence(sentence));
+          console.log(`Loaded ${data.length} sentences from NCE2 lesson: ${selectedArticle.title}`);
         } else {
-          throw new Error('未找到选中的文章');
+          throw new Error('未找到选中的文章或文章内容');
         }
        } else {
         // 其他数据源正常获取
