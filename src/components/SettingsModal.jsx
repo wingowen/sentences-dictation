@@ -21,17 +21,6 @@ const SettingsModal = ({
   onTranslationProviderChange,
   translationConfig,
   onTranslationConfigChange,
-  // 新增语音设置参数
-  availableVoices,
-  selectedVoice,
-  onVoiceChange,
-  speechService,
-  onSpeechServiceChange,
-  externalVoices,
-  selectedExternalVoice,
-  onExternalVoiceChange,
-  kittenTtsUrl,
-  onKittenTtsUrlChange
 }) => {
   const [activeTab, setActiveTab] = useState('speech')
 
@@ -101,72 +90,11 @@ const SettingsModal = ({
                        />
                        <span>自动朗读</span>
                      </label>
-
-                     <label className="settings-option">
-                       <span className="settings-label">语音选择:</span>
-                       {speechService === 'web_speech' ? (
-                         <select
-                           value={selectedVoice ? selectedVoice.name : ''}
-                           onChange={(e) => {
-                             const selectedVoiceName = e.target.value;
-                             const voice = availableVoices.find(v => v.name === selectedVoiceName);
-                             if (voice) {
-                               onVoiceChange(voice);
-                             }
-                           }}
-                           disabled={!speechSupported}
-                           className="settings-select"
-                         >
-                           {availableVoices.map((voice) => (
-                             <option key={voice.name} value={voice.name}>
-                               {voice.name} ({voice.lang})
-                             </option>
-                           ))}
-                         </select>
-                       ) : (
-                         <select
-                           value={selectedExternalVoice ? selectedExternalVoice.name : ''}
-                           onChange={(e) => {
-                             const selectedVoiceName = e.target.value;
-                             const voice = externalVoices.find(v => v.name === selectedVoiceName);
-                             if (voice) {
-                               onExternalVoiceChange(voice);
-                             }
-                           }}
-                           disabled={!speechSupported}
-                           className="settings-select"
-                         >
-                           {externalVoices.map((voice) => (
-                             <option key={voice.name} value={voice.name}>
-                               {voice.displayName}
-                             </option>
-                           ))}
-                         </select>
-                       )}
-                     </label>
                    </div>
                  </div>
                )}
                     
-                    {/* KittenTTS 本地服务器配置 */}
-                    <div className="settings-section">
-                      <div className="settings-section-title">🐱 KittenTTS 本地语音</div>
-                      <label className="settings-option">
-                        <span className="settings-label">服务器地址:</span>
-                        <input
-                          type="text"
-                          className="settings-input"
-                          value={kittenTtsUrl || ''}
-                          onChange={(e) => onKittenTtsUrlChange(e.target.value)}
-                          placeholder="http://127.0.0.1:8765"
-                        />
-                      </label>
-                      <div className="settings-hint">
-                        本地: http://127.0.0.1:8765<br/>
-                        内网穿透: https://你的穿透地址.ngrok.io<br/>
-                        启动: python3 scripts/kitten_tts_server.py
-                      </div>
-                    </div>
+                    
 
           {activeTab === 'practice' && (
             <div className="settings-panel">

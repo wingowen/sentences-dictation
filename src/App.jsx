@@ -2,12 +2,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
 import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
 import { newConcept3Data } from './services/dataService'
-import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
-
-// preloadSentence now in speechService (supports preloaded audio)
+import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
 import { preloadSentence } from './services/speechService';
-import { setKittenTtsUrl, getKittenTtsUrl } from './services/kittenTtsService';
-import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
 import { getTranslation, getWordTranslation, TRANSLATION_PROVIDERS, setTranslationProvider } from './services/translationService'
 
@@ -75,12 +71,6 @@ function AppContent() {
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
   const [randomMode, setRandomMode] = useState(false)
   const [listenMode, setListenMode] = useState(false)
-  const [availableVoices, setAvailableVoices] = useState([])
-  const [selectedVoice, setSelectedVoice] = useState(null)
-  const [speechService, setSpeechService] = useState('web_speech')
-  const [kittenTtsUrl, setKittenTtsUrlState] = useState(() => getKittenTtsUrl())
-  const [externalVoices, setExternalVoices] = useState([])
-  const [selectedExternalVoice, setSelectedExternalVoice] = useState(null)
   const [autoNext, setAutoNext] = useState(true)
   const [localResourceId, setLocalResourceId] = useState('simple')
   const [localResources, setLocalResources] = useState([])
@@ -159,64 +149,6 @@ function AppContent() {
     } else {
       console.log('localStorage中没有保存的练习进度');
     }
-  }, [])
-
-  // 初始化语音服务
-  useEffect(() => {
-    if (speechSupported) {
-      // 监听语音加载事件
-      const handleVoicesChanged = () => {
-        let voices = getAvailableVoices();
-        console.log('获取到的语音列表:', voices);
-        
-        // 额外过滤，确保只保留英文语音
-        voices = voices.filter(voice => voice.lang.startsWith('en-'));
-        console.log('过滤后的英文语音列表:', voices);
-        
-        setAvailableVoices(voices);
-        
-        // 选择默认英语语音（只考虑英文语音）
-        const defaultVoice = voices.find(voice => 
-          voice.lang.startsWith('en-')
-        );
-        if (defaultVoice) {
-          setSelectedVoice(defaultVoice);
-          setVoice(defaultVoice);
-          console.log('选择的默认语音:', defaultVoice);
-        }
-      };
-      
-      // 注册语音加载事件监听器
-      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
-      
-      // 立即尝试获取语音列表
-      handleVoicesChanged();
-      
-      return () => {
-        // 清理事件监听器
-        window.speechSynthesis.onvoiceschanged = null;
-      };
-    }
-  }, [speechSupported])
-
-  // 初始化外部语音服务
-  useEffect(() => {
-    // 获取外部语音服务可用语音列表
-    const loadExternalVoices = async () => {
-      try {
-        const voices = await getExternalAvailableVoices();
-        setExternalVoices(voices);
-        
-        // 选择默认外部语音
-        if (voices.length > 0) {
-          setSelectedExternalVoice(voices[0]);
-        }
-      } catch (error) {
-        console.error('Error loading external voices:', error);
-      }
-    };
-    
-    loadExternalVoices();
   }, [])
 
   // 监听练习状态变化，保存到localStorage
@@ -583,41 +515,19 @@ function AppContent() {
 
         // 如果自动朗读开启，则自动朗读句子
         if (autoPlay && speechSupported) {
-          // 增加延迟确保所有状态稳定
           const sid = sentenceIds[currentIndex] || null;
           setTimeout(() => {
-            try {
-              // 根据当前选择的语音服务使用相应的speak函数
-              if (speechService === 'web_speech') {
-                cancelSpeech() // 取消之前的朗读
-                speak(sentence, speechRate, sid).catch(error => {
-                  console.error('Error speaking:', error)
-                })
-              } else if (speechService === 'uberduck') {
-                externalCancelSpeech() // 取消之前的朗读
-                externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
-                  .catch(error => {
-                    console.error('Error speaking with external service:', error)
-                    // 如果外部服务失败，尝试回退到Web Speech API
-                    cancelSpeech()
-                    speak(sentence, speechRate, sid)
-                      .catch(fallbackError => {
-                        console.error('Fallback to web speech also failed:', fallbackError)
-                      })
-                    // 更新语音服务状态为Web Speech API
-                    setSpeechService('web_speech')
-                  })
-              }
-            } catch (error) {
-              console.error('Speech playback error:', error)
-            }
-          }, 200) // 增加延迟确保状态稳定
+            cancelSpeech()
+            speak(sentence, speechRate, sid).catch(error => {
+              console.error('Error speaking:', error)
+            })
+          }, 300)
         }
       }
     };
 
     loadCurrentSentence();
-  }, [currentIndex, sentences, sentenceIds, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService, sentenceCache])
+  }, [currentIndex, sentences, sentenceIds, autoPlay, speechSupported, speechRate, sentenceCache])
 
   // 获取转换后的完整句子
   const getExpandedSentence = (sentence) => {
@@ -880,29 +790,11 @@ function AppContent() {
     if (speechSupported && sentences[currentIndex]) {
       const sentence = sentences[currentIndex];
       const sid = sentenceIds[currentIndex] || null;
-
-      // 根据当前选择的语音服务使用相应的speak函数
-      if (speechService === 'web_speech') {
-        cancelSpeech() // 取消之前的朗读
-        speak(sentence, speechRate, sid)
-          .catch(error => {
-            console.error('Error speaking:', error)
-          })
-      } else if (speechService === 'uberduck') {
-        externalCancelSpeech() // 取消之前的朗读
-        externalSpeak(sentence, speechRate, selectedExternalVoice?.name)
-          .catch(error => {
-            console.error('Error speaking with external service:', error)
-            // 如果外部服务失败，尝试回退到Web Speech API
-            cancelSpeech()
-            speak(sentence, speechRate, sid)
-              .catch(fallbackError => {
-                console.error('Fallback to web speech also failed:', fallbackError)
-              })
-            // 更新语音服务状态为Web Speech API
-            setSpeechService('web_speech')
-          })
-      }
+      cancelSpeech()
+      speak(sentence, speechRate, sid)
+        .catch(error => {
+          console.error('Error speaking:', error)
+        })
     }
   }
 
@@ -1004,36 +896,11 @@ function AppContent() {
   // 播放句子两次（第一次0.75倍速，第二次1倍速）
   const playSentenceTwice = async (sentence, sentenceId = null) => {
     try {
-      // 根据当前选择的语音服务使用相应的speak函数
-      if (speechService === 'web_speech') {
-        // 第一次朗读：0.75倍速
-        await speak(sentence, 0.75, sentenceId);
-        // 短暂停顿
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // 第二次朗读：1倍速
-        await speak(sentence, 1.0, sentenceId);
-      } else if (speechService === 'uberduck') {
-        // 第一次朗读：0.75倍速
-        await externalSpeak(sentence, 0.75, selectedExternalVoice?.name);
-        // 短暂停顿
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // 第二次朗读：1倍速
-        await externalSpeak(sentence, 1.0, selectedExternalVoice?.name);
-      }
+      await speak(sentence, 0.75, sentenceId);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await speak(sentence, 1.0, sentenceId);
     } catch (error) {
       console.error('Error playing sentence twice:', error);
-      // 如果外部服务失败，尝试回退到Web Speech API
-      try {
-        // 第一次朗读：0.75倍速
-        await speak(sentence, 0.75, sentenceId);
-        // 短暂停顿
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // 第二次朗读：1倍速
-        await speak(sentence, 1.0, sentenceId);
-      } catch (fallbackError) {
-        console.error('Fallback to web speech also failed:', fallbackError);
-        // 即使回退也失败，仍然继续执行，确保listenModeLoop能继续
-      }
     }
   };
 
@@ -1182,30 +1049,7 @@ function AppContent() {
   }, []);
 
 
-  
-  // 切换语音服务
-  const handleSpeechServiceChange = useCallback((newService) => {
-    setSpeechService(newService);
-    setCurrentService(newService);
-  }, []);
-  
-  // 更新 KittenTTS 服务器地址
-  const handleKittenTtsUrlChange = useCallback((url) => {
-    setKittenTtsUrlState(url);
-    setKittenTtsUrl(url);
-  }, []);
-  
-  // 切换语音
-  const handleVoiceChange = useCallback((voice) => {
-    setSelectedVoice(voice);
-    setVoice(voice);
-  }, []);
-  
-  // 切换外部语音
-  const handleExternalVoiceChange = useCallback((voice) => {
-    setSelectedExternalVoice(voice);
-  }, []);
-  
+
   // 处理数据源选择
   const handleSelectDataSource = useCallback((sourceId) => {
     if (sourceId === 'flashcards') {
@@ -1449,17 +1293,6 @@ function AppContent() {
                 onTranslationProviderChange={handleTranslationProviderChange}
                 translationConfig={translationConfig}
                 onTranslationConfigChange={handleTranslationConfigChange}
-                // 新增语音设置参数
-                availableVoices={availableVoices}
-                selectedVoice={selectedVoice}
-                onVoiceChange={handleVoiceChange}
-                speechService={speechService}
-                onSpeechServiceChange={handleSpeechServiceChange}
-                externalVoices={externalVoices}
-                selectedExternalVoice={selectedExternalVoice}
-                onExternalVoiceChange={handleExternalVoiceChange}
-                kittenTtsUrl={kittenTtsUrl}
-                onKittenTtsUrlChange={handleKittenTtsUrlChange}
               />
             </Suspense>
           </>

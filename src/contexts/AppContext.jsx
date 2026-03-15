@@ -6,8 +6,7 @@ import { useSpeechVoices } from '../hooks/useSpeechVoices';
 import { useSpeechPlayback } from '../hooks/useSpeechPlayback';
 import { useSentences } from '../hooks/useSentences';
 import { DATA_SOURCE_TYPES } from '../services/dataService';
-import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from '../services/speechService';
-import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from '../services/externalSpeechService';
+import { speak, isSpeechSupported, cancelSpeech } from '../services/speechService';
 import { parseSentenceForPhonetics } from '../services/pronunciationService';
 import { getTranslation, getWordTranslation } from '../services/translationService';
 
