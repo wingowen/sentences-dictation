@@ -1,12 +1,14 @@
 // Netlify Function to generate TTS audio using Microsoft Edge TTS
+// Fixed: node-edge-tts uses ttsPromise(text, filePath), not speak()
 import { EdgeTTS } from 'node-edge-tts';
+import { writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { randomBytes } from 'crypto';
 import { CORS_HEADERS } from './shared/cors.js';
 
 /**
  * Netlify Function handler
- * @param {Object} event - Lambda event object
- * @param {Object} context - Lambda context object
- * @returns {Promise<Object>} - Response object
  */
 export async function handler(event, context) {
   // Handle CORS preflight
@@ -27,6 +29,8 @@ export async function handler(event, context) {
     };
   }
 
+  let tmpFile = null;
+
   try {
     // Parse request body
     const body = JSON.parse(event.body || '{}');
@@ -37,88 +41,48 @@ export async function handler(event, context) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ success: false, error: 'Text parameter is required and must be a non-empty string' })
+        body: JSON.stringify({ success: false, error: 'Text parameter is required' })
       };
     }
 
-    // Validate rate (0.5 to 2.0)
-    const parsedRate = parseFloat(rate);
-    if (isNaN(parsedRate) || parsedRate < 0.5 || parsedRate > 2.0) {
-      return {
-        statusCode: 400,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ success: false, error: 'Rate must be a number between 0.5 and 2.0' })
-      };
-    }
+    // Create temp file path
+    tmpFile = join(tmpdir(), `tts-${randomBytes(8).toString('hex')}.mp3`);
 
-    // Create EdgeTTS instance
+    // Create EdgeTTS instance and configure
     const tts = new EdgeTTS();
+    tts.voice(voice);
+    // Convert rate (0.5-2.0) to Edge TTS format (-50% to +100%)
+    const ratePercent = Math.round((rate - 1.0) * 100);
+    tts.rate(`${ratePercent >= 0 ? '+' : ''}${ratePercent}%`);
 
-    // Generate audio stream
-    const audioChunks = [];
-    
-    // Set timeout for TTS generation (10 seconds)
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('TTS generation timeout')), 10000);
-    });
+    // Generate audio file (with 10s timeout)
+    await Promise.race([
+      tts.ttsPromise(text, tmpFile),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TTS generation timeout')), 10000))
+    ]);
 
-    const ttsPromise = new Promise(async (resolve, reject) => {
-      try {
-        // Configure TTS options
-        const options = {
-          voice: voice,
-          rate: parsedRate,
-          pitch: 0,
-          volume: 0
-        };
-
-        // Generate audio stream
-        const audioStream = await tts.speak(text, options);
-
-        // Collect audio data chunks
-        audioStream.on('data', (chunk) => {
-          audioChunks.push(chunk);
-        });
-
-        audioStream.on('end', () => {
-          // Combine all chunks into a single buffer
-          const audioBuffer = Buffer.concat(audioChunks);
-          resolve(audioBuffer);
-        });
-
-        audioStream.on('error', (error) => {
-          reject(error);
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-
-    // Wait for TTS generation with timeout
-    const audioBuffer = await Promise.race([ttsPromise, timeoutPromise]);
-
-    // Convert to base64
+    // Read generated file
+    const audioBuffer = readFileSync(tmpFile);
     const base64Audio = audioBuffer.toString('base64');
 
-    // Return success response
+    // Cleanup temp file
+    try { unlinkSync(tmpFile); } catch {}
+
     return {
       statusCode: 200,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json'
-      },
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
         audio: base64Audio,
-        contentType: 'audio/mpeg',
-        duration: null // Could calculate if needed
+        contentType: 'audio/mpeg'
       })
     };
 
   } catch (error) {
     console.error('TTS Generation Error:', error);
+    // Cleanup temp file on error
+    if (tmpFile) { try { unlinkSync(tmpFile); } catch {} }
 
-    // Return error response
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
