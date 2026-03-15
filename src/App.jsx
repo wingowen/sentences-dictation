@@ -5,7 +5,7 @@ import { newConcept3Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
 import { preloadSentence } from './services/speechService';
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
-import { getTranslation, getWordTranslation, TRANSLATION_PROVIDERS, setTranslationProvider } from './services/translationService'
+// Translation features removed: translationService imports removed
 
 // 导入组件
 import React, { Suspense } from 'react'
@@ -50,21 +50,15 @@ function AppContent() {
   const [dataSource, setDataSource] = useState(DATA_SOURCE_TYPES.LOCAL)
   const [dataSourceError, setDataSourceError] = useState(null)
   const [currentWords, setCurrentWords] = useState([])
-  const [currentTranslation, setCurrentTranslation] = useState('翻译暂无')
+  // translation removed
   const [showOriginalText, setShowOriginalText] = useState(false)
   const [showCounter, setShowCounter] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [translationProvider, setTranslationProviderState] = useState(TRANSLATION_PROVIDERS.MYMEMORY)
-  const [translationConfig, setTranslationConfig] = useState({
-    googleApiKey: '',
-    deeplApiKey: '',
-    libreApiUrl: 'https://libretranslate.com/translate',
-    baiduAppId: '',
-    baiduSecretKey: ''
-  })
+  // translation provider removed
+  // translationConfig removed
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false)
-  const [autoPlay, setAutoPlay] = useState(true)
+  const [autoPlay, setAutoPlay] = useState(false)
   const [speechRate, _setSpeechRate] = useState(1)
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
@@ -1037,19 +1031,6 @@ function AppContent() {
     setShowSettings(!showSettings);
   }, [showSettings]);
 
-  // 切换翻译服务提供商
-  const handleTranslationProviderChange = useCallback((provider) => {
-    setTranslationProviderState(provider);
-    setTranslationProvider(provider);
-  }, []);
-
-  // 更新翻译配置
-  const handleTranslationConfigChange = useCallback((config) => {
-    setTranslationConfig(config);
-  }, []);
-
-
-
   // 处理数据源选择
   const handleSelectDataSource = useCallback((sourceId) => {
     if (sourceId === 'flashcards') {
@@ -1237,7 +1218,7 @@ function AppContent() {
                 totalSentences={sentences.length}
                 showOriginalText={showOriginalText}
                 onToggleOriginalText={handleToggleOriginalText}
-                currentTranslation={currentTranslation}
+                // translation feature removed
               />
             
             {/* 标准按词输入部分 */}
@@ -1289,10 +1270,7 @@ function AppContent() {
                 speechRate={speechRate}
                 onSpeechRateChange={_setSpeechRate}
                 speechSupported={speechSupported}
-                translationProvider={translationProvider}
-                onTranslationProviderChange={handleTranslationProviderChange}
-                translationConfig={translationConfig}
-                onTranslationConfigChange={handleTranslationConfigChange}
+                // translation features removed
               />
             </Suspense>
           </>
