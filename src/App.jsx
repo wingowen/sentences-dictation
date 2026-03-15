@@ -14,6 +14,7 @@ import PracticeStats from './components/PracticeStats'
 import PhoneticsSection from './components/PhoneticsSection'
 import WordInputs from './components/WordInputs'
 import WordInputsContext from './components/WordInputsContext'
+import PracticeCard from './components/PracticeCard'
 // 懒加载大型组件
 const FlashcardApp = React.lazy(() => import('./components/FlashcardApp'))
 import ArticleSelector from './components/ArticleSelector'
@@ -28,12 +29,25 @@ const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
 
 /**
  * 转换句子中的缩写为完整形式
- * @param {string} sentence - 包含缩写的句子
- * @returns {string} 转换后的完整形式句子
+ * @param {string|object} sentence - 包含缩写的句子或句子对象
+ * @returns {string|object} 转换后的完整形式句子
  */
 const expandContractionsInSentence = (sentence) => {
-  const text = typeof sentence === 'object' ? sentence.text || sentence : sentence;
+  // 处理 null 或 undefined 的情况
+  if (!sentence) {
+    console.warn('expandContractionsInSentence: received null or undefined sentence');
+    return '';
+  }
+
+  const text = typeof sentence === 'object' ? sentence.text || '' : sentence;
   const translation = typeof sentence === 'object' ? sentence.translation || '' : '';
+
+  // 确保 text 是字符串
+  if (typeof text !== 'string') {
+    console.warn('expandContractionsInSentence: text is not a string', text);
+    return translation ? { text: '', translation } : '';
+  }
+
   const wordsWithContractions = detectAndExpandContractions(text);
   const expandedText = wordsWithContractions.map(w => w.expanded).join(' ');
   // Preserve translation if it existed
@@ -1269,8 +1283,8 @@ function AppContent() {
                 onResetProgress={resetPracticeProgress}
               />
             
-             {/* 音标显示部分 */}
-              <PhoneticsSection
+             {/* 练习卡片 - 合并翻译和输入区域 */}
+              <PracticeCard
                 sentences={sentences}
                 currentIndex={currentIndex}
                 totalSentences={sentences.length}
@@ -1279,10 +1293,6 @@ function AppContent() {
                 showTranslation={showTranslation}
                 onToggleTranslation={handleToggleTranslation}
                 currentTranslation={currentTranslation}
-              />
-            
-            {/* 标准按词输入部分 */}
-              <WordInputs
                 wordInputs={wordInputs}
                 currentWords={currentWords}
                 onWordInputChange={_handleWordInputChange}

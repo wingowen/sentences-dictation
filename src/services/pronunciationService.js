@@ -169,6 +169,11 @@ export const formatPhonetic = (arpabet) => {
  * @returns {Array} 包含原始单词和转换后单词的对象数组
  */
 export const detectAndExpandContractions = (sentence) => {
+  // 确保 sentence 是字符串类型
+  if (typeof sentence !== 'string') {
+    console.warn('detectAndExpandContractions: expected string but got', typeof sentence, sentence);
+    return [];
+  }
   // 移除句子中的标点符号，保留缩略词中的单引号
   const words = sentence
     .replace(/[.,!?;:"()[\]{}_-]/g, '')

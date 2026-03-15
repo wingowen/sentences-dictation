@@ -51,9 +51,10 @@ const ArticleSelector = React.memo(({
           </option>
           {articles.map(article => {
             const id = getArticleId(article);
+            const displayTitle = article.title?.trim() || id;
             return (
               <option key={id} value={id}>
-                {article.title}
+                {displayTitle}
               </option>
             );
           })}
