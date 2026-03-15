@@ -617,7 +617,7 @@ function AppContent() {
     };
 
     loadCurrentSentence();
-  }, [currentIndex, sentences, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService, sentenceCache])
+  }, [currentIndex, sentences, sentenceIds, autoPlay, speechSupported, speechRate, selectedExternalVoice?.name, speechService, sentenceCache])
 
   // 获取转换后的完整句子
   const getExpandedSentence = (sentence) => {

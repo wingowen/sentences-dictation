@@ -22,35 +22,13 @@ const getAudioUrl = (sentenceId) => {
 
 /**
  * 检查句子是否有预加载音频
- * 通过 HEAD 请求检查文件是否存在（带缓存）
+ * 简化版：只要有 sentenceId 就假设有音频（948句全部已生成）
+ * 播放失败时自动降级到下一级 TTS
  */
-const audioExistsCache = new Map();
-
 export const hasPreloadedAudio = async (sentenceId) => {
   if (!sentenceId) return false;
-
-  // 检查缓存
-  if (audioExistsCache.has(sentenceId)) {
-    return audioExistsCache.get(sentenceId);
-  }
-
-  try {
-    const url = getAudioUrl(sentenceId);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch(url, {
-      method: 'HEAD',
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    const exists = res.ok;
-    audioExistsCache.set(sentenceId, exists);
-    return exists;
-  } catch (e) {
-    return false;
-  }
+  // 所有句子都有预生成音频，跳过 HEAD 检查（避免 CORS/超时问题）
+  return true;
 };
 
 /**
@@ -104,11 +82,11 @@ export const speak = async (sentenceId) => {
   if (audioCache.has(cacheKey)) {
     // 使用缓存的 blob URL
     audioUrl = audioCache.get(cacheKey);
-    console.log(`[PreloadAudio] 使用缓存: sentence ${sentenceId}`);
+    console.log(`[PreloadAudio] ✅ 使用缓存: sentence ${sentenceId}`);
   } else {
     // 直接使用 Supabase URL（浏览器会自动缓存）
     audioUrl = getAudioUrl(sentenceId);
-    console.log(`[PreloadAudio] 直播放: sentence ${sentenceId}`);
+    console.log(`[PreloadAudio] 🔗 直播放: sentence ${sentenceId} → ${audioUrl}`);
   }
 
   return new Promise((resolve, reject) => {
@@ -120,14 +98,20 @@ export const speak = async (sentenceId) => {
 
     currentAudio = new Audio(audioUrl);
     currentAudio.onended = () => {
+      console.log(`[PreloadAudio] ✅ 播放完成: sentence ${sentenceId}`);
       currentAudio = null;
       resolve();
     };
     currentAudio.onerror = (e) => {
+      const err = currentAudio?.error;
+      console.error(`[PreloadAudio] ❌ 播放失败: sentence ${sentenceId}`, err?.code, err?.message);
       currentAudio = null;
-      reject(new Error(`Audio playback failed for sentence ${sentenceId}`));
+      reject(new Error(`Audio playback failed for sentence ${sentenceId}: ${err?.message || 'unknown'}`));
     };
-    currentAudio.play().catch(reject);
+    currentAudio.play().catch((e) => {
+      console.error(`[PreloadAudio] ❌ play() rejected: sentence ${sentenceId}`, e.message);
+      reject(e);
+    });
   });
 };
 
