@@ -27,15 +27,11 @@ export async function handler(event, context) {
       };
     }
 
-    // 添加URL验证
-    const validation = validateUrl(link);
-    if (!validation.isValid) {
+    // URL 验证（相对路径直接放行）
+    if (link.startsWith('http') && !validateUrl(link)) {
       return {
         statusCode: 403,
-        body: JSON.stringify({
-          success: false,
-          error: validation.error
-        }),
+        body: JSON.stringify({ success: false, error: 'Invalid URL' }),
         headers: CORS_HEADERS
       };
     }
