@@ -38,7 +38,7 @@ describe('ArticleSelector', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('should render select with articles', () => {
+  it('should render select with articles for NEW_CONCEPT_3', () => {
     render(
       <ArticleSelector
         dataSource={DATA_SOURCE_TYPES.NEW_CONCEPT_3}
@@ -101,5 +101,20 @@ describe('ArticleSelector', () => {
     )
 
     expect(screen.getByDisplayValue('Article 1')).toBeInTheDocument()
+  })
+
+  it('should render select with articles for NEW_CONCEPT_2', () => {
+    render(
+      <ArticleSelector
+        dataSource={DATA_SOURCE_TYPES.NEW_CONCEPT_2}
+        articles={mockArticles}
+        selectedArticleId={null}
+        onArticleChange={() => {}}
+        isLoading={false}
+      />
+    )
+
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    expect(screen.getByText('Article 1')).toBeInTheDocument()
   })
 })

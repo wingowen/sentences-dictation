@@ -7,7 +7,7 @@ import { DATA_SOURCE_TYPES } from '../services/dataService';
  * @param {Object} props
  * @param {string} props.dataSource - 当前数据源
  * @param {Array} props.articles - 文章列表
- * @param {number|null} props.selectedArticleId - 选中的文章ID
+ * @param {string|number|null} props.selectedArticleId - 选中的文章ID
  * @param {boolean} props.isLoading - 是否正在加载
  */
 const ArticleSelectorHint = React.memo(({
@@ -16,8 +16,11 @@ const ArticleSelectorHint = React.memo(({
   selectedArticleId,
   isLoading
 }) => {
-  // 只在新概念三数据源、有文章、未选择文章且不在加载中时显示
-  if (dataSource !== DATA_SOURCE_TYPES.NEW_CONCEPT_3 ||
+  const supportsArticleSelection =
+    dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ||
+    dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3;
+
+  if (!supportsArticleSelection ||
       articles.length === 0 ||
       selectedArticleId ||
       isLoading) {

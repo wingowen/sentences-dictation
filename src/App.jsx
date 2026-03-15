@@ -344,7 +344,9 @@ function AppContent() {
       if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && selectedArticleId) {
         // 对于新概念三，从本地数据获取选中文章的句子
         console.log('加载新概念三课程内容', { selectedArticleId });
-        const selectedArticle = newConcept3Articles.find(article => article.id === selectedArticleId);
+        const selectedArticle = newConcept3Articles.find(
+          (article) => String(article.id) === String(selectedArticleId)
+        );
         if (selectedArticle && selectedArticle.sentences) {
           // 转换所有句子中的缩写为完整形式
           data = selectedArticle.sentences.map(sentence => expandContractionsInSentence(sentence));
@@ -355,7 +357,9 @@ function AppContent() {
        } else if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && selectedArticleId) {
         // 对于新概念二，从本地 JSON 获取选中文章的句子
         console.log('加载新概念二课程内容', { selectedArticleId });
-        const selectedArticle = newConcept2Articles.find(article => article.lesson_id === selectedArticleId);
+        const selectedArticle = newConcept2Articles.find(
+          (article) => String(article.lesson_id) === String(selectedArticleId)
+        );
         if (selectedArticle && selectedArticle.sentences) {
           data = selectedArticle.sentences.map(sentence => expandContractionsInSentence(sentence));
           console.log(`Loaded ${data.length} sentences from NCE2 lesson: ${selectedArticle.title}`);
@@ -1144,6 +1148,7 @@ function AppContent() {
   if (sentences.length === 0 && !dataSourceError) {
     // 对于需要选择文章的数据源，不显示错误，而是显示选择器
     const needsArticleSelection = 
+      (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && !selectedArticleId) ||
       (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) ||
       dataSource === DATA_SOURCE_TYPES.SUPABASE;
     

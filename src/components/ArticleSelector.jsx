@@ -7,7 +7,7 @@ import { DATA_SOURCE_TYPES } from '../services/dataService';
  * @param {Object} props
  * @param {string} props.dataSource - 当前数据源
  * @param {Array} props.articles - 文章列表
- * @param {number|null} props.selectedArticleId - 选中的文章ID
+ * @param {string|number|null} props.selectedArticleId - 选中的文章ID
  * @param {Function} props.onArticleChange - 文章选择回调
  * @param {boolean} props.isLoading - 是否正在加载
  */
@@ -18,8 +18,13 @@ const ArticleSelector = React.memo(({
   onArticleChange,
   isLoading
 }) => {
-  // 只在新概念三数据源且有文章时显示
-  if (dataSource !== DATA_SOURCE_TYPES.NEW_CONCEPT_3 ||
+  const supportsArticleSelection =
+    dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ||
+    dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3;
+
+  const getArticleId = (article) => article.lesson_id || article.id;
+
+  if (!supportsArticleSelection ||
       articles.length === 0) {
     return null;
   }
@@ -32,7 +37,12 @@ const ArticleSelector = React.memo(({
           value={selectedArticleId || ''}
           onChange={(e) => {
             const value = e.target.value;
-            onArticleChange(value || null);
+            if (!value) {
+              onArticleChange(null);
+              return;
+            }
+            const matchedArticle = articles.find((article) => String(getArticleId(article)) === value);
+            onArticleChange(matchedArticle ? getArticleId(matchedArticle) : value);
           }}
           disabled={isLoading}
         >
@@ -40,7 +50,7 @@ const ArticleSelector = React.memo(({
             {isLoading ? '加载中...' : '请选择文章'}
           </option>
           {articles.map(article => {
-            const id = article.lesson_id || article.id;
+            const id = getArticleId(article);
             return (
               <option key={id} value={id}>
                 {article.title}
