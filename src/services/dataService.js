@@ -15,6 +15,7 @@ export const DATA_SOURCE_TYPES = {
   LOCAL: 'local',
   NOTION: 'notion',
   NEW_CONCEPT_1: 'new-concept-1',
+  NEW_CONCEPT_2: 'new-concept-2',
   NEW_CONCEPT_3: 'new-concept-3',
   FLASHCARDS: 'flashcards',
   SUPABASE: 'supabase',
@@ -33,11 +34,6 @@ export const DATA_SOURCES = [
     description: '使用本地 JSON 文件中的句子',
   },
   {
-    id: DATA_SOURCE_TYPES.SUPABASE,
-    name: '在线课程',
-    description: '从数据库获取课程文章进行练习',
-  },
-  {
     id: DATA_SOURCE_TYPES.NOTION,
     name: 'Notion',
     description: '从 Notion 页面动态获取句子',
@@ -46,6 +42,11 @@ export const DATA_SOURCES = [
     id: DATA_SOURCE_TYPES.NEW_CONCEPT_1,
     name: '新概念一',
     description: '使用新概念英语第一册的句子',
+  },
+  {
+    id: DATA_SOURCE_TYPES.NEW_CONCEPT_2,
+    name: '新概念二',
+    description: '从网页动态获取新概念英语第二册文章',
   },
   {
     id: DATA_SOURCE_TYPES.NEW_CONCEPT_3,
@@ -272,6 +273,9 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
     case DATA_SOURCE_TYPES.NEW_CONCEPT_1:
       data = await getNewConcept1Sentences();
       break;
+    case DATA_SOURCE_TYPES.NEW_CONCEPT_2:
+      data = await getNewConcept2Sentences();
+      break;
     case DATA_SOURCE_TYPES.NEW_CONCEPT_3:
       data = await getNewConcept3Sentences();
       break;
@@ -298,6 +302,51 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
  * 从 Netlify Function 获取新概念三句子
  * @returns {Promise<Array>} 句子数组
  */
+/**
+ * 从 Netlify Function 获取新概念二句子
+ * @returns {Promise<Array>} 句子数组
+ */
+export const getNewConcept2Sentences = async () => {
+  const controller = new AbortController();
+  let timeoutId = null;
+  try {
+    const functionUrl = '/.netlify/functions/get-new-concept-2';
+    timeoutId = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(functionUrl, { signal: controller.signal });
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('新概念二数据源暂不可用');
+    }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data.success || !data.articles || data.articles.length === 0) {
+      throw new Error('获取新概念二文章失败或无数据');
+    }
+    return data.articles.flatMap(article =>
+      (article.sentences || []).map((sentence, index) => ({
+        text: sentence.text || sentence,
+        translation: sentence.translation || '',
+        id: `nce2-${article.id || article.title}-${index}`,
+        words: (sentence.text || sentence).split(/\s+/).map(word => ({
+          word: word.replace(/[^a-zA-Z']/g, ''),
+          original: word
+        }))
+      }))
+    ).filter(s => s.text && s.text.trim().length > 0);
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('请求超时，请检查网络连接');
+    }
+    console.error('Error fetching NCE2 sentences:', error);
+    throw error;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
+};
+
 export const getNewConcept3Sentences = async () => {
   // 创建超时控制器
   const controller = new AbortController();
