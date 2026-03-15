@@ -13,6 +13,8 @@ function PhoneticsSectionContext() {
     sentences,
     showOriginalText,
     handleToggleOriginalText,
+    showTranslation,
+    handleToggleTranslation,
     currentTranslation
   } = useApp();
 
@@ -23,6 +25,8 @@ function PhoneticsSectionContext() {
       totalSentences={sentences.length}
       showOriginalText={showOriginalText}
       onToggleOriginalText={handleToggleOriginalText}
+      showTranslation={showTranslation}
+      onToggleTranslation={handleToggleTranslation}
       currentTranslation={currentTranslation}
     />
   );

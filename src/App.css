@@ -963,6 +963,13 @@ html {
   -webkit-backdrop-filter: var(--glass-blur);
 }
 
+.toggle-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .toggle-text-button {
   padding: 0.6rem 1.2rem;
   font-size: var(--text-subhead);

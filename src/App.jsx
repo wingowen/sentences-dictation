@@ -54,6 +54,7 @@ function AppContent() {
   const [currentTranslation, setCurrentTranslation] = useState('')
   // translation removed
   const [showOriginalText, setShowOriginalText] = useState(false)
+  const [showTranslation, setShowTranslation] = useState(true)
   const [showCounter, setShowCounter] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -1069,6 +1070,10 @@ function AppContent() {
     setShowOriginalText(!showOriginalText);
   }, [showOriginalText]);
 
+  const handleToggleTranslation = useCallback(() => {
+    setShowTranslation(!showTranslation);
+  }, [showTranslation]);
+
   // 切换计数器显示
   const handleToggleShowCounter = useCallback(() => {
     setShowCounter(!showCounter);
@@ -1266,6 +1271,8 @@ function AppContent() {
                 totalSentences={sentences.length}
                 showOriginalText={showOriginalText}
                 onToggleOriginalText={handleToggleOriginalText}
+                showTranslation={showTranslation}
+                onToggleTranslation={handleToggleTranslation}
                 currentTranslation={currentTranslation}
               />
             

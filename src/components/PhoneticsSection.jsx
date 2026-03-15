@@ -1,6 +1,6 @@
 import React from 'react'
 
-const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, showOriginalText, onToggleOriginalText, currentTranslation }) => {
+const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, showOriginalText, onToggleOriginalText, showTranslation, onToggleTranslation, currentTranslation }) => {
   const currentSentence = sentences[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
 
@@ -10,7 +10,7 @@ const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, 
         <span>Question {currentIndex + 1} of {totalSentences}</span>
       </div>
       <div className="phonetics-list">
-        {currentTranslation && (
+        {showTranslation && currentTranslation && (
           <div className="sentence-translation">
             <span className="translation-text">{currentTranslation}</span>
           </div>
@@ -20,13 +20,24 @@ const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, 
             <span className="original-text-content">{sentenceText}</span>
           </div>
         )}
-        <button
-          className="toggle-text-button"
-          onClick={onToggleOriginalText}
-          title={showOriginalText ? '隐藏原文' : '显示原文'}
-        >
-          {showOriginalText ? '隐藏原文' : '显示原文'}
-        </button>
+        <div className="toggle-buttons">
+          {currentTranslation && (
+            <button
+              className="toggle-text-button"
+              onClick={onToggleTranslation}
+              title={showTranslation ? '隐藏中文' : '显示中文'}
+            >
+              {showTranslation ? '隐藏中文' : '显示中文'}
+            </button>
+          )}
+          <button
+            className="toggle-text-button"
+            onClick={onToggleOriginalText}
+            title={showOriginalText ? '隐藏原文' : '显示原文'}
+          >
+            {showOriginalText ? '隐藏原文' : '显示原文'}
+          </button>
+        </div>
       </div>
     </div>
   )
