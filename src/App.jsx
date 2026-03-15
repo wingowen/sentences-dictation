@@ -32,11 +32,12 @@ const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
  * @returns {string} 转换后的完整形式句子
  */
 const expandContractionsInSentence = (sentence) => {
-  // 检测并转换缩写形式
-  const wordsWithContractions = detectAndExpandContractions(sentence)
-  // 提取转换后的单词并重新组合成句子
-  const expandedWords = wordsWithContractions.map(wordData => wordData.expanded)
-  return expandedWords.join(' ')
+  const text = typeof sentence === 'object' ? sentence.text || sentence : sentence;
+  const translation = typeof sentence === 'object' ? sentence.translation || '' : '';
+  const wordsWithContractions = detectAndExpandContractions(text);
+  const expandedText = wordsWithContractions.map(w => w.expanded).join(' ');
+  // Preserve translation if it existed
+  return translation ? { text: expandedText, translation } : expandedText;
 }
 
 function AppContent() {
@@ -61,6 +62,7 @@ function AppContent() {
   const [autoPlay, setAutoPlay] = useState(false)
   const [speechRate, _setSpeechRate] = useState(1)
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
+  const [newConcept2Articles, setNewConcept2Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
   const [randomMode, setRandomMode] = useState(false)
@@ -252,6 +254,31 @@ function AppContent() {
     }
   }, [dataSource])
 
+  // 加载新概念二文章列表
+  useEffect(() => {
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2) {
+      const loadArticles = async () => {
+        try {
+          const res = await fetch('/.netlify/functions/get-new-concept-2');
+          const data = await res.json();
+          if (data.success && data.articles) {
+            setNewConcept2Articles(data.articles);
+            setDataSourceError(null);
+          } else {
+            throw new Error(data.error || '获取新概念二文章列表失败');
+          }
+        } catch (error) {
+          console.error('Error loading NCE2 articles:', error);
+          setDataSourceError(error.message);
+          setNewConcept2Articles([]);
+        }
+      };
+      loadArticles();
+    } else {
+      setNewConcept2Articles([]);
+    }
+  }, [dataSource])
+
   // 加载句子数据
   const loadSentences = useCallback(async () => {
     console.log('开始加载句子数据', { dataSource, selectedArticleId, hasSelectedDataSource });
@@ -271,6 +298,17 @@ function AppContent() {
     // 如果是新概念三但未选择文章，等待用户选择文章
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) {
       console.log('新概念三未选择文章，等待用户选择');
+      setIsLoading(false)
+      setSentences([])
+      setSentenceIds([])
+      setSentenceCache({})
+      setDataSourceError(null)
+      return
+    }
+
+    // 如果是新概念二但未选择文章，等待用户选择文章
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && !selectedArticleId) {
+      console.log('新概念二未选择文章，等待用户选择');
       setIsLoading(false)
       setSentences([])
       setSentenceIds([])
@@ -315,6 +353,26 @@ function AppContent() {
         } else {
           throw new Error('未找到选中的文章或文章内容');
          }
+       } else if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && selectedArticleId) {
+        // 对于新概念二，从 Netlify Function 获取选中文章的句子
+        console.log('加载新概念二课程内容', { selectedArticleId });
+        const selectedArticle = newConcept2Articles.find(article => article.id === selectedArticleId);
+        if (selectedArticle && selectedArticle.link) {
+          const res = await fetch('/.netlify/functions/get-new-concept-2-lesson', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ link: selectedArticle.link })
+          });
+          const lessonData = await res.json();
+          if (lessonData.success && lessonData.sentences && lessonData.sentences.length > 0) {
+            data = lessonData.sentences.map(sentence => expandContractionsInSentence(sentence));
+            console.log(`Loaded ${data.length} sentences from NCE2 lesson: ${selectedArticle.title}`);
+          } else {
+            throw new Error(lessonData.error || '获取新概念二课程内容失败');
+          }
+        } else {
+          throw new Error('未找到选中的文章');
+        }
        } else {
         // 其他数据源正常获取
         console.log('获取数据源', { dataSource });
@@ -342,9 +400,12 @@ function AppContent() {
         console.log('开始预计算句子数据');
         const cache = {};
         data.forEach((sentence, index) => {
-          const wordsWithPhonetics = parseSentenceForPhonetics(sentence);
+          const text = typeof sentence === 'object' ? sentence.text || '' : sentence;
+          const translation = typeof sentence === 'object' ? sentence.translation || '' : '';
+          const wordsWithPhonetics = parseSentenceForPhonetics(text);
           cache[index] = {
             wordsWithPhonetics,
+            translation,
             wordsWithTranslation: wordsWithPhonetics.map(word => ({
               ...word,
               translation: ''
@@ -462,26 +523,29 @@ function AppContent() {
     const loadCurrentSentence = async () => {
       if (sentences[currentIndex]) {
         const sentence = sentences[currentIndex]
-        
+        const text = typeof sentence === 'object' ? sentence.text || '' : sentence;
+
         // 优先使用预计算的缓存数据
-        let wordsWithPhonetics, wordsWithTranslation
-        
+        let wordsWithPhonetics, wordsWithTranslation, translation = '';
+
         if (sentenceCache[currentIndex]) {
           // 使用预计算的数据
           wordsWithPhonetics = sentenceCache[currentIndex].wordsWithPhonetics
           wordsWithTranslation = sentenceCache[currentIndex].wordsWithTranslation
+          translation = sentenceCache[currentIndex].translation || '';
         } else {
           // 回退到实时计算
-          wordsWithPhonetics = parseSentenceForPhonetics(sentence)
+          wordsWithPhonetics = parseSentenceForPhonetics(text)
           wordsWithTranslation = wordsWithPhonetics.map(word => ({
             ...word,
             translation: ''
           }))
+          translation = typeof sentence === 'object' ? sentence.translation || '' : '';
         }
-        
+
         // 重置状态并设置新数据
         setCurrentWords(wordsWithTranslation)
-        setCurrentTranslation('')
+        setCurrentTranslation(translation)
 
         // 初始化按词输入数组
         const initialWordInputs = wordsWithPhonetics.map(() => '')
@@ -1167,7 +1231,7 @@ function AppContent() {
         {/* 文章选择器 */}
         <ArticleSelector
           dataSource={dataSource}
-          articles={newConcept3Articles}
+          articles={dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ? newConcept2Articles : newConcept3Articles}
           selectedArticleId={selectedArticleId}
           onArticleChange={setSelectedArticleId}
           isLoading={isLoading}
@@ -1175,7 +1239,7 @@ function AppContent() {
 
         <ArticleSelectorHint
           dataSource={dataSource}
-          articles={newConcept3Articles}
+          articles={dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ? newConcept2Articles : newConcept3Articles}
           selectedArticleId={selectedArticleId}
           isLoading={isLoading}
         />

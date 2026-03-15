@@ -74,49 +74,48 @@ export async function handler(event, context) {
     const html = response.data;
     const $ = cheerio.load(html);
     
-    // Extract lesson content
+    // Extract lesson content - separate English and Chinese
     console.log('Extracting lesson content...');
-    
-    // Try different strategies to find content
-    let content = '';
-    
-    // Strategy 1: Look for main content container
-    const mainContent = $('#content, .main-content, .article-content, .post-content, .entry-content, .content').first();
-    if (mainContent.length > 0) {
-      content = mainContent.text().trim();
-      console.log('Found content in main container');
-    }
-    
-    // Strategy 2: Look for paragraphs
-    if (!content) {
-      const paragraphs = [];
-      $('p').each((index, element) => {
-        const text = $(element).text().trim();
-        if (text.length > 30) {
-          paragraphs.push(text);
-        }
-      });
-      content = paragraphs.join(' ');
-      console.log('Found content in paragraphs');
-    }
-    
-    // Extract sentences from content for dictation
-    let sentences = content
-      .split(/[.!?]+/)
-      .map(sentence => sentence.trim())
-      // Filter out sentences with Chinese characters
-      .filter(sentence => !/[\u4e00-\u9fa5]/.test(sentence))
-      // Filter out sentences with HTML tags or special characters
-      .filter(sentence => !sentence.includes('==') && !sentence.includes('!') && !sentence.includes('<') && !sentence.includes('>'))
-      // Filter out sentences that are website navigation or copyright
-      .filter(sentence => !sentence.toLowerCase().includes('copyright') && !sentence.toLowerCase().includes('com |') && !sentence.toLowerCase().includes('about'))
-      // Filter out very short or long sentences
-      .filter(sentence => sentence.length > 15 && sentence.length < 180)
-      // Filter out sentences with only numbers or symbols
-      .filter(sentence => /[a-zA-Z]/.test(sentence));
-    
-    console.log(`Extracted ${sentences.length} clean sentences from lesson`);
-    
+
+    let englishParagraph = '';
+    let chineseParagraph = '';
+
+    $('p').each((index, element) => {
+      const text = $(element).text().trim();
+      if (text.length < 30) return;
+      if (/^\s*(英|美|n\.|v\.|adj\.|adv\.)/.test(text)) return;
+      if (text.includes('copyright') || text.includes('NewConceptEnglish.com')) return;
+
+      const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+      const hasEnglish = /[a-zA-Z]{3,}/.test(text);
+
+      if (hasEnglish && !hasChinese && text.length > 50) {
+        englishParagraph = text;
+      } else if (hasChinese && !hasEnglish && text.length > 20) {
+        chineseParagraph = text;
+      }
+    });
+
+    // Split English into sentences
+    const englishSentences = englishParagraph
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 10 && /[a-zA-Z]/.test(s));
+
+    // Split Chinese into sentences (by 。！？)
+    const chineseSentences = chineseParagraph
+      .split(/(?<=[。！？])/)
+      .map(s => s.trim())
+      .filter(s => s.length > 5);
+
+    // Build sentences array with translations
+    const sentences = englishSentences.map((en, i) => ({
+      text: en,
+      translation: chineseSentences[i] || ''
+    }));
+
+    console.log(`Extracted ${sentences.length} sentences with ${chineseSentences.length} translations`);
+
     const result = {
       success: true,
       sentences: sentences,
