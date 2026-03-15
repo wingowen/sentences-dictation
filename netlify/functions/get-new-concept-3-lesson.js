@@ -77,7 +77,7 @@ export async function handler(event, context) {
     // Extract lesson content - separate English and Chinese
     console.log('Extracting lesson content...');
 
-    let englishParagraph = '';
+    const englishParts = [];
     const chineseParts = [];
     let foundEnglish = false;
 
@@ -94,8 +94,8 @@ export async function handler(event, context) {
       if (/^\s*(英|美)\s*(n\.|v\.|adj\.|adv\.)/.test(text)) return;
       if (/^\s*英\s*$/.test(text.split('\n')[0])) return;
 
-      if (hasEnglish && !hasChinese && text.length > 80) {
-        englishParagraph = text;
+      if (hasEnglish && !hasChinese && text.length > 20) {
+        englishParts.push(text);
         foundEnglish = true;
         return;
       }
@@ -105,6 +105,8 @@ export async function handler(event, context) {
         chineseParts.push(text);
       }
     });
+
+    const englishParagraph = englishParts.join(' ');
 
     const chineseParagraph = chineseParts.join('');
 
