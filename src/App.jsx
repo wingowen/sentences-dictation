@@ -347,7 +347,7 @@ function AppContent() {
             wordsWithPhonetics,
             wordsWithTranslation: wordsWithPhonetics.map(word => ({
               ...word,
-              translation: getWordTranslation(word.word)
+              translation: ''
             }))
           };
         });
@@ -475,18 +475,14 @@ function AppContent() {
           wordsWithPhonetics = parseSentenceForPhonetics(sentence)
           wordsWithTranslation = wordsWithPhonetics.map(word => ({
             ...word,
-            translation: getWordTranslation(word.word)
+            translation: ''
           }))
         }
         
         // 重置状态并设置新数据
         setCurrentWords(wordsWithTranslation)
-        setCurrentTranslation('翻译暂无') // 先设置为默认值，避免闪烁
-        
-        // 获取句子翻译（异步，不阻塞 UI）
-        const translation = await getTranslation(sentence, translationProvider, translationConfig)
-        setCurrentTranslation(translation || '翻译暂无')
-       
+        setCurrentTranslation('')
+
         // 初始化按词输入数组
         const initialWordInputs = wordsWithPhonetics.map(() => '')
         setWordInputs(initialWordInputs)
