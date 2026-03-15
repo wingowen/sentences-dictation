@@ -110,23 +110,17 @@ export async function handler(event, context) {
 
     const chineseParagraph = chineseParts.join('');
 
-    // Split English into sentences (handle text with/without spaces after periods)
+    // Split English into sentences
     const englishSentences = englishParagraph
       .replace(/([.!?])\s*([A-Z'"])/g, '$1\n$2')
       .split('\n')
       .map(s => s.trim())
       .filter(s => s.length > 10 && /[a-zA-Z]/.test(s));
 
-    // Split Chinese into sentences (by 。！？)
-    const chineseSentences = chineseParagraph
-      .split(/(?<=[。！？])/)
-      .map(s => s.trim())
-      .filter(s => s.length > 5);
-
-    // Build sentences array with translations
-    const sentences = englishSentences.map((en, i) => ({
+    // Build sentences - each gets the full Chinese paragraph as context
+    const sentences = englishSentences.map((en) => ({
       text: en,
-      translation: chineseSentences[i] || ''
+      translation: chineseParagraph.trim()
     }));
 
     console.log(`Extracted ${sentences.length} sentences with ${chineseSentences.length} translations`);
