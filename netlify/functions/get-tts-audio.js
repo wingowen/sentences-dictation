@@ -48,12 +48,19 @@ export async function handler(event, context) {
     // Create temp file path
     tmpFile = join(tmpdir(), `tts-${randomBytes(8).toString('hex')}.mp3`);
 
-    // Create EdgeTTS instance and configure
-    const tts = new EdgeTTS();
-    tts.voice(voice);
-    // Convert rate (0.5-2.0) to Edge TTS format (-50% to +100%)
+    // Convert rate (0.5-2.0) to Edge TTS format string (-50% to +100%)
     const ratePercent = Math.round((rate - 1.0) * 100);
-    tts.rate(`${ratePercent >= 0 ? '+' : ''}${ratePercent}%`);
+    const rateStr = `${ratePercent >= 0 ? '+' : ''}${ratePercent}%`;
+
+    // Create EdgeTTS instance with options (API uses constructor params, not methods)
+    const tts = new EdgeTTS({
+      voice: voice,
+      lang: voice.startsWith('zh') ? 'zh-CN' : 'en-US',
+      rate: rateStr,
+      pitch: 'default',
+      volume: 'default',
+      timeout: 10000
+    });
 
     // Generate audio file (with 10s timeout)
     await Promise.race([
