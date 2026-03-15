@@ -4,7 +4,8 @@ import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSe
 import { newConcept3Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech, getAvailableVoices, setVoice } from './services/speechService'
 
-import { preloadSentence } from './services/edgeTtsService';
+// preloadSentence now in speechService (supports preloaded audio)
+import { preloadSentence } from './services/speechService';
 import { setKittenTtsUrl, getKittenTtsUrl } from './services/kittenTtsService';
 import { speak as externalSpeak, cancelSpeech as externalCancelSpeech, getAvailableVoices as getExternalAvailableVoices, setCurrentService } from './services/externalSpeechService'
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
@@ -44,6 +45,7 @@ const expandContractionsInSentence = (sentence) => {
 
 function AppContent() {
   const [sentences, setSentences] = useState([])
+  const [sentenceIds, setSentenceIds] = useState([]) // Supabase 句子 ID（用于预加载音频）
   const [currentIndex, setCurrentIndex] = useState(0)
   const [wordInputs, setWordInputs] = useState([])
   const [result, setResult] = useState(null)
@@ -345,16 +347,18 @@ function AppContent() {
       console.log('新概念三未选择文章，等待用户选择');
       setIsLoading(false)
       setSentences([])
+      setSentenceIds([])
       setSentenceCache({})
       setDataSourceError(null)
       return
     }
-    
+
     // 如果是在线课程(Supabase)但未选择文章，等待用户选择文章
     if (dataSource === DATA_SOURCE_TYPES.SUPABASE) {
       console.log('在线课程数据源，等待用户通过选择器加载句子');
       setIsLoading(false)
       setSentences([])
+      setSentenceIds([])
       setSentenceCache({})
       setDataSourceError(null)
       return
@@ -487,6 +491,7 @@ function AppContent() {
         } catch (fallbackError) {
           console.error('回退到本地数据源也失败:', fallbackError)
           setSentences([])
+          setSentenceIds([])
           setSentenceCache({})  // 清除缓存
           isFallbackInProgressRef.current = false
           // 回退到本地数据源也失败，允许用户重新选择数据源
@@ -495,6 +500,7 @@ function AppContent() {
       } else {
         console.log('本地数据源加载失败，设置空句子');
         setSentences([])
+        setSentenceIds([])
         setSentenceCache({})  // 清除缓存
         // 本地数据源加载失败，允许用户重新选择数据源
         setHasSelectedDataSource(false)
@@ -515,6 +521,7 @@ function AppContent() {
     if (dataSource === DATA_SOURCE_TYPES.SUPABASE) {
       setIsLoading(false)
       setSentences([])
+      setSentenceIds([])
       return
     }
     // 只有在用户已经选择数据源后才加载数据
@@ -577,12 +584,13 @@ function AppContent() {
         // 如果自动朗读开启，则自动朗读句子
         if (autoPlay && speechSupported) {
           // 增加延迟确保所有状态稳定
+          const sid = sentenceIds[currentIndex] || null;
           setTimeout(() => {
             try {
               // 根据当前选择的语音服务使用相应的speak函数
               if (speechService === 'web_speech') {
                 cancelSpeech() // 取消之前的朗读
-                speak(sentence, speechRate).catch(error => {
+                speak(sentence, speechRate, sid).catch(error => {
                   console.error('Error speaking:', error)
                 })
               } else if (speechService === 'uberduck') {
@@ -592,7 +600,7 @@ function AppContent() {
                     console.error('Error speaking with external service:', error)
                     // 如果外部服务失败，尝试回退到Web Speech API
                     cancelSpeech()
-                    speak(sentence, speechRate)
+                    speak(sentence, speechRate, sid)
                       .catch(fallbackError => {
                         console.error('Fallback to web speech also failed:', fallbackError)
                       })
@@ -871,11 +879,12 @@ function AppContent() {
   const _handlePlay = () => {
     if (speechSupported && sentences[currentIndex]) {
       const sentence = sentences[currentIndex];
-      
+      const sid = sentenceIds[currentIndex] || null;
+
       // 根据当前选择的语音服务使用相应的speak函数
       if (speechService === 'web_speech') {
         cancelSpeech() // 取消之前的朗读
-        speak(sentence, speechRate)
+        speak(sentence, speechRate, sid)
           .catch(error => {
             console.error('Error speaking:', error)
           })
@@ -886,7 +895,7 @@ function AppContent() {
             console.error('Error speaking with external service:', error)
             // 如果外部服务失败，尝试回退到Web Speech API
             cancelSpeech()
-            speak(sentence, speechRate)
+            speak(sentence, speechRate, sid)
               .catch(fallbackError => {
                 console.error('Fallback to web speech also failed:', fallbackError)
               })
@@ -959,9 +968,9 @@ function AppContent() {
       };
     });
     
-    // 预加载下一句的音频（Edge TTS）
+    // 预加载下一句的音频（优先预生成音频）
     if (sentences[nextIndex]) {
-      preloadSentence(sentences[nextIndex], speechRate);
+      preloadSentence(sentences[nextIndex], speechRate, sentenceIds[nextIndex] || null);
     }
 
     // 直接设置新的当前索引（移除 setTimeout）
@@ -993,16 +1002,16 @@ function AppContent() {
   }
 
   // 播放句子两次（第一次0.75倍速，第二次1倍速）
-  const playSentenceTwice = async (sentence) => {
+  const playSentenceTwice = async (sentence, sentenceId = null) => {
     try {
       // 根据当前选择的语音服务使用相应的speak函数
       if (speechService === 'web_speech') {
         // 第一次朗读：0.75倍速
-        await speak(sentence, 0.75);
+        await speak(sentence, 0.75, sentenceId);
         // 短暂停顿
         await new Promise(resolve => setTimeout(resolve, 500));
         // 第二次朗读：1倍速
-        await speak(sentence, 1.0);
+        await speak(sentence, 1.0, sentenceId);
       } else if (speechService === 'uberduck') {
         // 第一次朗读：0.75倍速
         await externalSpeak(sentence, 0.75, selectedExternalVoice?.name);
@@ -1016,11 +1025,11 @@ function AppContent() {
       // 如果外部服务失败，尝试回退到Web Speech API
       try {
         // 第一次朗读：0.75倍速
-        await speak(sentence, 0.75);
+        await speak(sentence, 0.75, sentenceId);
         // 短暂停顿
         await new Promise(resolve => setTimeout(resolve, 500));
         // 第二次朗读：1倍速
-        await speak(sentence, 1.0);
+        await speak(sentence, 1.0, sentenceId);
       } catch (fallbackError) {
         console.error('Fallback to web speech also failed:', fallbackError);
         // 即使回退也失败，仍然继续执行，确保listenModeLoop能继续
@@ -1043,7 +1052,7 @@ function AppContent() {
       try {
         console.log('Playing sentence at index:', currentIndex);
         // 播放当前句子两次
-        await playSentenceTwice(sentences[currentIndex]);
+        await playSentenceTwice(sentences[currentIndex], sentenceIds[currentIndex] || null);
         // 短暂停顿后切换到下一个句子
         listenModeTimerRef.current = setTimeout(() => {
           console.log('Calling handleNext in listenModeLoop');
@@ -1213,9 +1222,10 @@ function AppContent() {
   }, []);
   
   // 处理从 SupabaseSelector 加载的句子
-  const handleSupabaseSentencesLoad = useCallback((loadedSentences) => {
-    console.log('[App] 收到 Supabase 句子:', loadedSentences?.length);
+  const handleSupabaseSentencesLoad = useCallback((loadedSentences, loadedIds) => {
+    console.log('[App] 收到 Supabase 句子:', loadedSentences?.length, 'IDs:', loadedIds?.length);
     setSentences(loadedSentences);
+    setSentenceIds(loadedIds || []);
     setCurrentIndex(0);
     setDataSourceError(null);
   }, []);

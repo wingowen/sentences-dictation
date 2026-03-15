@@ -106,10 +106,11 @@ const SupabaseSelector = React.memo(({
         setIsLoading?.(false);
         return;
       }
-      // 转换为 App.jsx 期望的格式：字符串数组
+      // 转换为 App.jsx 期望的格式：字符串数组 + ID 数组
       const sentencesText = sentencesData.map(s => s.text);
+      const sentenceIds = sentencesData.map(s => s.id);
       console.log('[SupabaseSelector] 加载了', sentencesText.length, '个句子');
-      onSentencesLoad?.(sentencesText);
+      onSentencesLoad?.(sentencesText, sentenceIds);
     } catch (error) {
       console.error('[SupabaseSelector] 加载句子失败:', error);
       onError?.(error.message || '加载句子失败');

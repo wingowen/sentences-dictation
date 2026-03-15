@@ -1,7 +1,13 @@
-// 语音服务 - KittenTTS本地 → Edge TTS在线 → Web Speech API 三级降级
+// 语音服务 - 预加载音频 → KittenTTS本地 → Edge TTS在线 → Web Speech API 四级降级
 
 import { speak as edgeSpeak, isEdgeTtsAvailable, cancelSpeech as edgeCancelSpeech } from './edgeTtsService.js';
 import { speak as kittenSpeak, isKittenTtsAvailable, cancelSpeech as kittenCancelSpeech } from './kittenTtsService.js';
+import {
+  speak as preloadedSpeak,
+  hasPreloadedAudio,
+  preloadAudio,
+  cancelSpeech as preloadedCancelSpeech,
+} from './preloadedAudioService.js';
 
 // import { debounce } from '../utils/debounce.js'; // Not currently used
 
@@ -108,10 +114,23 @@ const clearSpeechTasks = () => {
  * 朗读指定文本
  * @param {string} text - 要朗读的文本
  * @param {number} rate - 语速 (0.1 - 10, 默认 1.0)
+ * @param {number|string} sentenceId - 可选，句子 ID（用于播放预加载音频）
  * @returns {Promise<void>} - 朗读完成的Promise
  */
-export const speak = async (text, rate = 1.0) => {
-  // 1. Try KittenTTS first (local, best quality, 25MB model)
+export const speak = async (text, rate = 1.0, sentenceId = null) => {
+  // 1. Try preloaded audio first (Supabase Storage, instant playback)
+  if (sentenceId) {
+    try {
+      if (await hasPreloadedAudio(sentenceId)) {
+        await preloadedSpeak(sentenceId);
+        return;
+      }
+    } catch (error) {
+      console.warn('Preloaded audio failed, trying KittenTTS:', error.message);
+    }
+  }
+
+  // 2. Try KittenTTS (local, best quality, 25MB model)
   try {
     if (await isKittenTtsAvailable()) {
       await kittenSpeak(text, rate);
@@ -121,7 +140,7 @@ export const speak = async (text, rate = 1.0) => {
     console.warn('KittenTTS failed, trying Edge TTS:', error.message);
   }
 
-  // 2. Try Edge TTS (online, good quality)
+  // 3. Try Edge TTS (online, good quality)
   if (isEdgeTtsAvailable()) {
     try {
       await edgeSpeak(text, rate);
@@ -131,7 +150,7 @@ export const speak = async (text, rate = 1.0) => {
     }
   }
 
-  // 3. Fallback to Web Speech API (browser built-in)
+  // 4. Fallback to Web Speech API (browser built-in)
   return new Promise((resolve, reject) => {
     if (!isSpeechSupported()) {
       reject(new Error('Speech synthesis is not supported in this browser.'));
@@ -197,9 +216,31 @@ export const speak = async (text, rate = 1.0) => {
  */
 export const cancelSpeech = () => {
   // Cancel all TTS services
+  preloadedCancelSpeech();
   kittenCancelSpeech();
   edgeCancelSpeech();
   clearSpeechTasks();
+};
+
+/**
+ * 预加载句子音频
+ * @param {string} text - 要预加载的文本
+ * @param {number} rate - 语速
+ * @param {number|string} sentenceId - 可选，句子 ID
+ */
+export const preloadSentence = async (text, rate = 1.0, sentenceId = null) => {
+  // 优先预加载预生成音频
+  if (sentenceId) {
+    await preloadAudio(sentenceId);
+    return;
+  }
+  // 降级到 KittenTTS 预加载
+  try {
+    const { preloadSentence: kittenPreload } = await import('./kittenTtsService.js');
+    await kittenPreload(text, rate);
+  } catch (e) {
+    // 静默失败
+  }
 };
 
 

@@ -34,16 +34,26 @@ except ImportError:
 
 # 延迟加载 KittenTTS（首次需要下载模型）
 _model = None
-AVAILABLE_VOICES = ['Bella', 'Jasper', 'Luna', 'Bruno', 'Rosie', 'Hugo', 'Kiki', 'Leo']
+AVAILABLE_VOICES = ['expr-voice-2-m', 'expr-voice-2-f', 'expr-voice-3-m', 'expr-voice-3-f', 'expr-voice-4-m', 'expr-voice-4-f', 'expr-voice-5-m', 'expr-voice-5-f']
 
 
 def get_model():
     global _model
     if _model is None:
-        print("正在加载 KittenTTS 模型（首次需从 HuggingFace 下载约 25MB）...")
+        print("正在加载 KittenTTS 模型...")
         from kittentts import KittenTTS
-        _model = KittenTTS("KittenML/kitten-tts-mini-0.8")
-        print("模型加载完成！")
+        # 使用本地文件，避免从 HuggingFace 下载
+        import os
+        workspace = os.path.expanduser("~/.openclaw/workspace")
+        model_path = os.path.join(workspace, "kitten_tts_nano_v0_1.onnx")
+        voices_path = os.path.join(workspace, "voices.npz")
+        if os.path.exists(model_path) and os.path.exists(voices_path):
+            _model = KittenTTS(model_path=model_path, voices_path=voices_path)
+            print(f"模型加载完成（本地文件）！")
+        else:
+            # 回退到 HuggingFace 下载
+            _model = KittenTTS("KittenML/kitten-tts-nano-0.1")
+            print("模型加载完成（HuggingFace）！")
     return _model
 
 
@@ -69,7 +79,7 @@ class TTSRequest(BaseModel):
 def health():
     return {
         "status": "ok",
-        "model": "KittenML/kitten-tts-mini-0.8",
+        "model": "KittenML/kitten-tts-nano-0.1",
         "available_voices": AVAILABLE_VOICES,
     }
 
@@ -80,7 +90,7 @@ def generate_tts(req: TTSRequest):
         raise HTTPException(400, "text 不能为空")
 
     if req.voice not in AVAILABLE_VOICES:
-        raise HTTPException(400, f"voice 必须是: {AVAILABLE_VOices}")
+        raise HTTPException(400, f"voice 必须是: {AVAILABLE_VOICES}")
 
     try:
         model = get_model()
@@ -118,7 +128,7 @@ def list_voices():
 if __name__ == "__main__":
     print("=" * 50)
     print("KittenTTS 本地服务器")
-    print("模型: KittenML/kitten-tts-mini-0.8 (25MB)")
+    print("模型: KittenML/kitten-tts-nano-0.1 (25MB)")
     print("语音: " + ", ".join(AVAILABLE_VOICES))
     print("地址: http://127.0.0.1:8765")
     print("=" * 50)
