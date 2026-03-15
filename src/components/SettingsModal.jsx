@@ -16,6 +16,11 @@ const SettingsModal = ({
   speechRate,
   onSpeechRateChange,
   speechSupported,
+  showTranslation,
+  onToggleTranslation,
+  showOriginalText,
+  onToggleOriginalText,
+  currentTranslation,
 }) => {
   const [activeTab, setActiveTab] = useState('speech')
 
@@ -24,6 +29,7 @@ const SettingsModal = ({
   const tabs = [
     { id: 'speech', label: '语音' },
     { id: 'practice', label: '练习' },
+    { id: 'display', label: '显示' },
   ]
 
   return (
@@ -114,6 +120,33 @@ const SettingsModal = ({
                     onChange={(e) => onToggleShowCounter(e.target.checked)}
                   />
                   <span>显示字母计数器</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'display' && (
+            <div className="settings-panel">
+              <div className="settings-section">
+                <h3>显示设置</h3>
+
+                <label className="settings-option">
+                  <input
+                    type="checkbox"
+                    checked={showTranslation}
+                    onChange={(e) => onToggleTranslation()}
+                    disabled={!currentTranslation}
+                  />
+                  <span>显示中文翻译</span>
+                </label>
+
+                <label className="settings-option">
+                  <input
+                    type="checkbox"
+                    checked={showOriginalText}
+                    onChange={(e) => onToggleOriginalText()}
+                  />
+                  <span>显示原文</span>
                 </label>
               </div>
             </div>

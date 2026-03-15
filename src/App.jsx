@@ -87,6 +87,7 @@ function AppContent() {
   const [localResourceId, setLocalResourceId] = useState('simple')
   const [localResources, setLocalResources] = useState([])
   const [showFlashcardApp, setShowFlashcardApp] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
 
   // 练习状态
@@ -1183,25 +1184,24 @@ function AppContent() {
       ) : (
         <>
           <header className="app-header">
-            <div className="header-left">
+            <h1>Sentence Dictation Practice</h1>
+            <div className="app-controls">
+              {/* 桌面端显示的按钮 */}
               <button 
-                className="back-button"
+                className="back-button desktop-only"
                 onClick={() => setHasSelectedDataSource(false)}
                 title="返回数据源选择"
               >
                 ← 返回
               </button>
-            </div>
-            <h1>Sentence Dictation Practice</h1>
-            <div className="app-controls">
               <button
-                className="flashcard-button"
+                className="flashcard-button desktop-only"
                 onClick={() => setShowFlashcardApp(true)}
                 title="闪卡功能"
               >
                 📇 闪卡
               </button>
-              <div className="data-source-controls">
+              <div className="data-source-controls desktop-only">
                 <button 
                   className="data-source-button"
                   onClick={() => setShowDataSourceSelector(!showDataSourceSelector)}
@@ -1230,10 +1230,58 @@ function AppContent() {
                   </div>
                 )}
               </div>
+              
+              {/* 移动端折叠菜单按钮 */}
+              <div className="mobile-menu-container mobile-only">
+                <button 
+                  className="mobile-menu-button"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  title="更多选项"
+                >
+                  ☰ 菜单
+                </button>
+                {showMobileMenu && (
+                  <div className="mobile-menu-dropdown">
+                    <button 
+                      className="mobile-menu-item"
+                      onClick={() => {
+                        setHasSelectedDataSource(false)
+                        setShowMobileMenu(false)
+                      }}
+                    >
+                      ← 返回
+                    </button>
+                    <button
+                      className="mobile-menu-item"
+                      onClick={() => {
+                        setShowFlashcardApp(true)
+                        setShowMobileMenu(false)
+                      }}
+                    >
+                      📇 闪卡
+                    </button>
+                    <div className="mobile-menu-divider"></div>
+                    {DATA_SOURCES.map((source) => (
+                      <button
+                        key={source.id}
+                        className={`mobile-menu-item ${dataSource === source.id ? 'active' : ''}`}
+                        onClick={() => {
+                          handleDataSourceChange(source.id)
+                          setShowMobileMenu(false)
+                        }}
+                      >
+                        <span>{source.icon}</span>
+                        <span>{source.name}</span>
+                        {dataSource === source.id && <span className="check-mark">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </header>
        
-      <main className="app-main">
+      <main className={`app-main ${showDataSourceSelector ? 'with-dropdown-open' : ''}`}>
         {dataSourceError && (
           <div className="data-source-warning">
             <span>⚠️ {dataSourceError}</span>
@@ -1275,14 +1323,6 @@ function AppContent() {
         {/* 只有当有句子数据时才显示听写区域 */}
         {sentences.length > 0 && (
           <>
-            <PracticeStats 
-                stats={practiceStats}
-                progress={practiceProgress}
-                dataSource={dataSource}
-                onResetStats={resetPracticeStats}
-                onResetProgress={resetPracticeProgress}
-              />
-            
              {/* 练习卡片 - 合并翻译和输入区域 */}
               <PracticeCard
                 sentences={sentences}
@@ -1340,6 +1380,11 @@ function AppContent() {
                 speechRate={speechRate}
                 onSpeechRateChange={_setSpeechRate}
                 speechSupported={speechSupported}
+                showTranslation={showTranslation}
+                onToggleTranslation={handleToggleTranslation}
+                showOriginalText={showOriginalText}
+                onToggleOriginalText={handleToggleOriginalText}
+                currentTranslation={currentTranslation}
                 // translation features removed
               />
             </Suspense>

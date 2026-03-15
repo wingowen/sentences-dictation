@@ -230,6 +230,8 @@ html {
   padding: var(--spacing-md);
   background: var(--gradient-surface);
   box-shadow: var(--shadow-md);
+  position: relative;
+  z-index: 1;
 }
 
 /* Data Source Selection Page */
@@ -350,9 +352,10 @@ html {
   margin-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--gray-200);
   position: relative;
+  z-index: 100;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-md);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
@@ -389,7 +392,6 @@ html {
   font-weight: var(--font-semibold);
   color: var(--text-color);
   margin: 0;
-  flex: 1;
   letter-spacing: var(--letter-spacing-tight);
 }
 
@@ -397,6 +399,7 @@ html {
 .data-source-controls {
   position: relative;
   display: inline-block;
+  z-index: var(--z-popover);
 }
 
 .data-source-button {
@@ -439,7 +442,7 @@ html {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2xl);
-  z-index: var(--z-dropdown);
+  z-index: 9999;
   min-width: 280px;
   animation: slideDown var(--transition-spring);
 }
@@ -601,6 +604,13 @@ html {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  position: relative;
+  z-index: 0;
+}
+
+/* 当数据源下拉框打开时，防止内容遮挡下拉框 */
+.app-main.with-dropdown-open {
+  padding-top: var(--spacing-xl);
 }
 
 /* Progress Bar */
@@ -1042,7 +1052,16 @@ html {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+  flex-wrap: nowrap;
+}
+
+/* Practice Card Controls - 所有按钮放一排 */
+.practice-card-controls {
+  display: flex;
   flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  justify-content: center;
 }
 
 .toggle-text-button {
@@ -1900,7 +1919,8 @@ html {
   }
 
   .toggle-text-button {
-    width: 100%;
+    width: auto;
+    white-space: nowrap;
   }
 
   /* Settings Modal Responsive */
@@ -2019,6 +2039,171 @@ html {
   align-items: center;
   gap: var(--spacing-md);
   align-self: center;
+}
+
+/* 桌面端和移动端显示控制 */
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* 移动端折叠菜单 */
+.mobile-menu-container {
+  position: relative;
+}
+
+.mobile-menu-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-subhead);
+  font-weight: var(--font-medium);
+  color: var(--apple-blue);
+  background-color: var(--white);
+  border: 1.5px solid var(--apple-blue);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+}
+
+.mobile-menu-button:hover {
+  background: var(--gradient-primary);
+  color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-blue);
+  border-color: transparent;
+}
+
+.mobile-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-sm);
+  background: var(--glass-bg-dark);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
+  z-index: 9999;
+  min-width: 200px;
+  animation: slideDown var(--transition-spring);
+}
+
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-md);
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gray-200);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--text-subhead);
+  color: var(--text-color);
+}
+
+.mobile-menu-item:last-child {
+  border-bottom: none;
+}
+
+.mobile-menu-item:hover {
+  background-color: var(--gray-50);
+}
+
+.mobile-menu-item.active {
+  background-color: rgba(0, 122, 255, 0.08);
+  color: var(--apple-blue);
+}
+
+.mobile-menu-divider {
+  height: 1px;
+  background-color: var(--gray-200);
+  margin: var(--spacing-xs) 0;
+}
+
+/* 文本切换折叠菜单 */
+.text-toggle-menu-container {
+  position: relative;
+}
+
+.text-toggle-menu-button {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-subhead);
+  font-weight: var(--font-medium);
+  color: var(--gray-700);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  align-self: center;
+  box-shadow: var(--shadow-xs);
+}
+
+.text-toggle-menu-button:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.text-toggle-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-sm);
+  background: var(--glass-bg-dark);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
+  z-index: 9999;
+  min-width: 150px;
+  animation: slideDown var(--transition-spring);
+}
+
+.text-toggle-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gray-200);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--text-subhead);
+  color: var(--text-color);
+}
+
+.text-toggle-menu-item:last-child {
+  border-bottom: none;
+}
+
+.text-toggle-menu-item:hover {
+  background-color: var(--gray-50);
+}
+
+.text-toggle-menu-item.active {
+  background-color: rgba(0, 122, 255, 0.08);
+  color: var(--apple-blue);
+}
+
+.text-toggle-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .flashcard-button {
@@ -3090,9 +3275,18 @@ html {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  /* 在小屏幕时，隐藏桌面端按钮，显示移动端折叠菜单 */
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: flex !important;
+  }
+  
   .app-controls {
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
     gap: var(--spacing-sm);
   }
   

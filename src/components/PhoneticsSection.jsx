@@ -1,6 +1,6 @@
 import React from 'react'
 
-const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, showOriginalText, onToggleOriginalText, showTranslation, onToggleTranslation, currentTranslation }) => {
+const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, showOriginalText, showTranslation, currentTranslation }) => {
   const currentSentence = sentences[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
 
@@ -20,23 +20,6 @@ const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, 
             <span className="original-text-content">{sentenceText}</span>
           </div>
         )}
-        <div className="toggle-buttons">
-          <button
-            className="toggle-text-button"
-            onClick={onToggleTranslation}
-            disabled={!currentTranslation}
-            title={currentTranslation ? (showTranslation ? '隐藏中文' : '显示中文') : '当前数据源没有中文翻译'}
-          >
-            {showTranslation && currentTranslation ? '隐藏中文' : '显示中文'}
-          </button>
-          <button
-            className="toggle-text-button"
-            onClick={onToggleOriginalText}
-            title={showOriginalText ? '隐藏原文' : '显示原文'}
-          >
-            {showOriginalText ? '隐藏原文' : '显示原文'}
-          </button>
-        </div>
       </div>
     </div>
   )

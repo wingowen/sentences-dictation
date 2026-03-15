@@ -121,23 +121,6 @@ const PracticeCard = React.memo(({
           下一句
         </button>
 
-        <button
-          className="toggle-text-button"
-          onClick={onToggleTranslation}
-          disabled={!currentTranslation}
-          title={currentTranslation ? (showTranslation ? '隐藏中文' : '显示中文') : '当前数据源没有中文翻译'}
-        >
-          {showTranslation && currentTranslation ? '隐藏中文' : '显示中文'}
-        </button>
-
-        <button
-          className="toggle-text-button"
-          onClick={onToggleOriginalText}
-          title={showOriginalText ? '隐藏原文' : '显示原文'}
-        >
-          {showOriginalText ? '隐藏原文' : '显示原文'}
-        </button>
-
         <HintButton
           hintText={currentWords.length > 0 ? currentWords[focusedInputIndex]?.word : '暂无提示'}
           position="right"
