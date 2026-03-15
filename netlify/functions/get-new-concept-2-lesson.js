@@ -78,25 +78,38 @@ export async function handler(event, context) {
     console.log('Extracting lesson content...');
 
     let englishParagraph = '';
-    let chineseParagraph = '';
+    const chineseParts = [];
+    let foundEnglish = false;
 
-    // Strategy: Find the main content area and separate English/Chinese paragraphs
     $('p').each((index, element) => {
       const text = $(element).text().trim();
-      // Skip short, navigation, or phonetic content
-      if (text.length < 30) return;
-      if (/^\s*(英|美|n\.|v\.|adj\.|adv\.)/.test(text)) return; // skip phonetic lines
+      if (text.length < 15) return;
       if (text.includes('copyright') || text.includes('NewConceptEnglish.com')) return;
+      if (/^版权/.test(text)) return;
+      if (/^解析/.test(text)) return;
 
       const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-      const hasEnglish = /[a-zA-Z]{3,}/.test(text);
+      const hasEnglish = /[a-zA-Z]{5,}/.test(text);
 
-      if (hasEnglish && !hasChinese && text.length > 50) {
+      // Skip phonetic/word definition lines
+      if (/^\s*(英|美)\s*(n\.|v\.|adj\.|adv\.)/.test(text)) return;
+      if (/^\s*英\s*$/.test(text.split('\n')[0])) return;
+
+      // English paragraph (long English text, no Chinese)
+      if (hasEnglish && !hasChinese && text.length > 80) {
         englishParagraph = text;
-      } else if (hasChinese && !hasEnglish && text.length > 20) {
-        chineseParagraph = text;
+        foundEnglish = true;
+        return;
+      }
+
+      // Chinese-only paragraphs AFTER English = actual translations
+      if (foundEnglish && hasChinese && !hasEnglish && text.length > 15) {
+        if (text.startsWith('0') || (text.includes('语法') && text.includes('来看'))) return;
+        chineseParts.push(text);
       }
     });
+
+    const chineseParagraph = chineseParts.join('');
 
     // Split English into sentences
     const englishSentences = englishParagraph

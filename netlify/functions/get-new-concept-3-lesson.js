@@ -78,23 +78,35 @@ export async function handler(event, context) {
     console.log('Extracting lesson content...');
 
     let englishParagraph = '';
-    let chineseParagraph = '';
+    const chineseParts = [];
+    let foundEnglish = false;
 
     $('p').each((index, element) => {
       const text = $(element).text().trim();
-      if (text.length < 30) return;
-      if (/^\s*(英|美|n\.|v\.|adj\.|adv\.)/.test(text)) return;
+      if (text.length < 15) return;
       if (text.includes('copyright') || text.includes('NewConceptEnglish.com')) return;
+      if (/^版权/.test(text)) return;
+      if (/^解析/.test(text)) return;
 
       const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-      const hasEnglish = /[a-zA-Z]{3,}/.test(text);
+      const hasEnglish = /[a-zA-Z]{5,}/.test(text);
 
-      if (hasEnglish && !hasChinese && text.length > 50) {
+      if (/^\s*(英|美)\s*(n\.|v\.|adj\.|adv\.)/.test(text)) return;
+      if (/^\s*英\s*$/.test(text.split('\n')[0])) return;
+
+      if (hasEnglish && !hasChinese && text.length > 80) {
         englishParagraph = text;
-      } else if (hasChinese && !hasEnglish && text.length > 20) {
-        chineseParagraph = text;
+        foundEnglish = true;
+        return;
+      }
+
+      if (foundEnglish && hasChinese && !hasEnglish && text.length > 15) {
+        if (text.startsWith('0') || (text.includes('语法') && text.includes('来看'))) return;
+        chineseParts.push(text);
       }
     });
+
+    const chineseParagraph = chineseParts.join('');
 
     // Split English into sentences
     const englishSentences = englishParagraph
