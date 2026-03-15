@@ -992,6 +992,12 @@ html {
   border-color: transparent;
 }
 
+.toggle-text-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .phonetics-list {
   display: flex;
   flex-wrap: wrap;

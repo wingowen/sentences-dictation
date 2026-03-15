@@ -21,15 +21,14 @@ const PhoneticsSection = React.memo(({ sentences, currentIndex, totalSentences, 
           </div>
         )}
         <div className="toggle-buttons">
-          {currentTranslation && (
-            <button
-              className="toggle-text-button"
-              onClick={onToggleTranslation}
-              title={showTranslation ? '隐藏中文' : '显示中文'}
-            >
-              {showTranslation ? '隐藏中文' : '显示中文'}
-            </button>
-          )}
+          <button
+            className="toggle-text-button"
+            onClick={onToggleTranslation}
+            disabled={!currentTranslation}
+            title={currentTranslation ? (showTranslation ? '隐藏中文' : '显示中文') : '当前数据源没有中文翻译'}
+          >
+            {showTranslation && currentTranslation ? '隐藏中文' : '显示中文'}
+          </button>
           <button
             className="toggle-text-button"
             onClick={onToggleOriginalText}
