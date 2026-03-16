@@ -319,7 +319,7 @@ export const getNewConcept2Sentences = async () => {
         translation: sentence.translation || '',
         id: `nce2-${article.lesson_id || article.title}-${index}`,
         words: (sentence.text || sentence).split(/\s+/).map(word => ({
-          word: word.replace(/[^a-zA-Z']/g, ''),
+          word: word.replace(/[^a-zA-Z']/g, '').replace(/^'|'$/g, ''),
           original: word
         }))
       }))
