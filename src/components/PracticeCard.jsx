@@ -22,7 +22,10 @@ const PracticeCard = React.memo(({
   inputRefs,
   onToggleSettings,
   onNext,
-  showCounter
+  showCounter,
+  // Vocabulary props
+  currentUser,
+  onAddToVocabulary
 }) => {
   const currentSentence = sentences[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
@@ -126,6 +129,21 @@ const PracticeCard = React.memo(({
           position="right"
           className="hint-button-wrapper"
         />
+
+        {currentUser && (
+          <button
+            type="button"
+            className="add-vocab-button small"
+            onClick={() => {
+              if (currentWords[focusedInputIndex]) {
+                onAddToVocabulary(currentWords[focusedInputIndex])
+              }
+            }}
+            title="将当前单词加入生词本"
+          >
+            📖 加入生词
+          </button>
+        )}
       </div>
 
       {/* 输入区域 */}

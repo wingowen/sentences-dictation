@@ -19,6 +19,21 @@
 
 # Redirects and headers (optional)
 [[redirects]]
+  from = "/api/auth"
+  to = "/.netlify/functions/auth"
+  status = 200
+
+[[redirects]]
+  from = "/api/vocabulary/*"
+  to = "/.netlify/functions/api-vocabulary"
+  status = 200
+
+[[redirects]]
+  from = "/api/vocabulary"
+  to = "/.netlify/functions/api-vocabulary"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200

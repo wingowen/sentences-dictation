@@ -21,6 +21,8 @@
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
     "cmu-pronouncing-dictionary": "^3.0.0",
+    "cors": "^2.8.6",
+    "express": "^4.21.2",
     "node-edge-tts": "^1.2.10",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -42,6 +44,7 @@
     "jest-environment-jsdom": "^30.2.0",
     "jsdom": "^27.4.0",
     "netlify-cli": "^23.13.5",
+    "playwright": "^1.58.2",
     "vite": "^7.2.4",
     "vitest": "^4.0.18"
   }

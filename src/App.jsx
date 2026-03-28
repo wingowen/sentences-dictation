@@ -17,6 +17,7 @@ import WordInputsContext from './components/WordInputsContext'
 import PracticeCard from './components/PracticeCard'
 // 懒加载大型组件
 const FlashcardApp = React.lazy(() => import('./components/FlashcardApp'))
+const VocabularyApp = React.lazy(() => import('./components/VocabularyApp'))
 import ArticleSelector from './components/ArticleSelector'
 import LocalResourceSelector from './components/LocalResourceSelector'
 import ArticleSelectorHint from './components/ArticleSelectorHint'
@@ -26,6 +27,8 @@ import { AppProvider } from './contexts/AppContext'
 // 懒加载弹窗组件
 const ResultModal = React.lazy(() => import('./components/ResultModal'))
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'))
+const LoginModal = React.lazy(() => import('./components/LoginModal'))
+import Toast from './components/Toast'
 
 /**
  * 转换句子中的缩写为完整形式
@@ -87,7 +90,56 @@ function AppContent() {
   const [localResourceId, setLocalResourceId] = useState('simple')
   const [localResources, setLocalResources] = useState([])
   const [showFlashcardApp, setShowFlashcardApp] = useState(false)
+  const [showVocabularyApp, setShowVocabularyApp] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+
+  // 用户认证状态
+  const [currentUser, setCurrentUser] = useState(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' })
+  
+  // 暴露登录弹窗控制到 window（绕过 React 19 事件系统问题）
+  window.__setShowLoginModal = setShowLoginModal;
+
+  // 处理 OAuth 回调（Supabase 邮箱验证后的重定向）
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        try {
+          // 解析 URL hash 中的参数
+          const params = new URLSearchParams(hash.substring(1))
+          const accessToken = params.get('access_token')
+          const refreshToken = params.get('refresh_token')
+          const type = params.get('type')
+          
+          if (accessToken && type === 'signup') {
+            // 使用 access token 获取用户信息
+            const response = await fetch('/.netlify/functions/auth', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`
+              }
+            })
+            
+            const data = await response.json()
+            
+            if (data.success && data.data?.user) {
+              setCurrentUser(data.data.user)
+              // 清除 URL 中的 hash
+              window.history.replaceState(null, '', window.location.pathname)
+              // 显示成功消息
+              alert('邮箱验证成功！已自动登录。')
+            }
+          }
+        } catch (err) {
+          console.error('处理认证回调失败:', err)
+        }
+      }
+    }
+    
+    handleAuthCallback()
+  }, [])
 
 
   // 练习状态
@@ -1105,6 +1157,42 @@ function AppContent() {
     setShowSettings(!showSettings);
   }, [showSettings]);
 
+  // 添加生词到生词本
+  const handleAddToVocabulary = useCallback(async (wordData) => {
+    if (!currentUser) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/vocabulary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          word: wordData.word,
+          phonetic: wordData.phonetic || '',
+          meaning: wordData.translation || '',
+          part_of_speech: wordData.partOfSpeech || '',
+          sentence_context: sentences[currentIndex]?.text || ''
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setToast({ show: true, message: `已添加 "${wordData.word}"`, type: 'success' });
+      } else {
+        setToast({ show: true, message: data.error?.message || '添加失败', type: 'error' });
+      }
+    } catch (err) {
+      console.error('添加生词失败:', err);
+      setToast({ show: true, message: '添加失败，请重试', type: 'error' });
+    }
+  }, [currentUser, sentences, currentIndex]);
+
   // 处理数据源选择
   const handleSelectDataSource = useCallback((sourceId) => {
     if (sourceId === 'flashcards') {
@@ -1144,21 +1232,40 @@ function AppContent() {
     return DATA_SOURCES.find(s => s.id === dataSource)
   }, [dataSource])
 
+  // 登录弹窗 - 在所有页面都显示
+  const loginModal = (
+    <Suspense fallback={<div>加载中...</div>}>
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={(user) => setCurrentUser(user)}
+      />
+    </Suspense>
+  )
+
   if (!hasSelectedDataSource) {
     return (
-      <DataSourceSelection 
-        dataSourceError={dataSourceError}
-        onSelectDataSource={handleSelectDataSource}
-      />
+      <>
+        {loginModal}
+        <DataSourceSelection 
+          dataSourceError={dataSourceError}
+          onSelectDataSource={handleSelectDataSource}
+          currentUser={currentUser}
+          onLoginClick={() => setShowLoginModal(true)}
+        />
+      </>
     )
   }
 
   if (isLoading && dataSource !== DATA_SOURCE_TYPES.SUPABASE) {
     return (
-      <div className="loading">
-        <div>Loading sentences...</div>
-        <div className="loading-source">从 {currentDataSource?.name || '数据源'} 加载中...</div>
-      </div>
+      <>
+        {loginModal}
+        <div className="loading">
+          <div>Loading sentences...</div>
+          <div className="loading-source">从 {currentDataSource?.name || '数据源'} 加载中...</div>
+        </div>
+      </>
     )
   }
 
@@ -1170,7 +1277,12 @@ function AppContent() {
       dataSource === DATA_SOURCE_TYPES.SUPABASE;
     
     if (!needsArticleSelection) {
-      return <div className="error">No sentences available. Please check your data source.</div>
+      return (
+        <>
+          {loginModal}
+          <div className="error">No sentences available. Please check your data source.</div>
+        </>
+      )
     }
   }
 
@@ -1180,6 +1292,13 @@ function AppContent() {
         <Suspense fallback={<div className="loading">加载闪卡应用中...</div>}>
           <FlashcardApp onBack={() => {
             setShowFlashcardApp(false);
+            setHasSelectedDataSource(false);
+          }} />
+        </Suspense>
+      ) : showVocabularyApp ? (
+        <Suspense fallback={<div className="loading">加载生词本应用中...</div>}>
+          <VocabularyApp onBack={() => {
+            setShowVocabularyApp(false);
             setHasSelectedDataSource(false);
           }} />
         </Suspense>
@@ -1202,6 +1321,13 @@ function AppContent() {
                 title="闪卡功能"
               >
                 📇 闪卡
+              </button>
+              <button
+                className="vocabulary-button desktop-only"
+                onClick={() => setShowVocabularyApp(true)}
+                title="生词本功能"
+              >
+                📚 生词本
               </button>
               <div className="data-source-controls desktop-only">
                 <button 
@@ -1346,6 +1472,8 @@ function AppContent() {
                 onToggleSettings={handleToggleSettings}
                 onNext={handleNext}
                 showCounter={showCounter}
+                currentUser={currentUser}
+                onAddToVocabulary={handleAddToVocabulary}
               />
 
             {/* 语音警告 */}
@@ -1390,6 +1518,7 @@ function AppContent() {
                 // translation features removed
               />
             </Suspense>
+
           </>
         )}
       </main>
@@ -1398,6 +1527,15 @@ function AppContent() {
           <p>Sentence Dictation Practice Tool</p>
         </footer>
         </>
+      )}
+      
+      {/* Toast 提示 */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
       )}
     </div>
   )

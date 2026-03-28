@@ -28,6 +28,68 @@ try {
 }
 
 /**
+ * 用户注册
+ */
+async function signupHandler(body) {
+  const { email, password, confirmPassword } = body;
+
+  console.log('[Auth] Signup attempt for:', email);
+  
+  if (!email || !password) {
+    console.log('[Auth] Signup failed: missing credentials');
+    return validationError([
+      { field: 'email', message: '邮箱不能为空' },
+      { field: 'password', message: '密码不能为空' }
+    ]);
+  }
+
+  if (password !== confirmPassword) {
+    console.log('[Auth] Signup failed: passwords do not match');
+    return validationError([
+      { field: 'confirmPassword', message: '两次输入的密码不一致' }
+    ]);
+  }
+
+  if (password.length < 6) {
+    console.log('[Auth] Signup failed: password too short');
+    return validationError([
+      { field: 'password', message: '密码长度至少为6位' }
+    ]);
+  }
+
+  // 如果配置了 Supabase，使用 Supabase 注册
+  if (supabaseAdmin) {
+    try {
+      console.log('[Auth] Attempting Supabase signup...');
+      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+        email,
+        password
+      });
+      
+      if (authError) {
+        console.error('[Auth] Supabase signup error:', authError.message);
+        return error(authError.message, 'SIGNUP_FAILED');
+      }
+      
+      console.log('[Auth] Supabase signup successful');
+      return success({
+        user: authData.user,
+        token: authData.session?.access_token || null,
+        needsEmailConfirmation: !authData.session
+      }, '注册成功');
+      
+    } catch (err) {
+      console.error('[Auth] Signup exception:', err);
+      return error('注册失败，请稍后重试', 'SIGNUP_ERROR');
+    }
+  }
+  
+  // 没有配置 Supabase，返回提示
+  console.log('[Auth] Signup failed: no Supabase configured');
+  return error('当前环境不支持注册，请联系管理员配置 Supabase', 'SIGNUP_NOT_AVAILABLE');
+}
+
+/**
  * 简化登录
  */
 async function loginHandler(body) {
@@ -178,6 +240,12 @@ exports.handler = async (event) => {
     if (method === 'POST' && action === 'login') {
       const body = JSON.parse(event.body || '{}');
       const result = await loginHandler(body);
+      return { ...result, headers };
+    }
+    
+    if (method === 'POST' && action === 'signup') {
+      const body = JSON.parse(event.body || '{}');
+      const result = await signupHandler(body);
       return { ...result, headers };
     }
     
