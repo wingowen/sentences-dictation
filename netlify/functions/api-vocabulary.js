@@ -15,17 +15,17 @@ const response = require('./supabase/response');
 async function getUserId(event) {
   const authHeader = event.headers.authorization;
   
-  // 如果是模拟 token
-  if (authHeader && (authHeader.startsWith('mock-') || authHeader.startsWith('env-'))) {
-    return 'mock-user-1';
-  }
-  
   // 如果没有认证，返回 null
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
   
   const token = authHeader.split(' ')[1];
+  
+  // 如果是模拟 token
+  if (token && (token.startsWith('mock-') || token.startsWith('env-'))) {
+    return '00000000-0000-0000-0000-000000000001'
+  }
   
   // 如果配置了 Supabase，验证 token 并获取用户 ID
   if (supabaseAdmin) {

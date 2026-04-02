@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as flashcardService from '../services/flashcardService';
 import FlashcardImporter from './FlashcardImporter';
 
@@ -8,6 +8,7 @@ const FlashcardManager = ({ onBack }) => {
   const [editingFlashcard, setEditingFlashcard] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showImporter, setShowImporter] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     question: '',
     answer: '',
@@ -16,23 +17,25 @@ const FlashcardManager = ({ onBack }) => {
     difficulty: 3
   });
 
-  const loadFlashcards = () => {
-    const allFlashcards = flashcardService.getAllFlashcards();
-    setFlashcards(allFlashcards);
-  };
-
-  const loadCategories = () => {
-    const allCategories = flashcardService.getFlashcardCategories();
-    setCategories(allCategories);
-  };
-
-  // 加载闪卡和分类
-  useEffect(() => {
-    loadFlashcards();
-    loadCategories();
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const allFlashcards = await flashcardService.getAllFlashcards();
+      setFlashcards(allFlashcards);
+      
+      const allCategories = await flashcardService.getFlashcardCategories();
+      setCategories(allCategories);
+    } catch (error) {
+      console.error('加载闪卡失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // 处理表单输入变化
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -41,11 +44,9 @@ const FlashcardManager = ({ onBack }) => {
     }));
   };
 
-  // 处理表单提交
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 处理标签输入
     const tags = formData.tags
       .split(',')
       .map(tag => tag.trim())
@@ -57,23 +58,20 @@ const FlashcardManager = ({ onBack }) => {
       difficulty: parseInt(formData.difficulty)
     };
 
-    if (editingFlashcard) {
-      // 更新闪卡
-      flashcardService.updateFlashcard(editingFlashcard.id, flashcardData);
-    } else {
-      // 创建新闪卡
-      flashcardService.createFlashcard(flashcardData);
-    }
+    try {
+      if (editingFlashcard) {
+        await flashcardService.updateFlashcard(editingFlashcard.id, flashcardData);
+      } else {
+        await flashcardService.createFlashcard(flashcardData);
+      }
 
-    // 重置表单
-    resetForm();
-    // 重新加载闪卡
-    loadFlashcards();
-    // 重新加载分类
-    loadCategories();
+      resetForm();
+      await loadData();
+    } catch (error) {
+      console.error('保存闪卡失败:', error);
+    }
   };
 
-  // 重置表单
   const resetForm = () => {
     setFormData({
       question: '',
@@ -86,7 +84,6 @@ const FlashcardManager = ({ onBack }) => {
     setShowForm(false);
   };
 
-  // 编辑闪卡
   const handleEdit = (flashcard) => {
     setEditingFlashcard(flashcard);
     setFormData({
@@ -99,32 +96,54 @@ const FlashcardManager = ({ onBack }) => {
     setShowForm(true);
   };
 
-  // 删除闪卡
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('确定要删除这个闪卡吗？')) {
-      flashcardService.deleteFlashcard(id);
-      loadFlashcards();
+      try {
+        await flashcardService.deleteFlashcard(id);
+        await loadData();
+      } catch (error) {
+        console.error('删除闪卡失败:', error);
+      }
     }
   };
 
-  // 打开创建表单
   const handleCreate = () => {
     resetForm();
     setShowForm(true);
   };
 
-  // 打开导入对话框
   const handleImportClick = () => {
     setShowImporter(true);
   };
 
-  // 处理导入完成
   const handleImportComplete = () => {
-    // 重新加载闪卡和分类
-    loadFlashcards();
-    loadCategories();
+    loadData();
     setShowImporter(false);
   };
+
+  const handleFilterChange = async (category) => {
+    if (category === 'all') {
+      const allFlashcards = await flashcardService.getAllFlashcards();
+      setFlashcards(allFlashcards);
+    } else {
+      const filtered = await flashcardService.getFlashcardsByCategory(category);
+      setFlashcards(filtered);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flashcard-manager">
+        <div className="manager-header">
+          <button className="back-button" onClick={onBack}>
+            ← 返回
+          </button>
+          <h2>闪卡管理</h2>
+        </div>
+        <div className="loading">加载中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flashcard-manager">
@@ -216,14 +235,7 @@ const FlashcardManager = ({ onBack }) => {
             <h3>闪卡列表 ({flashcards.length})</h3>
             <div className="filter-controls">
               <select
-                onChange={(e) => {
-                  if (e.target.value === 'all') {
-                    loadFlashcards();
-                  } else {
-                    const filtered = flashcardService.getFlashcardsByCategory(e.target.value);
-                    setFlashcards(filtered);
-                  }
-                }}
+                onChange={(e) => handleFilterChange(e.target.value)}
               >
                 <option value="all">所有分类</option>
                 {categories.map(category => (
@@ -289,7 +301,6 @@ const FlashcardManager = ({ onBack }) => {
         </div>
       )}
 
-      {/* Import Dialog */}
       {showImporter && (
         <FlashcardImporter 
           onClose={() => setShowImporter(false)}

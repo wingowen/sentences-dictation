@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方案A: 卡片式布局</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 40px;
+    }
+    .login-btn {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 10px 20px;
+      border-radius: 50px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .login-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 50px;
+      color: white;
+    }
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .hero p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .card {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .card-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    .card-arrow {
+      font-size: 20px;
+      color: #667eea;
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: all 0.3s;
+    }
+    .card:hover .card-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .card.locked .card-arrow {
+      opacity: 0 !important;
+    }
+    .card.locked::after {
+      content: '🔒';
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 16px;
+    }
+    .card { position: relative; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <button class="login-btn">🔐 登录</button>
+    </div>
+    <div class="hero">
+      <h1>📚 Sentence Dictation</h1>
+      <p>英语听写练习平台 · 间隔重复 · 高效记忆</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🎴</div>
+        <div class="card-title">闪卡学习</div>
+        <div class="card-desc">间隔重复算法，高效记忆</div>
+        <div class="card-arrow">→</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <div class="card-title">闪卡管理</div>
+        <div class="card-desc">创建和管理你的闪卡</div>
+        <div class="card-arrow">→</div>
+      </div>
+      <div class="card locked">
+        <div class="card-icon">📖</div>
+        <div class="card-title">生词本复习</div>
+        <div class="card-desc">巩固你的生词记忆</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📗</div>
+        <div class="card-title">新概念英语</div>
+        <div class="card-desc">经典教材，1/2/3册</div>
+        <div class="card-arrow">→</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <div class="card-title">简单句练习</div>
+        <div class="card-desc">基础入门，轻松上手</div>
+        <div class="card-arrow">→</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <div class="card-title">Notion</div>
+        <div class="card-desc">云端同步，随时学习</div>
+        <div class="card-arrow">→</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

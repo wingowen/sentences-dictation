@@ -1,84 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as flashcardService from '../services/flashcardService';
 
 const FlashcardStats = ({ onBack }) => {
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadStats = () => {
-    const flashcardStats = flashcardService.getFlashcardStats();
-    setStats(flashcardStats);
-  };
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const flashcardStats = await flashcardService.getFlashcardStats();
+      setStats(flashcardStats);
 
-  const loadHistory = () => {
-    const allHistory = flashcardService.getLearningHistory();
+      const allHistory = await flashcardService.getLearningHistory();
+      const now = new Date();
+      let filteredHistory;
 
-    // 根据选择的时间段过滤历史记录
-    const now = new Date();
-    let filteredHistory;
+      switch (selectedPeriod) {
+        case 'day':
+          filteredHistory = allHistory.filter(record => {
+            return new Date(record.timestamp).toDateString() === now.toDateString();
+          });
+          break;
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          filteredHistory = allHistory.filter(record => {
+            return new Date(record.timestamp) >= weekAgo;
+          });
+          break;
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          filteredHistory = allHistory.filter(record => {
+            return new Date(record.timestamp) >= monthAgo;
+          });
+          break;
+        case 'all':
+          filteredHistory = allHistory;
+          break;
+        default:
+          filteredHistory = allHistory;
+      }
 
-    switch (selectedPeriod) {
-      case 'day':
-        filteredHistory = allHistory.filter(record => {
-          const recordDate = new Date(record.timestamp);
-          return recordDate.toDateString() === now.toDateString();
-        });
-        break;
-      case 'week':
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filteredHistory = allHistory.filter(record => {
-          const recordDate = new Date(record.timestamp);
-          return recordDate >= weekAgo;
-        });
-        break;
-      case 'month':
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        filteredHistory = allHistory.filter(record => {
-          const recordDate = new Date(record.timestamp);
-          return recordDate >= monthAgo;
-        });
-        break;
-      case 'all':
-        filteredHistory = allHistory;
-        break;
-      default:
-        filteredHistory = allHistory;
+      filteredHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setHistory(filteredHistory);
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    // 按时间倒序排序
-    filteredHistory.sort((a, b) => {
-      return new Date(b.timestamp) - new Date(a.timestamp);
-    });
-
-    setHistory(filteredHistory);
-  };
-
-  // 加载统计数据和历史记录
-  useEffect(() => {
-    loadStats();
-    loadHistory();
   }, [selectedPeriod]);
 
-  // 计算时间段内的学习统计
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const getPeriodStats = () => {
     const correct = history.filter(record => record.correct).length;
     const total = history.length;
     const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
     
-    // 计算平均响应时间
-    const totalResponseTime = history.reduce((sum, record) => sum + record.responseTime, 0);
-    const avgResponseTime = total > 0 ? Math.round(totalResponseTime / total) : 0;
-    
-    return {
-      correct,
-      total,
-      accuracy,
-      avgResponseTime
-    };
+    return { correct, total, accuracy };
   };
 
   const periodStats = getPeriodStats();
+
+  if (isLoading) {
+    return (
+      <div className="flashcard-stats">
+        <div className="stats-header">
+          <button className="back-button" onClick={onBack}>
+            ← 返回
+          </button>
+          <h2>闪卡统计</h2>
+        </div>
+        <div className="loading">加载中...</div>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (
@@ -89,7 +88,9 @@ const FlashcardStats = ({ onBack }) => {
           </button>
           <h2>闪卡统计</h2>
         </div>
-        <div className="loading">加载中...</div>
+        <div className="empty-state">
+          <p>暂无统计数据</p>
+        </div>
       </div>
     );
   }
@@ -117,8 +118,8 @@ const FlashcardStats = ({ onBack }) => {
           <p className="stat-value">{stats.todayTotal}</p>
         </div>
         <div className="stat-card">
-          <h3>总体正确率</h3>
-          <p className="stat-value">{stats.overallAccuracy}%</p>
+          <h3>今日正确率</h3>
+          <p className="stat-value">{stats.todayAccuracy}%</p>
         </div>
       </div>
 
@@ -164,10 +165,6 @@ const FlashcardStats = ({ onBack }) => {
             <span>正确率：</span>
             <strong>{periodStats.accuracy}%</strong>
           </div>
-          <div className="detail-item">
-            <span>平均响应时间：</span>
-            <strong>{periodStats.avgResponseTime}ms</strong>
-          </div>
         </div>
       </div>
 
@@ -181,29 +178,6 @@ const FlashcardStats = ({ onBack }) => {
               <div key={category} className="category-item">
                 <span>{category}</span>
                 <span className="category-count">{count}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="recent-history">
-        <h3>最近学习记录</h3>
-        {history.length === 0 ? (
-          <p>暂无学习记录</p>
-        ) : (
-          <div className="history-list">
-            {history.slice(0, 20).map((record) => (
-              <div key={record.id} className={`history-item ${record.correct ? 'correct' : 'incorrect'}`}>
-                <div className="history-time">
-                  {new Date(record.timestamp).toLocaleString()}
-                </div>
-                <div className="history-result">
-                  {record.correct ? '正确' : '错误'}
-                </div>
-                <div className="history-time-taken">
-                  {record.responseTime}ms
-                </div>
               </div>
             ))}
           </div>

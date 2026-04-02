@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './App.css'
-import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, getLocalResources, getSentencesByLocalResource } from './services/dataService'
+import { getSentences, DATA_SOURCE_TYPES, DATA_SOURCES, DATA_SOURCE_TREE, getLocalResources, getSentencesByLocalResource, findTreeNode } from './services/dataService'
 import { newConcept3Data, newConcept2Data } from './services/dataService'
 import { speak, isSpeechSupported, cancelSpeech } from './services/speechService'
 import { preloadSentence } from './services/speechService';
 import { parseSentenceForPhonetics, detectAndExpandContractions } from './services/pronunciationService'
+import { syncLocalToCloud, isLoggedIn } from './services/flashcardService'
 // Translation features removed: translationService imports removed
 
 // 导入组件
 import React, { Suspense } from 'react'
 import DataSourceSelection from './components/DataSourceSelection'
+import DataSourceTree from './components/DataSourceTree'
 import PracticeStats from './components/PracticeStats'
 import PhoneticsSection from './components/PhoneticsSection'
 import WordInputs from './components/WordInputs'
@@ -18,6 +20,7 @@ import PracticeCard from './components/PracticeCard'
 // 懒加载大型组件
 const FlashcardApp = React.lazy(() => import('./components/FlashcardApp'))
 const VocabularyApp = React.lazy(() => import('./components/VocabularyApp'))
+const VocabularyReview = React.lazy(() => import('./components/VocabularyReview'))
 import ArticleSelector from './components/ArticleSelector'
 import LocalResourceSelector from './components/LocalResourceSelector'
 import ArticleSelectorHint from './components/ArticleSelectorHint'
@@ -91,10 +94,25 @@ function AppContent() {
   const [localResources, setLocalResources] = useState([])
   const [showFlashcardApp, setShowFlashcardApp] = useState(false)
   const [showVocabularyApp, setShowVocabularyApp] = useState(false)
+  const [showVocabReview, setShowVocabReview] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   // 用户认证状态
-  const [currentUser, setCurrentUser] = useState(null)
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('current_user');
+    console.log('[Auth] 初始化 currentUser, savedUser:', savedUser);
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        console.log('[Auth] 解析后的 user:', user);
+        return user;
+      } catch (err) {
+        console.error('[Auth] 解析用户信息失败:', err);
+        return null;
+      }
+    }
+    return null;
+  })
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' })
   
@@ -914,6 +932,17 @@ function AppContent() {
     }
   }
 
+  // 播放单个单词
+  const handlePlayWord = (word) => {
+    if (speechSupported && word) {
+      cancelSpeech()
+      speak(word, speechRate)
+        .catch(error => {
+          console.error('Error speaking word:', error)
+        })
+    }
+  }
+
   // 下一题
   const handleNext = () => {
     console.log('[handleNext] 函数被调用, currentIndex:', currentIndex, 'randomMode:', randomMode, 'sentences.length:', sentences.length);
@@ -1159,7 +1188,21 @@ function AppContent() {
 
   // 添加生词到生词本
   const handleAddToVocabulary = useCallback(async (wordData) => {
-    if (!currentUser) {
+    let user = currentUser;
+    
+    if (!user) {
+      const savedUser = localStorage.getItem('current_user');
+      if (savedUser) {
+        try {
+          user = JSON.parse(savedUser);
+          setCurrentUser(user);
+        } catch (err) {
+          console.error('[Auth] 解析用户信息失败:', err);
+        }
+      }
+    }
+    
+    if (!user) {
       setShowLoginModal(true);
       return;
     }
@@ -1193,10 +1236,25 @@ function AppContent() {
     }
   }, [currentUser, sentences, currentIndex]);
 
-  // 处理数据源选择
-  const handleSelectDataSource = useCallback((sourceId) => {
-    if (sourceId === 'flashcards') {
-      // 如果选择闪卡模式，直接进入闪卡应用
+  // 处理数据源选择（支持树形菜单）
+  const handleSelectDataSource = useCallback((sourceIdOrNode) => {
+    // 支持传入节点对象或字符串ID
+    const sourceId = typeof sourceIdOrNode === 'object' ? sourceIdOrNode.id : sourceIdOrNode;
+    
+    // 处理练习模式下的子菜单
+    if (sourceId === 'flashcard-learn' || sourceId === 'flashcard-manage') {
+      setShowFlashcardApp(true);
+      setHasSelectedDataSource(true);
+      setDataSourceError(null);
+    } else if (sourceId === 'vocab-review') {
+      if (!isLoggedIn()) {
+        setToast({ show: true, message: '请先登录以使用生词本复习功能', type: 'error' });
+        return;
+      }
+      setShowVocabReview(true);
+      setHasSelectedDataSource(true);
+      setDataSourceError(null);
+    } else if (sourceId === 'flashcards') {
       setShowFlashcardApp(true);
       setHasSelectedDataSource(true);
       setDataSourceError(null);
@@ -1238,7 +1296,20 @@ function AppContent() {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onLogin={(user) => setCurrentUser(user)}
+        onLogin={async (user) => {
+          console.log('[Auth] onLogin called with user:', user);
+          setCurrentUser(user);
+          console.log('[Auth] setCurrentUser called');
+          try {
+            const result = await syncLocalToCloud();
+            if (result.synced > 0) {
+              setToast({ show: true, message: `已同步 ${result.synced} 张闪卡到云端`, type: 'success' });
+            }
+          } catch (error) {
+            console.error('同步闪卡失败:', error);
+            setToast({ show: true, message: '同步闪卡失败: ' + error.message, type: 'error' });
+          }
+        }}
       />
     </Suspense>
   )
@@ -1247,9 +1318,9 @@ function AppContent() {
     return (
       <>
         {loginModal}
-        <DataSourceSelection 
-          dataSourceError={dataSourceError}
-          onSelectDataSource={handleSelectDataSource}
+        <DataSourceTree 
+          tree={DATA_SOURCE_TREE}
+          onSelect={handleSelectDataSource}
           currentUser={currentUser}
           onLoginClick={() => setShowLoginModal(true)}
         />
@@ -1294,6 +1365,16 @@ function AppContent() {
             setShowFlashcardApp(false);
             setHasSelectedDataSource(false);
           }} />
+        </Suspense>
+      ) : showVocabReview ? (
+        <Suspense fallback={<div className="loading">加载生词复习中...</div>}>
+          <VocabularyReview 
+            onBack={() => {
+              setShowVocabReview(false);
+              setHasSelectedDataSource(false);
+            }}
+            currentUser={currentUser}
+          />
         </Suspense>
       ) : showVocabularyApp ? (
         <Suspense fallback={<div className="loading">加载生词本应用中...</div>}>
@@ -1468,12 +1549,14 @@ function AppContent() {
                 listenMode={listenMode}
                 speechSupported={speechSupported}
                 onPlay={_handlePlay}
+                onPlayWord={handlePlayWord}
                 inputRefs={inputRefs}
                 onToggleSettings={handleToggleSettings}
                 onNext={handleNext}
                 showCounter={showCounter}
                 currentUser={currentUser}
                 onAddToVocabulary={handleAddToVocabulary}
+                onRequireLogin={() => setShowLoginModal(true)}
               />
 
             {/* 语音警告 */}

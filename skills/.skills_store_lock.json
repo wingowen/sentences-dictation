@@ -6,6 +6,12 @@
       "zip_url": "https://lightmake.site/api/v1/download?slug=notion",
       "source": "skillhub",
       "version": "1.0.0"
+    },
+    "superdesign": {
+      "name": "SuperDesign",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=superdesign",
+      "source": "skillhub",
+      "version": "1.0.0"
     }
   }
 }

@@ -34,6 +34,21 @@
   status = 200
 
 [[redirects]]
+  from = "/api/flashcards/*"
+  to = "/.netlify/functions/api-flashcards"
+  status = 200
+
+[[redirects]]
+  from = "/api/flashcards"
+  to = "/.netlify/functions/api-flashcards"
+  status = 200
+
+[[redirects]]
+  from = "/api/flashcard-history"
+  to = "/.netlify/functions/api-flashcard-history"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200

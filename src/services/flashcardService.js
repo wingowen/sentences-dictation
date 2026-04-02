@@ -1,4 +1,4 @@
-// 闪卡服务 - 处理闪卡的存储和管理
+// 闪卡服务 - 支持本地和云端数据源
 
 /**
  * 闪卡数据模型
@@ -23,6 +23,7 @@
 const FLASHCARDS_STORAGE_KEY = 'flashcards';
 const FLASHCARD_CATEGORIES_KEY = 'flashcard_categories';
 const FLASHCARD_LEARNING_HISTORY_KEY = 'flashcard_learning_history';
+const AUTH_TOKEN_KEY = 'auth_token';
 
 /**
  * 生成唯一ID
@@ -33,99 +34,401 @@ const generateId = () => {
 };
 
 /**
- * 获取所有闪卡
+ * 获取认证token
+ * @returns {string|null} 认证token
+ */
+const getAuthToken = () => {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+};
+
+/**
+ * 检查是否已登录
+ * @returns {boolean} 是否已登录
+ */
+export const isLoggedIn = () => {
+  return !!getAuthToken();
+};
+
+/**
+ * 获取当前用户ID（从JWT token解析）
+ * @returns {string|null} 用户ID
+ */
+export const getCurrentUserId = () => {
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * 获取用户专属存储键
+ * @param {string} baseKey - 基础键名
+ * @returns {string} 用户专属键名
+ */
+const getUserStorageKey = (baseKey) => {
+  const userId = getCurrentUserId();
+  return userId ? `${baseKey}_${userId}` : baseKey;
+};
+
+/**
+ * API请求基础函数
+ */
+const apiRequest = async (endpoint, options = {}) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('未登录');
+  }
+
+  const response = await fetch(`/api/flashcards${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers
+    }
+  });
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || '请求失败');
+  }
+  return result;
+};
+
+/**
+ * API请求基础函数（学习历史）
+ */
+const historyApiRequest = async (endpoint, options = {}) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('未登录');
+  }
+
+  const response = await fetch(`/api/flashcard-history${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers
+    }
+  });
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || '请求失败');
+  }
+  return result;
+};
+
+// ==================== 本地存储函数 ====================
+
+/**
+ * 获取本地闪卡
  * @returns {Array<Flashcard>} 闪卡数组
  */
-export const getAllFlashcards = () => {
+export const getLocalFlashcards = () => {
   try {
-    const flashcards = localStorage.getItem(FLASHCARDS_STORAGE_KEY);
+    const key = getUserStorageKey(FLASHCARDS_STORAGE_KEY);
+    const flashcards = localStorage.getItem(key);
     return flashcards ? JSON.parse(flashcards) : [];
   } catch (error) {
-    console.error('Error getting flashcards:', error);
+    console.error('Error getting local flashcards:', error);
     return [];
   }
+};
+
+/**
+ * 保存本地闪卡
+ * @param {Array<Flashcard>} flashcards - 闪卡数组
+ */
+const saveLocalFlashcards = (flashcards) => {
+  try {
+    const key = getUserStorageKey(FLASHCARDS_STORAGE_KEY);
+    localStorage.setItem(key, JSON.stringify(flashcards));
+  } catch (error) {
+    console.error('Error saving local flashcards:', error);
+  }
+};
+
+/**
+ * 获取本地学习历史
+ * @returns {Array<Object>} 学习历史数组
+ */
+export const getLocalLearningHistory = () => {
+  try {
+    const key = getUserStorageKey(FLASHCARD_LEARNING_HISTORY_KEY);
+    const history = localStorage.getItem(key);
+    return history ? JSON.parse(history) : [];
+  } catch (error) {
+    console.error('Error getting local learning history:', error);
+    return [];
+  }
+};
+
+/**
+ * 保存本地学习历史
+ * @param {Array<Object>} history - 学习历史数组
+ */
+const saveLocalLearningHistory = (history) => {
+  try {
+    const key = getUserStorageKey(FLASHCARD_LEARNING_HISTORY_KEY);
+    localStorage.setItem(key, JSON.stringify(history));
+  } catch (error) {
+    console.error('Error saving local learning history:', error);
+  }
+};
+
+/**
+ * 获取本地闪卡分类
+ * @returns {Array<string>} 分类数组
+ */
+export const getLocalFlashcardCategories = () => {
+  try {
+    const key = getUserStorageKey(FLASHCARD_CATEGORIES_KEY);
+    const categories = localStorage.getItem(key);
+    return categories ? JSON.parse(categories) : [];
+  } catch (error) {
+    console.error('Error getting local flashcard categories:', error);
+    return [];
+  }
+};
+
+/**
+ * 保存本地闪卡分类
+ * @param {Array<string>} categories - 分类数组
+ */
+const saveLocalFlashcardCategories = (categories) => {
+  try {
+    const key = getUserStorageKey(FLASHCARD_CATEGORIES_KEY);
+    localStorage.setItem(key, JSON.stringify(categories));
+  } catch (error) {
+    console.error('Error saving local flashcard categories:', error);
+  }
+};
+
+// ==================== 云端API函数 ====================
+
+/**
+ * 从云端获取所有闪卡
+ * @returns {Promise<Array<Flashcard>>} 闪卡数组
+ */
+export const getCloudFlashcards = async () => {
+  const result = await apiRequest('/');
+  return result.data.map(card => ({
+    id: card.id,
+    question: card.question,
+    answer: card.answer,
+    category: card.category,
+    tags: card.tags || [],
+    difficulty: card.difficulty,
+    easeFactor: card.ease_factor,
+    repetitionCount: card.repetition_count,
+    interval: card.interval_days,
+    nextReviewDate: card.next_review_at,
+    createdAt: card.created_at,
+    updatedAt: card.updated_at
+  }));
+};
+
+/**
+ * 在云端创建闪卡
+ * @param {Object} flashcardData - 闪卡数据
+ * @returns {Promise<Flashcard>} 创建的闪卡
+ */
+export const createCloudFlashcard = async (flashcardData) => {
+  const data = {
+    question: flashcardData.question,
+    answer: flashcardData.answer,
+    category: flashcardData.category || '默认',
+    tags: flashcardData.tags || [],
+    difficulty: flashcardData.difficulty || 3,
+    ease_factor: 2.5,
+    repetition_count: 0,
+    interval_days: 0,
+    next_review_at: new Date().toISOString()
+  };
+
+  const result = await apiRequest('/', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+
+  return {
+    id: result.data.id,
+    question: result.data.question,
+    answer: result.data.answer,
+    category: result.data.category,
+    tags: result.data.tags || [],
+    difficulty: result.data.difficulty,
+    easeFactor: result.data.ease_factor,
+    repetitionCount: result.data.repetition_count,
+    interval: result.data.interval_days,
+    nextReviewDate: result.data.next_review_at,
+    createdAt: result.data.created_at,
+    updatedAt: result.data.updated_at
+  };
+};
+
+/**
+ * 在云端更新闪卡
+ * @param {string} id - 闪卡ID
+ * @param {Object} updates - 更新数据
+ * @returns {Promise<Flashcard>} 更新后的闪卡
+ */
+export const updateCloudFlashcard = async (id, updates) => {
+  const data = { ...updates };
+  if (updates.easeFactor !== undefined) data.ease_factor = updates.easeFactor;
+  if (updates.repetitionCount !== undefined) data.repetition_count = updates.repetitionCount;
+  if (updates.interval !== undefined) data.interval_days = updates.interval;
+  if (updates.nextReviewDate !== undefined) data.next_review_at = updates.nextReviewDate;
+
+  const result = await apiRequest(`/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+
+  return {
+    id: result.data.id,
+    question: result.data.question,
+    answer: result.data.answer,
+    category: result.data.category,
+    tags: result.data.tags || [],
+    difficulty: result.data.difficulty,
+    easeFactor: result.data.ease_factor,
+    repetitionCount: result.data.repetition_count,
+    interval: result.data.interval_days,
+    nextReviewDate: result.data.next_review_at,
+    createdAt: result.data.created_at,
+    updatedAt: result.data.updated_at
+  };
+};
+
+/**
+ * 在云端删除闪卡
+ * @param {string} id - 闪卡ID
+ * @returns {Promise<boolean>} 是否删除成功
+ */
+export const deleteCloudFlashcard = async (id) => {
+  await apiRequest(`/${id}`, { method: 'DELETE' });
+  return true;
+};
+
+/**
+ * 从云端获取学习历史
+ * @returns {Promise<Array<Object>>} 学习历史数组
+ */
+export const getCloudLearningHistory = async () => {
+  const result = await historyApiRequest('/');
+  return result.data.map(record => ({
+    id: record.id,
+    flashcardId: record.flashcard_id,
+    correct: record.correct,
+    timestamp: record.created_at
+  }));
+};
+
+/**
+ * 在云端添加学习记录
+ * @param {string} flashcardId - 闪卡ID
+ * @param {boolean} correct - 是否正确
+ * @returns {Promise<Object>} 创建的记录
+ */
+export const addCloudLearningRecord = async (flashcardId, correct) => {
+  const result = await historyApiRequest('/', {
+    method: 'POST',
+    body: JSON.stringify({
+      flashcard_id: flashcardId,
+      correct
+    })
+  });
+
+  return {
+    id: result.data.id,
+    flashcardId: result.data.flashcard_id,
+    correct: result.data.correct,
+    timestamp: result.data.created_at
+  };
+};
+
+// ==================== 统一接口（自动选择数据源） ====================
+
+/**
+ * 获取所有闪卡（自动选择数据源）
+ * @returns {Promise<Array<Flashcard>>|Array<Flashcard>} 闪卡数组
+ */
+export const getAllFlashcards = () => {
+  if (isLoggedIn()) {
+    return getCloudFlashcards();
+  }
+  return getLocalFlashcards();
 };
 
 /**
  * 获取闪卡分类
- * @returns {Array<string>} 分类数组
+ * @returns {Promise<Array<string>>|Array<string>} 分类数组
  */
 export const getFlashcardCategories = () => {
-  try {
-    const categories = localStorage.getItem(FLASHCARD_CATEGORIES_KEY);
-    return categories ? JSON.parse(categories) : [];
-  } catch (error) {
-    console.error('Error getting flashcard categories:', error);
-    return [];
+  if (isLoggedIn()) {
+    return getAllFlashcards().then(cards => {
+      const categories = new Set();
+      cards.forEach(card => {
+        if (card.category) categories.add(card.category);
+      });
+      return Array.from(categories);
+    });
   }
-};
-
-/**
- * 保存闪卡分类
- * @param {Array<string>} categories - 分类数组
- */
-export const saveFlashcardCategories = (categories) => {
-  try {
-    localStorage.setItem(FLASHCARD_CATEGORIES_KEY, JSON.stringify(categories));
-  } catch (error) {
-    console.error('Error saving flashcard categories:', error);
-  }
+  return getLocalFlashcardCategories();
 };
 
 /**
  * 获取学习历史
- * @returns {Array<Object>} 学习历史数组
+ * @returns {Promise<Array<Object>>|Array<Object>} 学习历史数组
  */
 export const getLearningHistory = () => {
-  try {
-    const history = localStorage.getItem(FLASHCARD_LEARNING_HISTORY_KEY);
-    return history ? JSON.parse(history) : [];
-  } catch (error) {
-    console.error('Error getting learning history:', error);
-    return [];
+  if (isLoggedIn()) {
+    return getCloudLearningHistory();
   }
-};
-
-/**
- * 保存学习历史
- * @param {Array<Object>} history - 学习历史数组
- */
-export const saveLearningHistory = (history) => {
-  try {
-    localStorage.setItem(FLASHCARD_LEARNING_HISTORY_KEY, JSON.stringify(history));
-  } catch (error) {
-    console.error('Error saving learning history:', error);
-  }
+  return getLocalLearningHistory();
 };
 
 /**
  * 添加学习记录
  * @param {string} flashcardId - 闪卡ID
  * @param {boolean} correct - 是否正确
- * @param {number} responseTime - 响应时间（毫秒）
  */
-export const addLearningRecord = (flashcardId, correct, responseTime) => {
-  const history = getLearningHistory();
+export const addLearningRecord = async (flashcardId, correct) => {
+  if (isLoggedIn()) {
+    return await addCloudLearningRecord(flashcardId, correct);
+  }
+
+  const history = getLocalLearningHistory();
   const record = {
     id: generateId(),
     flashcardId,
     correct,
-    responseTime,
     timestamp: new Date().toISOString()
   };
   history.push(record);
-  // 只保留最近1000条记录
-  const trimmedHistory = history.slice(-1000);
-  saveLearningHistory(trimmedHistory);
+  const trimmedHistory = history.slice(-500);
+  saveLocalLearningHistory(trimmedHistory);
+  return record;
 };
 
 /**
  * 创建闪卡
  * @param {Object} flashcardData - 闪卡数据
- * @returns {Flashcard} 创建的闪卡
+ * @returns {Promise<Flashcard>|Flashcard} 创建的闪卡
  */
-export const createFlashcard = (flashcardData) => {
-  const flashcards = getAllFlashcards();
+export const createFlashcard = async (flashcardData) => {
+  if (isLoggedIn()) {
+    return await createCloudFlashcard(flashcardData);
+  }
+
+  const flashcards = getLocalFlashcards();
   const newFlashcard = {
     id: generateId(),
     question: flashcardData.question,
@@ -133,54 +436,44 @@ export const createFlashcard = (flashcardData) => {
     category: flashcardData.category || '默认',
     tags: flashcardData.tags || [],
     difficulty: flashcardData.difficulty || 3,
-    easeFactor: 2.5, // 初始难度系数
+    easeFactor: 2.5,
     repetitionCount: 0,
     interval: 0,
     nextReviewDate: new Date().toISOString(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-  
+
   flashcards.push(newFlashcard);
-  saveFlashcards(flashcards);
-  
-  // 更新分类
-  updateCategories(newFlashcard.category);
-  
+  saveLocalFlashcards(flashcards);
+  updateLocalCategories(newFlashcard.category);
+
   return newFlashcard;
 };
 
 /**
- * 更新分类
+ * 更新本地分类
  * @param {string} category - 分类名称
  */
-const updateCategories = (category) => {
-  const categories = getFlashcardCategories();
+const updateLocalCategories = (category) => {
+  const categories = getLocalFlashcardCategories();
   if (!categories.includes(category)) {
     categories.push(category);
-    saveFlashcardCategories(categories);
-  }
-};
-
-/**
- * 保存闪卡
- * @param {Array<Flashcard>} flashcards - 闪卡数组
- */
-const saveFlashcards = (flashcards) => {
-  try {
-    localStorage.setItem(FLASHCARDS_STORAGE_KEY, JSON.stringify(flashcards));
-  } catch (error) {
-    console.error('Error saving flashcards:', error);
+    saveLocalFlashcardCategories(categories);
   }
 };
 
 /**
  * 获取闪卡
  * @param {string} id - 闪卡ID
- * @returns {Flashcard|null} 闪卡
+ * @returns {Promise<Flashcard>|Flashcard|null} 闪卡
  */
-export const getFlashcard = (id) => {
-  const flashcards = getAllFlashcards();
+export const getFlashcard = async (id) => {
+  if (isLoggedIn()) {
+    const cards = await getCloudFlashcards();
+    return cards.find(card => card.id === id) || null;
+  }
+  const flashcards = getLocalFlashcards();
   return flashcards.find(flashcard => flashcard.id === id) || null;
 };
 
@@ -188,12 +481,16 @@ export const getFlashcard = (id) => {
  * 更新闪卡
  * @param {string} id - 闪卡ID
  * @param {Object} updates - 更新数据
- * @returns {Flashcard|null} 更新后的闪卡
+ * @returns {Promise<Flashcard>|Flashcard|null} 更新后的闪卡
  */
-export const updateFlashcard = (id, updates) => {
-  const flashcards = getAllFlashcards();
+export const updateFlashcard = async (id, updates) => {
+  if (isLoggedIn()) {
+    return await updateCloudFlashcard(id, updates);
+  }
+
+  const flashcards = getLocalFlashcards();
   const index = flashcards.findIndex(flashcard => flashcard.id === id);
-  
+
   if (index !== -1) {
     const updatedFlashcard = {
       ...flashcards[index],
@@ -201,45 +498,57 @@ export const updateFlashcard = (id, updates) => {
       updatedAt: new Date().toISOString()
     };
     flashcards[index] = updatedFlashcard;
-    saveFlashcards(flashcards);
-    
-    // 更新分类
+    saveLocalFlashcards(flashcards);
+
     if (updates.category) {
-      updateCategories(updates.category);
+      updateLocalCategories(updates.category);
     }
-    
+
     return updatedFlashcard;
   }
-  
+
   return null;
 };
 
 /**
  * 删除闪卡
  * @param {string} id - 闪卡ID
- * @returns {boolean} 是否删除成功
+ * @returns {Promise<boolean>|boolean} 是否删除成功
  */
-export const deleteFlashcard = (id) => {
-  const flashcards = getAllFlashcards();
+export const deleteFlashcard = async (id) => {
+  if (isLoggedIn()) {
+    return await deleteCloudFlashcard(id);
+  }
+
+  const flashcards = getLocalFlashcards();
   const newFlashcards = flashcards.filter(flashcard => flashcard.id !== id);
-  
+
   if (newFlashcards.length !== flashcards.length) {
-    saveFlashcards(newFlashcards);
+    saveLocalFlashcards(newFlashcards);
     return true;
   }
-  
+
   return false;
 };
 
 /**
  * 批量创建闪卡
  * @param {Array<Object>} flashcardDataArray - 闪卡数据数组
- * @returns {Array<Object>} 创建的闪卡数组
+ * @returns {Promise<Array<Flashcard>>|Array<Flashcard>} 创建的闪卡数组
  */
-export const batchCreateFlashcards = (flashcardDataArray) => {
-  const flashcards = getAllFlashcards();
+export const batchCreateFlashcards = async (flashcardDataArray) => {
+  if (isLoggedIn()) {
+    const results = [];
+    for (const data of flashcardDataArray) {
+      const card = await createCloudFlashcard(data);
+      results.push(card);
+    }
+    return results;
+  }
+
+  const flashcards = getLocalFlashcards();
   const createdFlashcards = [];
-  
+
   flashcardDataArray.forEach(flashcardData => {
     const newFlashcard = {
       id: generateId(),
@@ -248,33 +557,31 @@ export const batchCreateFlashcards = (flashcardDataArray) => {
       category: flashcardData.category || '默认',
       tags: flashcardData.tags || [],
       difficulty: flashcardData.difficulty || 3,
-      easeFactor: 2.5, // 初始难度系数
+      easeFactor: 2.5,
       repetitionCount: 0,
       interval: 0,
       nextReviewDate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     flashcards.push(newFlashcard);
     createdFlashcards.push(newFlashcard);
-    
-    // 更新分类
-    updateCategories(newFlashcard.category);
+    updateLocalCategories(newFlashcard.category);
   });
-  
-  saveFlashcards(flashcards);
+
+  saveLocalFlashcards(flashcards);
   return createdFlashcards;
 };
 
 /**
  * 检查闪卡是否存在（基于问题内容）
  * @param {string} question - 闪卡问题
- * @returns {Object|null} 存在的闪卡或null
+ * @returns {Promise<Flashcard>|Flashcard|null} 存在的闪卡或null
  */
-export const getFlashcardByQuestion = (question) => {
-  const flashcards = getAllFlashcards();
-  return flashcards.find(flashcard => 
+export const getFlashcardByQuestion = async (question) => {
+  const flashcards = isLoggedIn() ? await getCloudFlashcards() : getLocalFlashcards();
+  return flashcards.find(flashcard =>
     flashcard.question.trim() === question.trim()
   ) || null;
 };
@@ -299,29 +606,29 @@ export const cleanFlashcardData = (flashcardDataArray) => {
 /**
  * 按分类获取闪卡
  * @param {string} category - 分类名称
- * @returns {Array<Flashcard>} 闪卡数组
+ * @returns {Promise<Array<Flashcard>>|Array<Flashcard>} 闪卡数组
  */
-export const getFlashcardsByCategory = (category) => {
-  const flashcards = getAllFlashcards();
+export const getFlashcardsByCategory = async (category) => {
+  const flashcards = isLoggedIn() ? await getCloudFlashcards() : getLocalFlashcards();
   return flashcards.filter(flashcard => flashcard.category === category);
 };
 
 /**
  * 按标签获取闪卡
  * @param {string} tag - 标签名称
- * @returns {Array<Flashcard>} 闪卡数组
+ * @returns {Promise<Array<Flashcard>>|Array<Flashcard>} 闪卡数组
  */
-export const getFlashcardsByTag = (tag) => {
-  const flashcards = getAllFlashcards();
+export const getFlashcardsByTag = async (tag) => {
+  const flashcards = isLoggedIn() ? await getCloudFlashcards() : getLocalFlashcards();
   return flashcards.filter(flashcard => flashcard.tags.includes(tag));
 };
 
 /**
  * 获取需要复习的闪卡
- * @returns {Array<Flashcard>} 需要复习的闪卡数组
+ * @returns {Promise<Array<Flashcard>>|Array<Flashcard>} 需要复习的闪卡数组
  */
-export const getFlashcardsForReview = () => {
-  const flashcards = getAllFlashcards();
+export const getFlashcardsForReview = async () => {
+  const flashcards = isLoggedIn() ? await getCloudFlashcards() : getLocalFlashcards();
   const now = new Date();
   return flashcards.filter(flashcard => {
     const nextReviewDate = new Date(flashcard.nextReviewDate);
@@ -332,32 +639,25 @@ export const getFlashcardsForReview = () => {
 };
 
 /**
- * 获取学习统计数据
- * @returns {Object} 统计数据
+ * 获取闪卡统计
+ * @returns {Promise<Object>|Object} 统计数据
  */
-export const getFlashcardStats = () => {
-  const flashcards = getAllFlashcards();
-  const history = getLearningHistory();
-  
+export const getFlashcardStats = async () => {
+  const flashcards = isLoggedIn() ? await getCloudFlashcards() : getLocalFlashcards();
+  const history = isLoggedIn() ? await getCloudLearningHistory() : getLocalLearningHistory();
+
   const totalFlashcards = flashcards.length;
-  const dueFlashcards = getFlashcardsForReview().length;
-  
-  // 计算今日学习记录
+  const dueFlashcards = (await getFlashcardsForReview()).length;
+
   const today = new Date().toDateString();
   const todayRecords = history.filter(record => {
     return new Date(record.timestamp).toDateString() === today;
   });
-  
+
   const todayCorrect = todayRecords.filter(record => record.correct).length;
   const todayTotal = todayRecords.length;
   const todayAccuracy = todayTotal > 0 ? Math.round((todayCorrect / todayTotal) * 100) : 0;
-  
-  // 计算总体学习记录
-  const totalCorrect = history.filter(record => record.correct).length;
-  const totalRecords = history.length;
-  const overallAccuracy = totalRecords > 0 ? Math.round((totalCorrect / totalRecords) * 100) : 0;
-  
-  // 按分类统计
+
   const categoryStats = {};
   flashcards.forEach(flashcard => {
     if (!categoryStats[flashcard.category]) {
@@ -365,24 +665,115 @@ export const getFlashcardStats = () => {
     }
     categoryStats[flashcard.category]++;
   });
-  
+
   return {
     totalFlashcards,
     dueFlashcards,
-    todayCorrect,
     todayTotal,
     todayAccuracy,
-    overallAccuracy,
     categoryStats
+  };
+};
+
+// ==================== 数据同步功能 ====================
+
+/**
+ * 同步本地数据到云端
+ * @returns {Promise<Object>} 同步结果
+ */
+export const syncLocalToCloud = async () => {
+  if (!isLoggedIn()) {
+    throw new Error('未登录，无法同步');
+  }
+
+  const localFlashcards = getLocalFlashcards();
+  const localHistory = getLocalLearningHistory();
+
+  console.log(`开始同步 ${localFlashcards.length} 张本地闪卡到云端...`);
+
+  const cloudFlashcards = await getCloudFlashcards();
+  const cloudQuestions = new Set(cloudFlashcards.map(c => c.question.trim()));
+
+  let syncedCount = 0;
+  let skippedCount = 0;
+
+  for (const localCard of localFlashcards) {
+    if (cloudQuestions.has(localCard.question.trim())) {
+      skippedCount++;
+      continue;
+    }
+
+    try {
+      await createCloudFlashcard(localCard);
+      syncedCount++;
+    } catch (error) {
+      console.error(`同步闪卡失败: ${localCard.question}`, error);
+    }
+  }
+
+  console.log(`同步完成: ${syncedCount} 张新闪卡已同步, ${skippedCount} 张已存在`);
+
+  return {
+    totalLocal: localFlashcards.length,
+    synced: syncedCount,
+    skipped: skippedCount
+  };
+};
+
+/**
+ * 从云端下载数据到本地
+ * @returns {Promise<Object>} 下载结果
+ */
+export const downloadFromCloud = async () => {
+  if (!isLoggedIn()) {
+    throw new Error('未登录，无法下载');
+  }
+
+  console.log('从云端下载闪卡数据...');
+
+  const cloudFlashcards = await getCloudFlashcards();
+  const cloudHistory = await getCloudLearningHistory();
+
+  const localFlashcards = cloudFlashcards.map(card => ({
+    id: card.id,
+    question: card.question,
+    answer: card.answer,
+    category: card.category,
+    tags: card.tags,
+    difficulty: card.difficulty,
+    easeFactor: card.easeFactor,
+    repetitionCount: card.repetitionCount,
+    interval: card.interval,
+    nextReviewDate: card.nextReviewDate,
+    createdAt: card.createdAt,
+    updatedAt: card.updatedAt
+  }));
+
+  saveLocalFlashcards(localFlashcards);
+
+  const categories = [...new Set(localFlashcards.map(c => c.category))];
+  saveLocalFlashcardCategories(categories);
+
+  const localHistory = cloudHistory.map(record => ({
+    id: record.id,
+    flashcardId: record.flashcardId,
+    correct: record.correct,
+    timestamp: record.timestamp
+  }));
+  saveLocalLearningHistory(localHistory);
+
+  console.log(`下载完成: ${localFlashcards.length} 张闪卡, ${localHistory.length} 条学习记录`);
+
+  return {
+    flashcards: localFlashcards.length,
+    history: localHistory.length
   };
 };
 
 export default {
   getAllFlashcards,
   getFlashcardCategories,
-  saveFlashcardCategories,
   getLearningHistory,
-  saveLearningHistory,
   addLearningRecord,
   createFlashcard,
   getFlashcard,
@@ -394,5 +785,10 @@ export default {
   getFlashcardStats,
   batchCreateFlashcards,
   getFlashcardByQuestion,
-  cleanFlashcardData
+  cleanFlashcardData,
+  isLoggedIn,
+  syncLocalToCloud,
+  downloadFromCloud,
+  getLocalFlashcards,
+  getLocalLearningHistory
 };

@@ -49,6 +49,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
           } else {
             setSuccessMessage('注册成功！正在自动登录...')
             localStorage.setItem('auth_token', data.data.token)
+            localStorage.setItem('current_user', JSON.stringify(data.data.user))
             setTimeout(() => {
               onLogin(data.data.user)
               onClose()
@@ -56,6 +57,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
           }
         } else {
           localStorage.setItem('auth_token', data.data.token)
+          localStorage.setItem('current_user', JSON.stringify(data.data.user))
           onLogin(data.data.user)
           onClose()
         }

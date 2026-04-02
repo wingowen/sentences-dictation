@@ -1,25 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as flashcardService from '../services/flashcardService';
 import * as spacedRepetitionService from '../services/spacedRepetitionService';
 
-/**
- * Processes English text to hide/show words in {{}} placeholders
- * @param {string} text - English text with {{}} placeholders
- * @param {boolean} showComplete - Whether to show complete text or hide placeholders
- * @returns {string} Processed text
- */
 const processEnglishText = (text, showComplete) => {
   if (showComplete) {
     return text;
   }
   
-  // Replace {{}} content with underscores of similar length
   return text.replace(/\{\{([^}]+)\}\}/g, (match, content) => {
-    // Calculate length of content without spaces
     const contentLength = content.trim().length;
-    // Create underscores string (minimum 3 underscores)
-    const underscores = '_'.repeat(Math.max(3, contentLength));
-    return underscores;
+    return '_'.repeat(Math.max(3, contentLength));
   });
 };
 
@@ -28,98 +18,103 @@ const FlashcardLearner = ({ onBack }) => {
   const [currentFlashcard, setCurrentFlashcard] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [learningProgress, setLearningProgress] = useState(0);
-  const [startTime, setStartTime] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     correct: 0,
     total: 0
   });
 
-  const loadFlashcards = () => {
-    const dueFlashcards = flashcardService.getFlashcardsForReview();
-    if (dueFlashcards.length > 0) {
-      const sortedFlashcards = spacedRepetitionService.sortFlashcardsByPriority(dueFlashcards);
-      setFlashcards(sortedFlashcards);
-      setCurrentFlashcard(sortedFlashcards[0]);
-      setLearningProgress(0);
-      setStartTime(Date.now());
-      setStats({ correct: 0, total: 0 });
-    } else {
-      // 没有需要复习的闪卡，加载所有闪卡按优先级排序
-      const allFlashcards = flashcardService.getAllFlashcards();
-      if (allFlashcards.length > 0) {
-        const sortedFlashcards = spacedRepetitionService.sortFlashcardsByPriority(allFlashcards);
+  const loadFlashcards = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let dueFlashcards = await flashcardService.getFlashcardsForReview();
+      if (dueFlashcards.length > 0) {
+        const sortedFlashcards = spacedRepetitionService.sortFlashcardsByPriority(dueFlashcards);
         setFlashcards(sortedFlashcards);
         setCurrentFlashcard(sortedFlashcards[0]);
         setLearningProgress(0);
-        setStartTime(Date.now());
         setStats({ correct: 0, total: 0 });
+      } else {
+        const allFlashcards = await flashcardService.getAllFlashcards();
+        if (allFlashcards.length > 0) {
+          const sortedFlashcards = spacedRepetitionService.sortFlashcardsByPriority(allFlashcards);
+          setFlashcards(sortedFlashcards);
+          setCurrentFlashcard(sortedFlashcards[0]);
+          setLearningProgress(0);
+          setStats({ correct: 0, total: 0 });
+        }
       }
+    } catch (error) {
+      console.error('加载闪卡失败:', error);
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  // 加载需要复习的闪卡
-  useEffect(() => {
-    loadFlashcards();
   }, []);
 
-  // 处理用户响应
-  const handleResponse = (quality) => {
+  useEffect(() => {
+    loadFlashcards();
+  }, [loadFlashcards]);
+
+  const handleResponse = async (quality) => {
     if (!currentFlashcard) return;
 
-    // 计算响应时间
-    const responseTime = Date.now() - startTime;
-    
-    // 更新闪卡的间隔重复参数
     const updatedParams = spacedRepetitionService.updateSpacedRepetitionParams(
       currentFlashcard, 
       quality
     );
     
-    // 保存更新后的闪卡
-    flashcardService.updateFlashcard(currentFlashcard.id, updatedParams);
+    await flashcardService.updateFlashcard(currentFlashcard.id, updatedParams);
     
-    // 记录学习历史
     const correct = quality >= 2;
-    flashcardService.addLearningRecord(currentFlashcard.id, correct, responseTime);
+    await flashcardService.addLearningRecord(currentFlashcard.id, correct);
     
-    // 更新统计数据
     setStats(prev => ({
       correct: prev.correct + (correct ? 1 : 0),
       total: prev.total + 1
     }));
     
-    // 移动到下一个闪卡
     const nextIndex = flashcards.findIndex(f => f.id === currentFlashcard.id) + 1;
     if (nextIndex < flashcards.length) {
       setCurrentFlashcard(flashcards[nextIndex]);
       setLearningProgress(nextIndex / flashcards.length);
       setShowAnswer(false);
-      setStartTime(Date.now());
     } else {
-      // 学习完成
       setCurrentFlashcard(null);
       setLearningProgress(1);
     }
   };
 
-  // 跳过当前闪卡
   const handleSkip = () => {
     const nextIndex = flashcards.findIndex(f => f.id === currentFlashcard.id) + 1;
     if (nextIndex < flashcards.length) {
       setCurrentFlashcard(flashcards[nextIndex]);
       setLearningProgress(nextIndex / flashcards.length);
       setShowAnswer(false);
-      setStartTime(Date.now());
     } else {
       setCurrentFlashcard(null);
       setLearningProgress(1);
     }
   };
 
-  // 重新开始学习
   const handleRestart = () => {
     loadFlashcards();
   };
+
+  if (isLoading) {
+    return (
+      <div className="flashcard-learner">
+        <div className="learner-header">
+          <button className="back-button" onClick={onBack}>
+            ← 返回
+          </button>
+          <h2>闪卡学习</h2>
+        </div>
+        <div className="loading-state">
+          <p>加载闪卡中...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (flashcards.length === 0 && !currentFlashcard) {
     return (

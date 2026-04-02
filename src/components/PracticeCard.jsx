@@ -19,13 +19,15 @@ const PracticeCard = React.memo(({
   listenMode,
   speechSupported,
   onPlay,
+  onPlayWord,
   inputRefs,
   onToggleSettings,
   onNext,
   showCounter,
   // Vocabulary props
   currentUser,
-  onAddToVocabulary
+  onAddToVocabulary,
+  onRequireLogin
 }) => {
   const currentSentence = sentences[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
@@ -130,20 +132,23 @@ const PracticeCard = React.memo(({
           className="hint-button-wrapper"
         />
 
-        {currentUser && (
-          <button
-            type="button"
-            className="add-vocab-button small"
-            onClick={() => {
-              if (currentWords[focusedInputIndex]) {
-                onAddToVocabulary(currentWords[focusedInputIndex])
-              }
-            }}
-            title="将当前单词加入生词本"
-          >
-            📖 加入生词
-          </button>
-        )}
+        <button
+          type="button"
+          className={`add-vocab-button small ${!currentUser ? 'disabled' : ''}`}
+          onClick={() => {
+            console.log('[PracticeCard] currentUser:', currentUser);
+            if (!currentUser) {
+              onRequireLogin?.()
+              return
+            }
+            if (currentWords[focusedInputIndex]) {
+              onAddToVocabulary(currentWords[focusedInputIndex])
+            }
+          }}
+          title={currentUser ? '将当前单词加入生词本' : '登录后可使用生词本功能'}
+        >
+          📖 加入生词
+        </button>
       </div>
 
       {/* 输入区域 */}
@@ -174,6 +179,15 @@ const PracticeCard = React.memo(({
                   placeholder={underlinePlaceholder}
                   autoFocus={index === 0}
                 />
+                <button
+                  type="button"
+                  className="word-pronounce-button"
+                  onClick={() => onPlayWord?.(currentWords[index]?.word)}
+                  disabled={!speechSupported || !currentWords[index]?.word}
+                  title="发音"
+                >
+                  🔊
+                </button>
                 {showCounter && (
                   <div className="word-input-counter">
                     {inputCharCount} / {wordLength}

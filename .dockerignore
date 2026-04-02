@@ -1,0 +1,93 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# Development files
+.cache
+.sisyphus
+.github
+.vscode
+.idea
+
+# Documentation
+*.md
+!README.md
+docs/
+doc/
+
+# Test files
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.jsx
+**/*.spec.ts
+**/*.spec.tsx
+test/
+__tests__/
+
+# Admin panel (separate app)
+admin/
+
+# Database scripts
+supabase/
+
+# Scripts
+scripts/
+
+# Config files not needed in container
+*.config.js
+*.config.ts
+!vite.config.js
+!vite.config.ts
+tsconfig.json
+tsconfig.node.json
+eslint.config.js
+postcss.config.js
+tailwind.config.js
+
+# CI/CD
+.github/
+.travis.yml
+.gitlab-ci.yml
+
+# Development utilities
+*.sh
+*.py
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Lock files (npm ci needs package-lock.json)
+!package-lock.json
+yarn.lock
+pnpm-lock.yaml
+deno.lock
