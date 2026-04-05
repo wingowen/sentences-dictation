@@ -1,47 +1,56 @@
 import React from 'react'
 import HintButton from './HintButton'
+import { useApp } from '../contexts/AppContext'
 
 const PracticeCard = React.memo(({
-  // PhoneticsSection props
-  sentences,
-  currentIndex,
-  totalSentences,
-  showOriginalText,
-  onToggleOriginalText,
-  showTranslation,
-  onToggleTranslation,
-  currentTranslation,
-  // WordInputs props
-  wordInputs,
-  currentWords,
-  onWordInputChange,
-  onSubmit,
-  listenMode,
-  speechSupported,
-  onPlay,
-  onPlayWord,
-  inputRefs,
-  onToggleSettings,
-  onNext,
-  showCounter,
-  // Vocabulary props
+  onBack,
   currentUser,
   onAddToVocabulary,
   onRequireLogin
 }) => {
-  const currentSentence = sentences[currentIndex];
+  const {
+    sentences,
+    currentIndex,
+    showOriginalText,
+    setShowOriginalText,
+    showTranslation,
+    setShowTranslation,
+    currentTranslation,
+    wordInputs,
+    currentWords,
+    handleWordInputChange,
+    handleSubmit,
+    listenMode,
+    isSupported: speechSupported,
+    play: onPlay,
+    inputRefs,
+    setShowSettingsModal: setShowSettingsModal,
+    setCurrentIndex,
+    totalSentences = sentences?.length || 0
+  } = useApp() || {}
+  
+  const onToggleSettings = () => {
+    if (setShowSettingsModal) setShowSettingsModal(prev => !prev)
+  }
+  
+  const onNext = () => {
+    if (setCurrentIndex) setCurrentIndex(prev => prev + 1)
+  }
+  
+  const currentSentence = sentences?.[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
   const [focusedInputIndex, setFocusedInputIndex] = React.useState(0);
+  const inputRefsLocal = React.useRef([]);
 
   // 聚焦第一个输入框
   React.useEffect(() => {
     setTimeout(() => {
-      inputRefs.current[0]?.focus()
+      (inputRefs?.current || inputRefsLocal.current)?.[0]?.focus()
     }, 100)
-  }, [wordInputs.length, inputRefs])
+  }, [wordInputs?.length])
 
-  const handleWordInputChange = (index, value) => {
-    onWordInputChange(index, value)
+  const onWordChange = (index, value) => {
+    if (handleWordInputChange) handleWordInputChange(index, value)
   }
 
   const handleInputFocus = (index) => {
@@ -58,7 +67,7 @@ const PracticeCard = React.memo(({
         const isCorrect = normalize(userWord) === normalize(correctWord)
         if (isCorrect && index < wordInputs.length - 1) {
           setTimeout(() => {
-            inputRefs.current[index + 1]?.focus()
+            (inputRefs?.current || inputRefsLocal.current)?.[index + 1]?.focus()
           }, 100)
         }
       }
@@ -168,12 +177,15 @@ const PracticeCard = React.memo(({
             return (
               <div key={index} className="word-input-wrapper">
                 <input
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    const refs = inputRefs?.current || inputRefsLocal.current
+                    if (refs) refs[index] = el
+                  }}
                   type="text"
                   className={`word-input ${isCorrect ? 'word-correct' : ''}`}
                   style={{ width: inputWidth }}
                   value={input}
-                  onChange={(e) => handleWordInputChange(index, e.target.value)}
+                  onChange={(e) => onWordChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onFocus={() => handleInputFocus(index)}
                   placeholder={underlinePlaceholder}

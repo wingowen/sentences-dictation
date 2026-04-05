@@ -14,7 +14,7 @@ import { getTranslation, getWordTranslation } from '../services/translationServi
 const AppContext = createContext();
 
 // Context Provider组件
-export function AppProvider({ children }) {
+export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) {
   // 基本状态
   const [currentIndex, setCurrentIndex] = useState(0);
   const [wordInputs, setWordInputs] = useState([]);
@@ -35,7 +35,7 @@ export function AppProvider({ children }) {
 
   // 使用自定义hooks
   const practiceStats = usePracticeStats();
-  const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
+  const sentences = useSentences(dataSource);
   const speechVoices = useSpeechVoices(speechService);
   const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate }) || {
     isPlaying: false,

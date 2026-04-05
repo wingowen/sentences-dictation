@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
 import './App.css';
 import { onAuthStateChanged, getCurrentUser } from './services/firebase';
-import { DATA_SOURCE_TREE } from './services/dataService';
+import { DATA_SOURCE_TREE, DATA_SOURCE_TYPES } from './services/dataService';
 import DataSourceTree from './components/DataSourceTree';
 import PracticeCard from './components/PracticeCard';
 import LoadingIndicator from './components/LoadingIndicator';
 import PageSkeleton from './components/PageSkeleton';
 import AppNavbar from './components/AppNavbar';
+import LoginModal from './components/LoginModal';
+import { AppProvider } from './contexts/AppContext';
 
 const FlashcardApp = lazy(() => import('./components/FlashcardApp'));
 const FlashcardLearner = lazy(() => import('./components/FlashcardLearner'));
@@ -127,6 +129,8 @@ function AppContent() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isContentLoading, setIsContentLoading] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [selectedDataSource, setSelectedDataSource] = useState(null);
   const contentAreaRef = useRef(null);
 
   const { currentView, navigateTo, navigateBack, canGoBack } = useHashRouter(VIEWS.HOME);
@@ -179,10 +183,16 @@ function AppContent() {
   }, [navigateBack]);
 
   const handleLoginClick = useCallback(() => {
-    const loginSection = document.getElementById('login-section');
-    if (loginSection) {
-      loginSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    setIsLoginModalOpen(true);
+  }, []);
+
+  const handleLoginSuccess = useCallback((user) => {
+    setCurrentUser(user);
+    setIsLoginModalOpen(false);
+  }, []);
+
+  const handleCloseLoginModal = useCallback(() => {
+    setIsLoginModalOpen(false);
   }, []);
 
   const handleSelectDataSource = useCallback((node) => {
@@ -195,6 +205,7 @@ function AppContent() {
     } else if (node.view === 'vocab-review') {
       handleNavigate(VIEWS.VOCAB_REVIEW);
     } else if (node.id) {
+      setSelectedDataSource(node.id);
       handleNavigate(VIEWS.PRACTICE);
     } else {
       handleNavigate(VIEWS.HOME);
@@ -218,11 +229,12 @@ function AppContent() {
       
       case VIEWS.PRACTICE:
         return (
-          <PracticeCard
-            selectedDataSource="ielts"
-            onBack={() => navigateTo(VIEWS.HOME)}
-            currentUser={currentUser}
-          />
+          <AppProvider dataSource={selectedDataSource || DATA_SOURCE_TYPES.LOCAL}>
+            <PracticeCard
+              onBack={() => navigateTo(VIEWS.HOME)}
+              currentUser={currentUser}
+            />
+          </AppProvider>
         );
       
       case VIEWS.FLASHCARD_LEARN:
@@ -320,6 +332,12 @@ function AppContent() {
           {renderContent}
         </div>
       </main>
+
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={handleCloseLoginModal}
+        onLogin={handleLoginSuccess}
+      />
     </div>
   );
 }
