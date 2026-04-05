@@ -3,8 +3,7 @@ import {
   getVocabularies, 
   addVocabulary, 
   updateVocabulary, 
-  deleteVocabulary,
-  reviewVocabulary 
+  deleteVocabulary
 } from '../services/vocabularyService';
 import LoadingIndicator from './LoadingIndicator';
 
@@ -14,6 +13,7 @@ const VocabularyApp = ({ onBack }) => {
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   
   // 新建/编辑表单状态
   const [formData, setFormData] = useState({
@@ -73,24 +73,25 @@ const VocabularyApp = ({ onBack }) => {
 
   // 删除生词
   const handleDelete = async (id) => {
-    if (!confirm('确定要删除这个生词吗？')) return;
+    setDeleteConfirmId(id);
+  };
+  
+  // 确认删除
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
     
     try {
-      await deleteVocabulary(id);
+      await deleteVocabulary(deleteConfirmId);
       loadVocabularies();
+      setDeleteConfirmId(null);
     } catch (err) {
       alert('删除失败');
     }
   };
-
-  // 标记复习
-  const handleReview = async (id, isCorrect) => {
-    try {
-      await reviewVocabulary(id, isCorrect);
-      loadVocabularies();
-    } catch (err) {
-      console.error('复习记录失败:', err);
-    }
+  
+  // 取消删除
+  const cancelDelete = () => {
+    setDeleteConfirmId(null);
   };
 
   // 编辑生词
@@ -157,20 +158,6 @@ const VocabularyApp = ({ onBack }) => {
                 )}
 
                 <div className="vocab-actions">
-                  <button 
-                    className="review-btn correct"
-                    onClick={() => handleReview(vocab.id, true)}
-                    title="认识"
-                  >
-                    ✓
-                  </button>
-                  <button 
-                    className="review-btn incorrect"
-                    onClick={() => handleReview(vocab.id, false)}
-                    title="不认识"
-                  >
-                    ✗
-                  </button>
                   <button 
                     className="edit-btn"
                     onClick={() => handleEdit(vocab)}
@@ -258,6 +245,24 @@ const VocabularyApp = ({ onBack }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        
+        {/* 删除确认弹窗 */}
+        {deleteConfirmId && (
+          <div className="modal-overlay" onClick={cancelDelete}>
+            <div className="modal-content delete-confirm" onClick={e => e.stopPropagation()}>
+              <h3>确认删除</h3>
+              <p>确定要删除这个生词吗？此操作无法撤销。</p>
+              <div className="form-actions">
+                <button type="button" className="cancel-btn" onClick={cancelDelete}>
+                  取消
+                </button>
+                <button type="button" className="submit-btn danger" onClick={confirmDelete}>
+                  删除
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -472,6 +477,24 @@ const VocabularyApp = ({ onBack }) => {
           border: none;
           border-radius: 6px;
           cursor: pointer;
+        }
+        
+        .submit-btn.danger {
+          background: #EF4444;
+        }
+        
+        .delete-confirm {
+          max-width: 360px;
+        }
+        
+        .delete-confirm h3 {
+          margin-top: 0;
+          color: #EF4444;
+        }
+        
+        .delete-confirm p {
+          color: #374151;
+          margin: 16px 0;
         }
         
         .empty-state {

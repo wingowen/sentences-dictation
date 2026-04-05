@@ -282,10 +282,17 @@ async function deleteVocabulary(event) {
     return response.unauthorized('请先登录');
   }
   
-  const id = event.pathParameters?.id;
+  // 从路径中提取 ID
+  const path = event.path || '/';
+  const match = path.match(/\/api\/vocabulary\/(\d+)$/);
+  const id = match ? match[1] : event.pathParameters?.id;
+  
   if (!id) {
-    return response.validationError([{ field: 'id', message: '生词ID不能为空' }]);
+    console.error('[Vocabulary] Delete: ID not found in path:', path);
+    return response.validationError([{ field: 'id', message: '生词 ID 不能为空' }]);
   }
+  
+  console.log(`[Vocabulary] Delete: Deleting vocabulary ID ${id} for user ${userId}`);
   
   const { error } = await supabaseAdmin
     .from('user_vocabulary')

@@ -25,7 +25,7 @@
 
 [[redirects]]
   from = "/api/vocabulary/*"
-  to = "/.netlify/functions/api-vocabulary"
+  to = "/.netlify/functions/api-vocabulary/:splat"
   status = 200
 
 [[redirects]]

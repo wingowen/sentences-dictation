@@ -8,7 +8,8 @@ import LoadingIndicator from './components/LoadingIndicator';
 import PageSkeleton from './components/PageSkeleton';
 import AppNavbar from './components/AppNavbar';
 import LoginModal from './components/LoginModal';
-import { AppProvider } from './contexts/AppContext';
+import { AppProvider, useApp } from './contexts/AppContext';
+import { addVocabulary } from './services/vocabularyService';
 
 const FlashcardApp = lazy(() => import('./components/FlashcardApp'));
 const FlashcardLearner = lazy(() => import('./components/FlashcardLearner'));
@@ -125,6 +126,45 @@ function useHashRouter(initialView) {
   return { currentView, navigateTo, navigateBack, canGoBack };
 }
 
+// PracticeCard 包装组件，用于传递 onAddToVocabulary 函数
+function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
+  const { currentWords, currentIndex, sentences } = useApp();
+  
+  const handleAddToVocabulary = useCallback(async (wordData) => {
+    if (!currentUser) {
+      onRequireLogin?.();
+      return;
+    }
+    
+    try {
+      const currentSentence = sentences[currentIndex];
+      const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
+      
+      await addVocabulary({
+        word: wordData.word,
+        phonetic: wordData.phonetic || '',
+        meaning: wordData.translation || '',
+        part_of_speech: wordData.partOfSpeech || '',
+        sentence_context: sentenceText
+      });
+      
+      alert(`已添加 "${wordData.word}" 到生词本`);
+    } catch (err) {
+      console.error('添加生词失败:', err);
+      alert(err.message || '添加失败，请重试');
+    }
+  }, [currentUser, sentences, currentIndex, onRequireLogin]);
+  
+  return (
+    <PracticeCard
+      onBack={onBack}
+      currentUser={currentUser}
+      onAddToVocabulary={handleAddToVocabulary}
+      onRequireLogin={onRequireLogin}
+    />
+  );
+}
+
 function AppContent() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -230,9 +270,10 @@ function AppContent() {
       case VIEWS.PRACTICE:
         return (
           <AppProvider dataSource={selectedDataSource || DATA_SOURCE_TYPES.LOCAL}>
-            <PracticeCard
+            <PracticeCardWrapper
               onBack={() => navigateTo(VIEWS.HOME)}
               currentUser={currentUser}
+              onRequireLogin={() => setIsLoginModalOpen(true)}
             />
           </AppProvider>
         );
