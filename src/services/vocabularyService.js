@@ -67,7 +67,8 @@ async function request(method, path, data = null, params = null) {
  * @param {string} params.order - 排序方向 (asc/desc)
  */
 export async function getVocabularies(params = {}) {
-  return request('GET', '', null, params);
+  const result = await request('GET', '', null, params);
+  return result.items || [];
 }
 
 /**

@@ -29,7 +29,7 @@ const VocabularyApp = ({ onBack }) => {
     setError(null);
     try {
       const data = await getVocabularies({ limit: 100 });
-      setVocabularies(data.items || []);
+      setVocabularies(data || []);
     } catch (err) {
       console.error('加载生词失败:', err);
       setError('加载生词失败，请确保已登录');

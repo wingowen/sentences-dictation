@@ -13,8 +13,8 @@ app.use(express.json());
 // 允许跨域
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -100,22 +100,27 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // API 路由 - 模拟 /api/* → Netlify Functions
 app.all('/api/*', async (req, res) => {
-  // 提取函数名：/api/get-xxx -> get-xxx
-  const funcName = req.path.replace(/^\/api\//, '').replace(/\//g, '-');
+  const pathParts = req.path.replace(/^\/api\//, '').split('/');
+  const funcName = pathParts[0];
   const func = functions[funcName];
   
   if (!func) {
     return res.status(404).json({ error: 'Function not found' });
   }
   
-  // 构造 Netlify 风格的事件对象
+  const pathParameters = {};
+  if (pathParts.length > 1) {
+    pathParameters.id = pathParts[1];
+  }
+  
   const event = {
     httpMethod: req.method,
     path: req.path,
     queryStringParameters: req.query,
     headers: req.headers,
     body: req.body ? JSON.stringify(req.body) : null,
-    isBase64Encoded: false
+    isBase64Encoded: false,
+    pathParameters
   };
   
   try {

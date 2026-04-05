@@ -1610,7 +1610,7 @@ html {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: var(--z-modal-overlay);
+  z-index: 9999;
   animation: fadeIn var(--transition-spring);
 }
 
@@ -1706,6 +1706,7 @@ html {
 /* Settings Modal Styles */
 .settings-modal-content {
   max-width: 600px;
+  position: relative;
 }
 
 .settings-modal-content h2 {
@@ -1713,6 +1714,33 @@ html {
   font-weight: var(--font-semibold);
   margin-bottom: var(--spacing-lg);
   letter-spacing: var(--letter-spacing-tight);
+}
+
+.settings-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--gray-100);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-600);
+  transition: all 0.2s;
+}
+
+.settings-close-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.settings-close-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Login Modal Styles */
@@ -3674,6 +3702,72 @@ html {
   margin: var(--spacing-xs) 0;
 }
 
+/* 复习模式选择器 */
+.mode-switcher {
+  display: flex;
+  gap: var(--spacing-xs);
+  background: var(--gray-100);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
+}
+
+.mode-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--text-caption-1);
+  font-weight: var(--font-medium);
+  color: var(--gray-600);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mode-button:hover {
+  color: var(--gray-800);
+}
+
+.mode-button.active {
+  background: var(--white);
+  color: var(--apple-blue);
+  box-shadow: var(--shadow-xs);
+}
+
+/* 模式选择器（无待复习时显示） */
+.mode-selector {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.mode-selector p {
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mode-hint {
+  font-size: var(--text-caption-1);
+  color: var(--gray-500);
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.mode-selector .primary-button {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--text-body);
+  font-weight: var(--font-medium);
+  color: var(--white);
+  background: var(--apple-blue);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+}
+
+.mode-selector .primary-button:hover {
+  background: var(--apple-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-blue);
+}
+
 /* 闪卡统计样式 */
 .flashcard-stats {
   max-width: 1000px;
@@ -5131,4 +5225,150 @@ button:focus-visible:not(:disabled) {
 .section-item-lock {
   font-size: 12px;
   margin-left: 4px;
+}
+
+/* Homepage Responsive Styles */
+@media (max-width: 768px) {
+  .homepage-navbar {
+    padding: 12px 16px;
+  }
+  
+  .homepage-logo {
+    font-size: 16px;
+  }
+  
+  .homepage-login-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .homepage-hero {
+    padding: 100px 16px 40px;
+  }
+  
+  .homepage-hero-icon {
+    font-size: 60px;
+    margin-bottom: 16px;
+  }
+  
+  .homepage-hero-title {
+    font-size: 32px;
+    letter-spacing: -0.5px;
+  }
+  
+  .homepage-hero-subtitle {
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .homepage-btn-primary,
+  .homepage-btn-secondary {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+  
+  .homepage-sections {
+    padding: 24px 16px 40px;
+  }
+  
+  .homepage-section {
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .homepage-section-header {
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+  
+  .homepage-section-icon {
+    font-size: 24px;
+  }
+  
+  .homepage-section-title {
+    font-size: 18px;
+  }
+  
+  .homepage-section-items {
+    gap: 8px;
+  }
+  
+  .section-item {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .back-button {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--text-caption-1);
+  }
+}
+
+@media (max-width: 480px) {
+  .homepage-navbar {
+    padding: 10px 12px;
+  }
+  
+  .homepage-logo {
+    font-size: 14px;
+  }
+  
+  .homepage-login-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .homepage-hero {
+    padding: 80px 12px 32px;
+  }
+  
+  .homepage-hero-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  
+  .homepage-hero-title {
+    font-size: 28px;
+  }
+  
+  .homepage-hero-subtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  
+  .homepage-btn-primary,
+  .homepage-btn-secondary {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  
+  .homepage-sections {
+    padding: 16px 12px 32px;
+  }
+  
+  .homepage-section {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .homepage-section-icon {
+    font-size: 20px;
+  }
+  
+  .homepage-section-title {
+    font-size: 16px;
+  }
+  
+  .section-item {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .back-button {
+    padding: var(--spacing-xs) var(--spacing-xs);
+    font-size: 0.7rem;
+  }
 }

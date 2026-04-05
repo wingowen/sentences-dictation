@@ -3,6 +3,9 @@
  * 将 Netlify Functions 转换为 Express 路由
  */
 
+// 加载环境变量
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -13,8 +16,8 @@ app.use(express.json());
 // 允许跨域
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -100,26 +103,34 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // API 路由 - 模拟 /api/* → Netlify Functions
 app.all('/api/*', async (req, res) => {
-  // 提取函数名：/api/get-xxx -> get-xxx
-  const funcName = req.path.replace(/^\/api\//, '').replace(/\//g, '-');
-  const func = functions[funcName];
+  const pathParts = req.path.replace(/^\/api\//, '').split('/');
+  const baseName = pathParts[0];
+  
+  let func = functions[baseName];
+  if (!func && functions[`api-${baseName}`]) {
+    func = functions[`api-${baseName}`];
+  }
   
   if (!func) {
     return res.status(404).json({ error: 'Function not found' });
   }
   
-  // 构造 Netlify 风格的事件对象
+  const pathParameters = {};
+  if (pathParts.length > 1) {
+    pathParameters.id = pathParts[1];
+  }
+  
   const event = {
     httpMethod: req.method,
     path: req.path,
     queryStringParameters: req.query,
     headers: req.headers,
     body: req.body ? JSON.stringify(req.body) : null,
-    isBase64Encoded: false
+    isBase64Encoded: false,
+    pathParameters
   };
   
   try {
-    // 调用 handler
     const result = await (typeof func.handler === 'function' 
       ? func.handler(event, {}) 
       : func(event, {}));
@@ -128,7 +139,7 @@ app.all('/api/*', async (req, res) => {
        .set(result.headers || {})
        .send(result.body || '');
   } catch (e) {
-    console.error(`Error in ${funcName}:`, e);
+    console.error(`Error in ${baseName}:`, e);
     res.status(500).json({ error: e.message });
   }
 });

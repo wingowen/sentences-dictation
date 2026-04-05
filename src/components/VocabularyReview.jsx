@@ -8,6 +8,8 @@ const VocabularyReview = ({ onBack, currentUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({ correct: 0, total: 0 });
   const [isComplete, setIsComplete] = useState(false);
+  const [reviewMode, setReviewMode] = useState('due');
+  const [showModeSelector, setShowModeSelector] = useState(false);
 
   const loadVocabularies = useCallback(async () => {
     if (!currentUser) {
@@ -17,7 +19,10 @@ const VocabularyReview = ({ onBack, currentUser }) => {
 
     setIsLoading(true);
     try {
-      const data = await getVocabularies({ review: 'due', limit: 50 });
+      const params = reviewMode === 'due' 
+        ? { review: 'due', limit: 50 }
+        : { limit: 100 };
+      const data = await getVocabularies(params);
       setVocabularies(data || []);
       if (!data || data.length === 0) {
         setIsComplete(true);
@@ -27,11 +32,20 @@ const VocabularyReview = ({ onBack, currentUser }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, reviewMode]);
 
   useEffect(() => {
     loadVocabularies();
   }, [loadVocabularies]);
+
+  const handleModeChange = (mode) => {
+    setReviewMode(mode);
+    setCurrentIndex(0);
+    setShowAnswer(false);
+    setStats({ correct: 0, total: 0 });
+    setIsComplete(false);
+    setShowModeSelector(false);
+  };
 
   const handleResponse = async (correct) => {
     const vocab = vocabularies[currentIndex];
@@ -88,31 +102,6 @@ const VocabularyReview = ({ onBack, currentUser }) => {
     );
   }
 
-  if (isComplete || vocabularies.length === 0) {
-    return (
-      <div className="vocab-review">
-        <div className="review-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>生词本复习</h2>
-        </div>
-        <div className="review-complete">
-          <h3>{vocabularies.length === 0 ? '暂无待复习的生词' : '复习完成！'}</h3>
-          {stats.total > 0 && (
-            <div className="completion-stats">
-              <p>完成了 {stats.total} 个生词</p>
-              <p>正确率: {Math.round((stats.correct / stats.total) * 100)}%</p>
-            </div>
-          )}
-          <button className="primary-button" onClick={onBack}>
-            返回
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const current = vocabularies[currentIndex];
 
   if (!current) {
@@ -125,8 +114,24 @@ const VocabularyReview = ({ onBack, currentUser }) => {
           <h2>生词本复习</h2>
         </div>
         <div className="review-complete">
-          <h3>暂无待复习的生词</h3>
-          <button className="primary-button" onClick={onBack}>
+          {reviewMode === 'due' ? (
+            <div className="mode-selector">
+              <p>暂无待复习的生词</p>
+              <p className="mode-hint">你可以练习所有生词来巩固记忆</p>
+              <button 
+                className="primary-button"
+                onClick={() => handleModeChange('all')}
+              >
+                练习所有生词
+              </button>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>暂无生词</p>
+              <p className="mode-hint">请先添加一些生词到生词本</p>
+            </div>
+          )}
+          <button className="secondary-button" onClick={onBack}>
             返回
           </button>
         </div>
@@ -141,6 +146,20 @@ const VocabularyReview = ({ onBack, currentUser }) => {
           ← 返回
         </button>
         <h2>生词本复习</h2>
+        <div className="mode-switcher">
+          <button 
+            className={`mode-button ${reviewMode === 'due' ? 'active' : ''}`}
+            onClick={() => handleModeChange('due')}
+          >
+            待复习
+          </button>
+          <button 
+            className={`mode-button ${reviewMode === 'all' ? 'active' : ''}`}
+            onClick={() => handleModeChange('all')}
+          >
+            所有生词
+          </button>
+        </div>
         <div className="progress-info">
           {currentIndex + 1} / {vocabularies.length}
         </div>

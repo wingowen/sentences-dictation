@@ -1388,9 +1388,8 @@ function AppContent() {
           <header className="app-header">
             <h1>Sentence Dictation Practice</h1>
             <div className="app-controls">
-              {/* 桌面端显示的按钮 */}
               <button 
-                className="back-button desktop-only"
+                className="back-button"
                 onClick={() => setHasSelectedDataSource(false)}
                 title="返回数据源选择"
               >
