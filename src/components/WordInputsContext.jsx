@@ -25,7 +25,8 @@ function WordInputsContext() {
     handleToggleAutoPlay,
     handleToggleRandomMode,
     handleToggleListenMode,
-    handleToggleAutoNext
+    handleToggleAutoNext,
+    handleToggleSettings
   } = useApp();
 
   // 聚焦第一个输入框

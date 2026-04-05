@@ -21,6 +21,7 @@ export function AppProvider({ children }) {
   const [result, setResult] = useState(null);
   const [showOriginalText, setShowOriginalText] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const [speechRate, setSpeechRate] = useState(1);
@@ -174,6 +175,10 @@ export function AppProvider({ children }) {
     setAutoNext(!autoNext);
   }, [autoNext]);
 
+  const handleToggleSettings = useCallback(() => {
+    setShowSettingsModal(prev => !prev);
+  }, []);
+
   // 上下文值
   const value = {
     // 基本状态
@@ -187,6 +192,8 @@ export function AppProvider({ children }) {
     setShowOriginalText,
     showModal,
     setShowModal,
+    showSettingsModal,
+    setShowSettingsModal,
     showDataSourceSelector,
     setShowDataSourceSelector,
     autoPlay,
@@ -212,6 +219,7 @@ export function AppProvider({ children }) {
     handleToggleListenMode,
 
     handleToggleAutoNext,
+    handleToggleSettings,
 
     // 派生状态
     currentWords,
