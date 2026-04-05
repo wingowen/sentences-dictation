@@ -5372,3 +5372,502 @@ button:focus-visible:not(:disabled) {
     font-size: 0.7rem;
   }
 }
+
+/* ============================================
+   LOADING INDICATOR - Unified State Styles
+   ============================================ */
+
+/* Loading Inline Container */
+.loading-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  min-height: 200px;
+}
+
+/* Loading Fullscreen */
+.loading-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-fullscreen .loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+/* Loading Message Text */
+.loading-message {
+  font-size: var(--text-body);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  letter-spacing: var(--letter-spacing-normal);
+  text-align: center;
+}
+
+/* Spinner Animation */
+.loading-spinner {
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--apple-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-sm {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.loading-md {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+.loading-lg {
+  width: 56px;
+  height: 56px;
+  border-width: 4px;
+}
+
+/* Dots Animation */
+.loading-dots {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-dot {
+  background: var(--apple-blue);
+  border-radius: 50%;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.loading-dot.loading-sm {
+  width: 8px;
+  height: 8px;
+}
+
+.loading-dot.loading-md {
+  width: 12px;
+  height: 12px;
+}
+
+.loading-dot.loading-lg {
+  width: 16px;
+  height: 16px;
+}
+
+.loading-dot:nth-child(1) { animation-delay: 0s; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Pulse Animation */
+.loading-pulse {
+  background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple));
+  border-radius: 50%;
+  animation: pulseScale 1.5s ease-in-out infinite;
+}
+
+.loading-pulse.loading-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.loading-pulse.loading-md {
+  width: 40px;
+  height: 40px;
+}
+
+.loading-pulse.loading-lg {
+  width: 56px;
+  height: 56px;
+}
+
+@keyframes pulseScale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+/* Bars Animation */
+.loading-bars {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  justify-content: center;
+  height: 32px;
+}
+
+.loading-bar {
+  width: 6px;
+  background: linear-gradient(180deg, var(--apple-blue), var(--apple-purple));
+  border-radius: 3px;
+  animation: barBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes barBounce {
+  0%, 80%, 100% {
+    transform: scaleY(0.4);
+  }
+  40% {
+    transform: scaleY(1);
+  }
+}
+
+/* Vocab Review Loading Container */
+.vocab-review__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--spacing-2xl);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Flashcard Learner Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--spacing-2xl);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.loading-state p {
+  margin-top: var(--spacing-md);
+  font-size: var(--text-body);
+  color: var(--text-muted);
+}
+
+/* Vocabulary App Loading Container */
+.vocabulary-app__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--spacing-2xl);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   STATE TRANSITION ANIMATIONS
+   ============================================ */
+
+/* Card Flip Animation for Show/Hide Answer */
+.flashcard-content {
+  animation: cardContentFadeIn 0.3s ease-out;
+}
+
+@keyframes cardContentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Progress Bar Animation */
+.review-progress .progress-bar,
+.learning-progress .progress-bar {
+  transition: width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Response Button Hover & Active States */
+.response-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.response-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.response-button:active::after {
+  width: 200px;
+  height: 200px;
+  opacity: 1;
+  transition: 0s;
+}
+
+/* Show Answer Button Enhancement */
+.show-answer-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.show-answer-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.show-answer-button:hover::before {
+  left: 100%;
+}
+
+/* Card Transition on Index Change */
+.flashcard-container {
+  animation: cardSlideIn 0.4s ease-out;
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Mode Switcher Button Transitions */
+.mode-button {
+  transition: all var(--transition-fast);
+}
+
+.mode-button.active {
+  animation: modeButtonPop 0.2s ease-out;
+}
+
+@keyframes modeButtonPop {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Stats Update Animation */
+.learning-stats {
+  transition: all var(--transition-normal);
+}
+
+.learning-stats.updating {
+  animation: statsPulse 0.3s ease-out;
+}
+
+@keyframes statsPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); background: rgba(0, 122, 255, 0.05); }
+  100% { transform: scale(1); }
+}
+
+/* Empty State Animation */
+.empty-state,
+.review-complete,
+.learning-complete {
+  animation: stateFadeIn 0.4s ease-out;
+}
+
+@keyframes stateFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Error State Shake Animation */
+.error-message {
+  animation: errorShake 0.4s ease-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ============================================
+   VOCABULARY REVIEW - Enhanced Card Styles
+   ============================================ */
+
+/* Card Section - Unified Content Blocks */
+.card-section {
+  margin-bottom: var(--spacing-md);
+  animation: sectionFadeIn 0.3s ease-out;
+}
+
+.card-section:last-of-type {
+  margin-bottom: var(--spacing-lg);
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-section h3 {
+  font-size: var(--text-title-3);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--spacing-xs);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.card-section h4 {
+  font-size: var(--text-subhead);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--spacing-xs);
+}
+
+.card-section .word {
+  font-size: var(--text-title-1);
+  font-weight: var(--font-bold);
+  color: var(--apple-blue);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.card-section .meaning {
+  font-size: var(--text-headline);
+  color: var(--text-color);
+  line-height: var(--line-height-relaxed);
+}
+
+.card-section .phonetic {
+  font-size: var(--text-subhead);
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+  font-style: italic;
+}
+
+.card-section .pos {
+  display: inline-block;
+  padding: 2px 10px;
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption-1);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Sentence Section */
+.sentence-section {
+  padding: var(--spacing-md);
+  background: rgba(0, 122, 255, 0.04);
+  border-left: 3px solid var(--apple-blue);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.sentence {
+  font-size: var(--text-body);
+  color: var(--text-color);
+  font-style: italic;
+  line-height: var(--line-height-relaxed);
+}
+
+.sentence-empty {
+  color: var(--gray-400);
+  font-style: italic;
+}
+
+/* Answer/Question State Transitions */
+.flashcard-content.question-visible {
+  animation: questionSlideIn 0.35s ease-out;
+}
+
+.flashcard-content.answer-visible {
+  animation: answerSlideIn 0.35s ease-out;
+}
+
+@keyframes questionSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes answerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Card Transitioning State (between cards) */
+.flashcard-container.card-transitioning {
+  animation: cardExit 0.2s ease-in forwards;
+}
+
+@keyframes cardExit {
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}

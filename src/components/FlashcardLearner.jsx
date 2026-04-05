@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as flashcardService from '../services/flashcardService';
 import * as spacedRepetitionService from '../services/spacedRepetitionService';
+import LoadingIndicator from './LoadingIndicator';
 
 const processEnglishText = (text, showComplete) => {
   if (showComplete) {
@@ -110,7 +111,11 @@ const FlashcardLearner = ({ onBack }) => {
           <h2>闪卡学习</h2>
         </div>
         <div className="loading-state">
-          <p>加载闪卡中...</p>
+          <LoadingIndicator
+            message="加载闪卡中..."
+            type="spinner"
+            size="medium"
+          />
         </div>
       </div>
     );

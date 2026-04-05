@@ -11,6 +11,7 @@ const VocabularyReview = ({ onBack, currentUser }) => {
   const [isComplete, setIsComplete] = useState(false);
   const [reviewMode, setReviewMode] = useState('due');
   const [showModeSelector, setShowModeSelector] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const loadVocabularies = useCallback(async () => {
     if (!currentUser) {
@@ -39,6 +40,13 @@ const VocabularyReview = ({ onBack, currentUser }) => {
     loadVocabularies();
   }, [loadVocabularies]);
 
+  useEffect(() => {
+    if (isTransitioning) {
+      const timer = setTimeout(() => setIsTransitioning(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isTransitioning]);
+
   const handleModeChange = (mode) => {
     setReviewMode(mode);
     setCurrentIndex(0);
@@ -46,6 +54,7 @@ const VocabularyReview = ({ onBack, currentUser }) => {
     setStats({ correct: 0, total: 0 });
     setIsComplete(false);
     setShowModeSelector(false);
+    setIsTransitioning(true);
   };
 
   const handleResponse = async (correct) => {
@@ -64,8 +73,11 @@ const VocabularyReview = ({ onBack, currentUser }) => {
     }));
 
     if (currentIndex < vocabularies.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setShowAnswer(false);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setShowAnswer(false);
+      }, 200);
     } else {
       setIsComplete(true);
     }
@@ -177,19 +189,21 @@ const VocabularyReview = ({ onBack, currentUser }) => {
         ></div>
       </div>
 
-      <div className="flashcard-container">
+      <div className={`flashcard-container ${isTransitioning ? 'card-transitioning' : ''}`} key={currentIndex}>
         <div className="flashcard">
-          <div className="flashcard-content">
+          <div className={`flashcard-content ${showAnswer ? 'answer-visible' : 'question-visible'}`}>
             {!showAnswer ? (
               <>
-                <h3>词义：</h3>
-                <p className="meaning">{current.meaning || current.word}</p>
-                {current.sentence_context && (
-                  <>
-                    <h4>例句：</h4>
-                    <p className="sentence">{current.sentence_context}</p>
-                  </>
-                )}
+                <div className="card-section">
+                  <h3>词义：</h3>
+                  <p className="meaning">{current.meaning || current.word}</p>
+                </div>
+                <div className="card-section sentence-section">
+                  <h4>例句：</h4>
+                  <p className={`sentence ${!current.sentence_context ? 'sentence-empty' : ''}`}>
+                    {current.sentence_context || '暂无例句'}
+                  </p>
+                </div>
                 <button
                   className="show-answer-button"
                   onClick={() => setShowAnswer(true)}
@@ -199,19 +213,31 @@ const VocabularyReview = ({ onBack, currentUser }) => {
               </>
             ) : (
               <>
-                <h3>单词：</h3>
-                <p className="word">{current.word}</p>
+                <div className="card-section">
+                  <h3>单词：</h3>
+                  <p className="word">{current.word}</p>
+                </div>
                 {current.phonetic && (
-                  <p className="phonetic">{current.phonetic}</p>
+                  <div className="card-section">
+                    <p className="phonetic">{current.phonetic}</p>
+                  </div>
                 )}
                 {current.part_of_speech && (
-                  <p className="pos">{current.part_of_speech}</p>
+                  <div className="card-section">
+                    <p className="pos">{current.part_of_speech}</p>
+                  </div>
                 )}
                 {current.meaning && (
-                  <>
+                  <div className="card-section">
                     <h4>释义：</h4>
                     <p className="meaning">{current.meaning}</p>
-                  </>
+                  </div>
+                )}
+                {current.sentence_context && (
+                  <div className="card-section sentence-section">
+                    <h4>例句：</h4>
+                    <p className="sentence">{current.sentence_context}</p>
+                  </div>
                 )}
                 <div className="response-buttons">
                   <button
@@ -233,7 +259,7 @@ const VocabularyReview = ({ onBack, currentUser }) => {
         </div>
       </div>
 
-      <div className="learning-stats">
+      <div className={`learning-stats ${stats.total > 0 ? 'updating' : ''}`}>
         <p>已复习: {stats.total} / {vocabularies.length}</p>
         <p>正确率: {stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0}%</p>
       </div>
