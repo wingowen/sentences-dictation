@@ -14,7 +14,7 @@ const processEnglishText = (text, showComplete) => {
   });
 };
 
-const FlashcardLearner = ({ onBack }) => {
+const FlashcardLearner = ({ onBack, showHeader = true }) => {
   const [flashcards, setFlashcards] = useState([]);
   const [currentFlashcard, setCurrentFlashcard] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -104,12 +104,14 @@ const FlashcardLearner = ({ onBack }) => {
   if (isLoading) {
     return (
       <div className="flashcard-learner">
-        <div className="learner-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>闪卡学习</h2>
-        </div>
+        {showHeader && (
+          <div className="learner-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>闪卡学习</h2>
+          </div>
+        )}
         <div className="loading-state">
           <LoadingIndicator
             message="加载闪卡中..."
@@ -124,12 +126,14 @@ const FlashcardLearner = ({ onBack }) => {
   if (flashcards.length === 0 && !currentFlashcard) {
     return (
       <div className="flashcard-learner">
-        <div className="learner-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>闪卡学习</h2>
-        </div>
+        {showHeader && (
+          <div className="learner-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>闪卡学习</h2>
+          </div>
+        )}
         <div className="empty-state">
           <p>还没有闪卡，去创建一些闪卡吧！</p>
           <button className="primary-button" onClick={onBack}>
@@ -143,12 +147,14 @@ const FlashcardLearner = ({ onBack }) => {
   if (!currentFlashcard) {
     return (
       <div className="flashcard-learner">
-        <div className="learner-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>闪卡学习</h2>
-        </div>
+        {showHeader && (
+          <div className="learner-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>闪卡学习</h2>
+          </div>
+        )}
         <div className="learning-complete">
           <h3>学习完成！</h3>
           <div className="completion-stats">
@@ -168,15 +174,23 @@ const FlashcardLearner = ({ onBack }) => {
 
   return (
     <div className="flashcard-learner">
-      <div className="learner-header">
-        <button className="back-button" onClick={onBack}>
-          ← 返回
-        </button>
-        <h2>闪卡学习</h2>
-        <div className="progress-info">
-          {Math.round(learningProgress * 100)}%
+      {showHeader ? (
+        <div className="learner-header">
+          <button className="back-button" onClick={onBack}>
+            ← 返回
+          </button>
+          <h2>闪卡学习</h2>
+          <div className="progress-info">
+            {Math.round(learningProgress * 100)}%
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="learner-subheader">
+          <div className="progress-info">
+            {Math.round(learningProgress * 100)}%
+          </div>
+        </div>
+      )}
 
       <div className="learning-progress">
         <div 

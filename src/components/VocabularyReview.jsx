@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getVocabularies, reviewVocabulary } from '../services/vocabularyService';
 import LoadingIndicator from './LoadingIndicator';
 
-const VocabularyReview = ({ onBack, currentUser }) => {
+const VocabularyReview = ({ onBack, currentUser, showHeader = true }) => {
   const [vocabularies, setVocabularies] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -86,12 +86,14 @@ const VocabularyReview = ({ onBack, currentUser }) => {
   if (!currentUser) {
     return (
       <div className="vocab-review">
-        <div className="review-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>生词本复习</h2>
-        </div>
+        {showHeader && (
+          <div className="review-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>生词本复习</h2>
+          </div>
+        )}
         <div className="empty-state">
           <p>请先登录以使用生词本复习功能</p>
         </div>
@@ -102,12 +104,14 @@ const VocabularyReview = ({ onBack, currentUser }) => {
   if (isLoading) {
     return (
       <div className="vocab-review">
-        <div className="review-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>生词本复习</h2>
-        </div>
+        {showHeader && (
+          <div className="review-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>生词本复习</h2>
+          </div>
+        )}
         <div className="vocab-review__loading">
           <LoadingIndicator 
             message="正在加载生词列表..."
@@ -124,12 +128,14 @@ const VocabularyReview = ({ onBack, currentUser }) => {
   if (!current) {
     return (
       <div className="vocab-review">
-        <div className="review-header">
-          <button className="back-button" onClick={onBack}>
-            ← 返回
-          </button>
-          <h2>生词本复习</h2>
-        </div>
+        {showHeader && (
+          <div className="review-header">
+            <button className="back-button" onClick={onBack}>
+              ← 返回
+            </button>
+            <h2>生词本复习</h2>
+          </div>
+        )}
         <div className="review-complete">
           {reviewMode === 'due' ? (
             <div className="mode-selector">
@@ -158,29 +164,51 @@ const VocabularyReview = ({ onBack, currentUser }) => {
 
   return (
     <div className="vocab-review">
-      <div className="review-header">
-        <button className="back-button" onClick={onBack}>
-          ← 返回
-        </button>
-        <h2>生词本复习</h2>
-        <div className="mode-switcher">
-          <button 
-            className={`mode-button ${reviewMode === 'due' ? 'active' : ''}`}
-            onClick={() => handleModeChange('due')}
-          >
-            待复习
+      {showHeader ? (
+        <div className="review-header">
+          <button className="back-button" onClick={onBack}>
+            ← 返回
           </button>
-          <button 
-            className={`mode-button ${reviewMode === 'all' ? 'active' : ''}`}
-            onClick={() => handleModeChange('all')}
-          >
-            所有生词
-          </button>
+          <h2>生词本复习</h2>
+          <div className="mode-switcher">
+            <button 
+              className={`mode-button ${reviewMode === 'due' ? 'active' : ''}`}
+              onClick={() => handleModeChange('due')}
+            >
+              待复习
+            </button>
+            <button 
+              className={`mode-button ${reviewMode === 'all' ? 'active' : ''}`}
+              onClick={() => handleModeChange('all')}
+            >
+              所有生词
+            </button>
+          </div>
+          <div className="progress-info">
+            {currentIndex + 1} / {vocabularies.length}
+          </div>
         </div>
-        <div className="progress-info">
-          {currentIndex + 1} / {vocabularies.length}
+      ) : (
+        <div className="review-subheader">
+          <div className="mode-switcher">
+            <button 
+              className={`mode-button ${reviewMode === 'due' ? 'active' : ''}`}
+              onClick={() => handleModeChange('due')}
+            >
+              待复习
+            </button>
+            <button 
+              className={`mode-button ${reviewMode === 'all' ? 'active' : ''}`}
+              onClick={() => handleModeChange('all')}
+            >
+              所有生词
+            </button>
+          </div>
+          <div className="progress-info">
+            {currentIndex + 1} / {vocabularies.length}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="review-progress">
         <div
