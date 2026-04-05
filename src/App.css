@@ -5829,6 +5829,11 @@ button:focus-visible:not(:disabled) {
   font-style: italic;
 }
 
+.meaning-empty {
+  color: var(--gray-400);
+  font-style: italic;
+}
+
 /* Answer/Question State Transitions */
 .flashcard-content.question-visible {
   animation: questionSlideIn 0.35s ease-out;

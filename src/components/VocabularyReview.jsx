@@ -224,7 +224,9 @@ const VocabularyReview = ({ onBack, currentUser, showHeader = true }) => {
               <>
                 <div className="card-section">
                   <h3>词义：</h3>
-                  <p className="meaning">{current.meaning || current.word}</p>
+                  <p className={`meaning ${!current.meaning ? 'meaning-empty' : ''}`}>
+                    {current.meaning || '暂无释义'}
+                  </p>
                 </div>
                 <div className="card-section sentence-section">
                   <h4>例句：</h4>
