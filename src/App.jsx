@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
 import { onAuthStateChanged, getCurrentUser } from './services/firebase';
+import { DATA_SOURCE_TREE } from './services/dataService';
 import DataSourceTree from './components/DataSourceTree';
 import PracticeCard from './components/PracticeCard';
 import LoadingIndicator from './components/LoadingIndicator';
@@ -183,13 +184,36 @@ function AppContent() {
     }
   }, []);
 
+  const handleSelectDataSource = useCallback((node) => {
+    if (!node) return;
+    
+    if (node.view === 'flashcard-learner') {
+      handleNavigate(VIEWS.FLASHCARD_LEARN);
+    } else if (node.view === 'flashcard-manager') {
+      handleNavigate(VIEWS.FLASHCARD_MANAGE);
+    } else if (node.view === 'vocab-review') {
+      handleNavigate(VIEWS.VOCAB_REVIEW);
+    } else if (node.id) {
+      handleNavigate(VIEWS.PRACTICE);
+    } else {
+      handleNavigate(VIEWS.HOME);
+    }
+  }, [handleNavigate]);
+
   const showBackButton = VIEW_CONFIG[currentView]?.showBackButton && canGoBack;
   const pageTitle = VIEW_TITLES[currentView];
 
   const renderContent = useMemo(() => {
     switch (currentView) {
       case VIEWS.HOME:
-        return <DataSourceTree currentUser={currentUser} />;
+        return (
+          <DataSourceTree
+            tree={DATA_SOURCE_TREE}
+            onSelect={handleSelectDataSource}
+            currentUser={currentUser}
+            onLoginClick={handleLoginClick}
+          />
+        );
       
       case VIEWS.PRACTICE:
         return (
@@ -258,7 +282,7 @@ function AppContent() {
           </div>
         );
     }
-  }, [currentView, currentUser, navigateTo]);
+  }, [currentView, currentUser, navigateTo, handleSelectDataSource, handleLoginClick]);
 
   if (authLoading) {
     return (
