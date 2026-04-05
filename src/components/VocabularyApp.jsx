@@ -6,6 +6,7 @@ import {
   deleteVocabulary,
   reviewVocabulary 
 } from '../services/vocabularyService';
+import LoadingIndicator from './LoadingIndicator';
 
 const VocabularyApp = ({ onBack }) => {
   const [vocabularies, setVocabularies] = useState([]);
@@ -129,7 +130,13 @@ const VocabularyApp = ({ onBack }) => {
 
       <div className="app-content">
         {isLoading ? (
-          <div className="loading">加载中...</div>
+          <div className="vocabulary-app__loading">
+            <LoadingIndicator 
+              message="正在加载生词数据..."
+              type="spinner"
+              size="medium"
+            />
+          </div>
         ) : error ? (
           <div className="error-message">{error}</div>
         ) : vocabularies.length === 0 ? (

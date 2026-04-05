@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getVocabularies, reviewVocabulary } from '../services/vocabularyService';
+import LoadingIndicator from './LoadingIndicator';
 
 const VocabularyReview = ({ onBack, currentUser }) => {
   const [vocabularies, setVocabularies] = useState([]);
@@ -95,8 +96,12 @@ const VocabularyReview = ({ onBack, currentUser }) => {
           </button>
           <h2>生词本复习</h2>
         </div>
-        <div className="loading-state">
-          <p>加载中...</p>
+        <div className="vocab-review__loading">
+          <LoadingIndicator 
+            message="正在加载生词列表..."
+            type="dots"
+            size="medium"
+          />
         </div>
       </div>
     );

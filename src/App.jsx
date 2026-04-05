@@ -10,6 +10,8 @@ import { syncLocalToCloud, isLoggedIn } from './services/flashcardService'
 
 // 导入组件
 import React, { Suspense } from 'react'
+import PageSkeleton from './components/PageSkeleton'
+import LoadingIndicator from './components/LoadingIndicator'
 import DataSourceSelection from './components/DataSourceSelection'
 import DataSourceTree from './components/DataSourceTree'
 import PracticeStats from './components/PracticeStats'
@@ -1332,10 +1334,12 @@ function AppContent() {
     return (
       <>
         {loginModal}
-        <div className="loading">
-          <div>Loading sentences...</div>
-          <div className="loading-source">从 {currentDataSource?.name || '数据源'} 加载中...</div>
-        </div>
+        <LoadingIndicator 
+          message={`从 ${currentDataSource?.name || '数据源'} 加载中...`}
+          type="pulse"
+          size="large"
+          fullScreen={false}
+        />
       </>
     )
   }
