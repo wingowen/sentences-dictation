@@ -1,8 +1,19 @@
-// Netlify Function to fetch New Concept English 2 articles
-import { readCache, writeCache } from '../shared/cache.js';
-import { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } from '../shared/cors.js';
+const fs = require('fs');
+const path = require('path');
+const { readCache, writeCache } = require('../shared/cache.js');
+const { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } = require('../shared/cors.js');
 
-// Main handler
+function getDataFilePath(filename) {
+  const possiblePaths = [
+    path.join(__dirname, '..', 'data', filename),
+    path.join(process.cwd(), 'netlify', 'data', filename),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return path.join(process.cwd(), 'netlify', 'data', filename);
+}
+
 export async function handler(event, context) {
   const preflightResponse = handleCorsPreflight(event);
   if (preflightResponse) return preflightResponse;
@@ -11,40 +22,41 @@ export async function handler(event, context) {
   if (methodError) return methodError;
 
   try {
-    console.log('Fetching New Concept English 2 data...');
+    console.log('[get-new-concept-2] 开始获取数据...');
 
     const cachedData = readCache('get-new-concept-2', {});
     if (cachedData) {
-      console.log('Using cached New Concept English 2 data');
+      console.log('[get-new-concept-2] 使用缓存数据');
       return { statusCode: 200, body: JSON.stringify(cachedData), headers: CORS_HEADERS };
     }
 
-    // 从本地数据文件读取（使用 require 动态导入）
-    const localDataPath = './data/new-concept-2.json';
-    const localDataModule = await import(localDataPath);
-    const localData = localDataModule.default;
-    
+    const dataPath = getDataFilePath('new-concept-2.json');
+    console.log(`[get-new-concept-2] 读取文件: ${dataPath}`);
+
+    const rawContent = fs.readFileSync(dataPath, 'utf-8');
+    const localData = JSON.parse(rawContent);
+
     if (localData && localData.success && localData.articles && localData.articles.length > 0) {
-      console.log(`Using local data: ${localData.articles.length} articles found`);
-      
+      console.log(`[get-new-concept-2] 成功读取 ${localData.articles.length} 篇课文`);
+
       const result = {
         success: true,
-        articles: localData.default.articles,
-        totalArticles: localData.default.articles.length
+        articles: localData.articles,
+        totalArticles: localData.articles.length
       };
-      
+
       writeCache('get-new-concept-2', result, {});
-      console.log('New Concept English 2 data cached successfully');
-      
+      console.log('[get-new-concept-2] 数据已缓存');
+
       return { statusCode: 200, body: JSON.stringify(result), headers: CORS_HEADERS };
     }
 
-    // 如果本地数据不存在，返回错误
+    console.error('[get-new-concept-2] 本地数据格式不正确或为空');
     return {
       statusCode: 404,
       body: JSON.stringify({
         success: false,
-        error: '本地数据不存在',
+        error: '本地数据不存在或格式错误',
         articles: [],
         totalArticles: 0
       }),
@@ -52,7 +64,7 @@ export async function handler(event, context) {
     };
 
   } catch (error) {
-    console.error('Error fetching New Concept English 2:', error);
+    console.error('[get-new-concept-2] 错误:', error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ success: false, error: error.message || 'Failed to fetch New Concept English 2 articles' }),

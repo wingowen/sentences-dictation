@@ -8,17 +8,15 @@ const LessonSelector = ({ onBack }) => {
     setSelectedLesson,
     setShowLessonSelector,
     dataSource,
-    sentencesData,
+    rawArticles,
     sentencesLoading
   } = useApp() || {};
 
   const [lessons, setLessons] = useState([]);
 
-  // 当数据加载完成时，提取课文列表
   useEffect(() => {
-    if (sentencesData && sentencesData.articles && sentencesData.articles.length > 0) {
-      const articles = sentencesData.articles;
-      const lessonList = articles.map((article, index) => ({
+    if (rawArticles && rawArticles.length > 0) {
+      const lessonList = rawArticles.map((article, index) => ({
         lesson_id: article.lesson_id || `lesson-${index + 1}`,
         lesson_number: `Lesson ${index + 1}`,
         title: article.title || `第 ${index + 1} 课`,
@@ -27,38 +25,34 @@ const LessonSelector = ({ onBack }) => {
       setLessons(lessonList);
       console.log('[LessonSelector] Lessons loaded:', lessonList.length);
     }
-  }, [sentencesData, dataSource]);
+  }, [rawArticles, dataSource]);
 
   const handleSelectLesson = (lesson) => {
     console.log('[LessonSelector] Selecting lesson:', lesson);
-    if (setSelectedLesson) {
-      setSelectedLesson(lesson);
-    }
-    if (setShowLessonSelector) {
-      setShowLessonSelector(false);
-    }
+    if (setSelectedLesson) setSelectedLesson(lesson);
+    if (setShowLessonSelector) setShowLessonSelector(false);
   };
 
   const handleBackClick = () => {
-    if (onBack) {
-      onBack();
-    }
+    if (onBack) onBack();
   };
 
-  if (sentencesLoading) {
+  const bookTitle = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ? '新概念英语第二册' : '新概念英语第三册';
+
+  if (sentencesLoading && (!rawArticles || rawArticles.length === 0)) {
     return (
       <div className="lesson-selector">
         <div className="lesson-selector-header">
-          <button className="back-button" onClick={handleBackClick}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button className="lesson-back-btn" onClick={handleBackClick}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
             <span>返回</span>
           </button>
-          <h2 className="lesson-selector-title">加载中...</h2>
+          <h2 className="lesson-selector-title">{bookTitle} - 选择课文</h2>
         </div>
         <div className="lesson-list">
-          <div className="loading-message">正在加载课文列表，请稍候...</div>
+          <div className="loading-message">正在加载课文列表...</div>
         </div>
       </div>
     );
@@ -68,15 +62,13 @@ const LessonSelector = ({ onBack }) => {
     return (
       <div className="lesson-selector">
         <div className="lesson-selector-header">
-          <button className="back-button" onClick={handleBackClick}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button className="lesson-back-btn" onClick={handleBackClick}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
             <span>返回</span>
           </button>
-          <h2 className="lesson-selector-title">
-            {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ? '新概念英语第二册' : '新概念英语第三册'} - 选择课文
-          </h2>
+          <h2 className="lesson-selector-title">{bookTitle} - 选择课文</h2>
         </div>
         <div className="lesson-list">
           <div className="no-lessons-message">暂无可用课文，请检查网络连接或稍后重试</div>
@@ -88,15 +80,13 @@ const LessonSelector = ({ onBack }) => {
   return (
     <div className="lesson-selector">
       <div className="lesson-selector-header">
-        <button className="back-button" onClick={handleBackClick}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <button className="lesson-back-btn" onClick={handleBackClick}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
           <span>返回</span>
         </button>
-        <h2 className="lesson-selector-title">
-          {dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ? '新概念英语第二册' : '新概念英语第三册'} - 选择课文
-        </h2>
+        <h2 className="lesson-selector-title">{bookTitle} - 选择课文</h2>
       </div>
 
       <div className="lesson-list">
@@ -110,7 +100,7 @@ const LessonSelector = ({ onBack }) => {
               <span className="lesson-number">{lesson.lesson_number}</span>
               <span className="lesson-title">{lesson.title}</span>
             </div>
-            <svg className="lesson-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="lesson-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6"/>
             </svg>
           </button>

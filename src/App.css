@@ -1287,6 +1287,7 @@ html {
 /* Word Inputs */
 .word-inputs-form {
   margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-3xl);
 }
 
 .word-inputs {
@@ -4848,79 +4849,125 @@ button:focus-visible:not(:disabled) {
 
 .lesson-selector {
   width: 100%;
-  max-width: 800px;
+  max-width: 720px;
+  max-height: calc(100vh - 100px);
   margin: 0 auto;
   padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* 当 app-content-area 包含 lesson-selector 时，调整 padding */
+.app-content-area:has(.lesson-selector) {
+  padding: 16px 0;
 }
 
 .lesson-selector-header {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--gray-200);
 }
 
+.lesson-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--apple-blue);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.lesson-back-btn:hover {
+  background: rgba(0, 122, 255, 0.08);
+  color: var(--apple-blue-dark, #0055d4);
+}
+
+.lesson-back-btn svg {
+  flex-shrink: 0;
+}
+
 .lesson-selector-title {
-  font-size: var(--text-title-2);
-  font-weight: var(--font-semibold);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-color);
   margin: 0;
   flex: 1;
 }
 
 .lesson-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  max-height: calc(100vh - 200px);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  flex: 1;
   overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
 }
 
 .lesson-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
+  gap: 8px;
+  padding: 12px 16px;
   background: var(--white);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
   text-align: left;
-  width: 100%;
+  min-height: 52px;
+  box-sizing: border-box;
 }
 
 .lesson-item:hover {
   background: var(--gray-50);
   border-color: var(--apple-blue);
-  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
 }
 
 .lesson-item.selected {
-  background: rgba(0, 122, 255, 0.08);
+  background: rgba(0, 122, 255, 0.06);
   border-color: var(--apple-blue);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.12);
 }
 
 .lesson-info {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 10px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .lesson-number {
-  font-size: var(--text-body);
-  font-weight: var(--font-semibold);
+  font-size: 13px;
+  font-weight: 600;
   color: var(--apple-blue);
-  min-width: 80px;
+  min-width: 62px;
+  flex-shrink: 0;
 }
 
 .lesson-title {
-  font-size: var(--text-body);
+  font-size: 13px;
   color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
 }
 
 .lesson-arrow {
@@ -6642,9 +6689,9 @@ button:focus-visible:not(:disabled) {
   margin-top: var(--navbar-height);
   min-height: calc(100vh - var(--navbar-height));
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 8vh;
+  padding: 8vh 0 16vh 0;
   transition: opacity var(--transition-normal);
 }
 

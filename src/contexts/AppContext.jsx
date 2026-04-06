@@ -5,7 +5,7 @@ import { usePracticeProgress } from '../hooks/usePracticeProgress';
 import { useSpeechVoices } from '../hooks/useSpeechVoices';
 import { useSpeechPlayback } from '../hooks/useSpeechPlayback';
 import { useSentences } from '../hooks/useSentences';
-import { DATA_SOURCE_TYPES } from '../services/dataService';
+import { DATA_SOURCE_TYPES, newConcept2Data, newConcept3Data } from '../services/dataService';
 import { speak, isSpeechSupported, cancelSpeech } from '../services/speechService';
 import { parseSentenceForPhonetics } from '../services/pronunciationService';
 import { getTranslation, getWordTranslation } from '../services/translationService';
@@ -93,6 +93,16 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
   }, [sentences.sentences]);
 
   const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
+
+  const rawArticles = useMemo(() => {
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && newConcept2Data?.success && newConcept2Data?.articles) {
+      return newConcept2Data.articles;
+    }
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Data?.success && newConcept3Data?.articles) {
+      return newConcept3Data.articles;
+    }
+    return null;
+  }, [dataSource]);
 
   // 计算派生状态
   const currentWords = processedSentences[currentIndex]?.words || [];
@@ -263,6 +273,7 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
     // 数据源和加载状态
     dataSource,
     sentencesLoading,
+    rawArticles,
 
     // 派生状态
     currentWords,
