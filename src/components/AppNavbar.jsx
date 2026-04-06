@@ -2,11 +2,18 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 const NAV_ITEMS = [
   { id: 'home', icon: '🏠', label: '首页', requiresAuth: false },
-  { id: 'practice', icon: '✍️', label: '练习模式', requiresAuth: false },
-  { id: 'flashcard-learn', icon: '📇', label: '闪卡学习', requiresAuth: false },
-  { id: 'flashcard-manage', icon: '📋', label: '闪卡管理', requiresAuth: false },
-  { id: 'vocab-review', icon: '📖', label: '生词复习', requiresAuth: true },
-  { id: 'vocabulary', icon: '📚', label: '生词本', requiresAuth: true },
+  { 
+    id: 'practice', 
+    icon: '📖', 
+    label: '新概念', 
+    requiresAuth: false,
+    children: [
+      { id: 'new-concept-1', icon: '1️⃣', label: '第一册' },
+      { id: 'new-concept-2', icon: '2️⃣', label: '第二册' },
+      { id: 'new-concept-3', icon: '3️⃣', label: '第三册' },
+    ]
+  },
+  { id: 'vocabulary', icon: '📚', label: '生词本', requiresAuth: false },
 ];
 
 const AppNavbar = ({ 
@@ -16,7 +23,8 @@ const AppNavbar = ({
   onLoginClick,
   showBackButton,
   onBack,
-  title
+  title,
+  onNewConceptSelect
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,6 +61,7 @@ const AppNavbar = ({
   }, [isMobileMenuOpen]);
 
   const handleNavClick = useCallback((itemId) => {
+    // 检查是否需要登录（生词本相关功能）
     if (itemId === 'vocab-review' || itemId === 'vocabulary') {
       if (!currentUser) {
         onLoginClick?.();
@@ -63,6 +72,16 @@ const AppNavbar = ({
     setIsMobileMenuOpen(false);
     setActiveDropdown(null);
   }, [currentUser, onNavigate, onLoginClick]);
+  
+  const handleDropdownClick = useCallback((childId) => {
+    if (onNewConceptSelect) {
+      onNewConceptSelect(childId);
+    } else {
+      onNavigate(childId);
+    }
+    setActiveDropdown(null);
+    setIsMobileMenuOpen(false);
+  }, [onNavigate, onNewConceptSelect]);
 
   const isActive = useCallback((itemId) => {
     if (currentView === itemId) return true;
@@ -157,7 +176,7 @@ const AppNavbar = ({
                       <button
                         key={child.id}
                         className={`dropdown-item ${isActive(child.id) ? 'dropdown-active' : ''}`}
-                        onClick={() => handleNavClick(child.id)}
+                        onClick={() => handleDropdownClick(child.id)}
                       >
                         <span>{child.icon}</span>
                         <span>{child.label}</span>
@@ -225,15 +244,53 @@ const AppNavbar = ({
         
         <div className="mobile-nav-items">
           {navItemsToShow.map(item => (
-            <button
-              key={item.id}
-              className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
-              onClick={() => handleNavClick(item.id)}
-            >
-              <span className="mobile-nav-icon">{item.icon}</span>
-              <span className="mobile-nav-label">{item.label}</span>
-              {isActive(item.id) && <span className="mobile-nav-indicator"></span>}
-            </button>
+            <div key={item.id} className="mobile-nav-item-wrapper">
+              {item.children ? (
+                <>
+                  <button
+                    className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
+                    onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
+                  >
+                    <span className="mobile-nav-icon">{item.icon}</span>
+                    <span className="mobile-nav-label">{item.label}</span>
+                    <svg 
+                      className={`mobile-nav-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                    >
+                      <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                  </button>
+                  {activeDropdown === item.id && (
+                    <div className="mobile-nav-submenu">
+                      {item.children.map(child => (
+                        <button
+                          key={child.id}
+                          className="mobile-nav-subitem"
+                          onClick={() => handleDropdownClick(child.id)}
+                        >
+                          <span className="subitem-icon">{child.icon}</span>
+                          <span className="subitem-label">{child.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
+                  onClick={() => handleNavClick(item.id)}
+                >
+                  <span className="mobile-nav-icon">{item.icon}</span>
+                  <span className="mobile-nav-label">{item.label}</span>
+                  {isActive(item.id) && <span className="mobile-nav-indicator"></span>}
+                </button>
+              )}
+            </div>
           ))}
         </div>
 

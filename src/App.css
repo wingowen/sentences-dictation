@@ -1115,13 +1115,44 @@ html {
   flex-wrap: nowrap;
 }
 
+/* Practice Card */
+.practice-card {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px var(--spacing-xl);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.practice-card-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.practice-card-content {
+  margin-bottom: var(--spacing-xl);
+  min-height: auto;
+}
+
+.practice-card-content:empty {
+  display: none;
+}
+
 /* Practice Card Controls - 所有按钮放一排 */
 .practice-card-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   align-items: center;
   justify-content: center;
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background: var(--gray-50);
+  border-radius: var(--radius-lg);
 }
 
 .toggle-text-button {
@@ -1169,11 +1200,11 @@ html {
 
 .original-text-display {
   width: 100%;
-  padding: var(--spacing-md);
-  background: rgba(0, 122, 255, 0.05);
-  border: 1px solid rgba(0, 122, 255, 0.2);
+  padding: var(--spacing-lg);
+  background: rgba(0, 122, 255, 0.08);
+  border: 2px solid rgba(0, 122, 255, 0.3);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .original-text-label {
@@ -1184,16 +1215,17 @@ html {
 }
 
 .original-text-content {
-  font-size: var(--text-body);
-  font-weight: var(--font-medium);
+  font-size: var(--text-headline);
+  font-weight: var(--font-semibold);
   color: var(--text-color);
+  line-height: var(--line-height-relaxed);
 }
 
 .sentence-translation {
   width: 100%;
-  padding: var(--spacing-md);
-  background: rgba(52, 199, 89, 0.05);
-  border: 1px solid rgba(52, 199, 89, 0.2);
+  padding: var(--spacing-lg);
+  background: rgba(52, 199, 89, 0.08);
+  border: 2px solid rgba(52, 199, 89, 0.3);
   border-radius: var(--radius-lg);
   margin: var(--spacing-md) 0;
   display: flex;
@@ -1208,9 +1240,10 @@ html {
 }
 
 .translation-text {
-  font-size: var(--text-body);
+  font-size: var(--text-headline);
   line-height: var(--line-height-relaxed);
   color: var(--text-color);
+  font-weight: var(--font-medium);
 }
 
 .phonetic-item {
@@ -1252,33 +1285,50 @@ html {
 }
 
 /* Word Inputs */
+.word-inputs-form {
+  margin-top: var(--spacing-lg);
+}
+
 .word-inputs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  margin: var(--spacing-md) 0;
+  gap: var(--spacing-lg);
+  justify-content: center;
+  margin: 0;
 }
 
 .word-input-wrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.2rem;
+}
+
+.word-input-container {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--white);
+  transition: all var(--transition-fast);
+}
+
+.word-input-container:focus-within {
+  border-color: var(--apple-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .word-input {
   flex: 0 0 auto;
   min-width: 6ch;
   max-width: 35ch;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.8rem;
   font-size: var(--text-body);
   border: none;
-  /* border-bottom: 2px solid var(--gray-300); */
   border-radius: 0;
-  text-align: left;
-  transition: all var(--transition-spring);
+  text-align: center;
+  transition: all var(--transition-fast);
   box-sizing: border-box;
-  overflow: visible;
   background-color: transparent;
   letter-spacing: var(--letter-spacing-normal);
   font-family: var(--font-family-mono);
@@ -1286,10 +1336,7 @@ html {
 
 .word-input:focus {
   outline: none;
-  border-bottom-color: var(--apple-blue);
-  box-shadow: none;
-  transform: none;
-  background-color: rgba(0, 122, 255, 0.03);
+  background-color: transparent;
 }
 
 .word-input::placeholder {
@@ -1327,30 +1374,37 @@ html {
 
 /* 单词发音按钮 */
 .word-pronounce-button {
-  padding: 0.2rem 0.4rem;
-  font-size: var(--text-caption-1);
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.6rem;
+  background: var(--gray-50);
   border: none;
+  border-left: 1px solid var(--gray-200);
   cursor: pointer;
-  opacity: 0.6;
   transition: all var(--transition-fast);
-  line-height: 1;
-  border-radius: var(--radius-sm);
+  color: var(--gray-600);
 }
 
 .word-pronounce-button:hover:not(:disabled) {
-  opacity: 1;
-  background: var(--gray-100);
-  transform: scale(1.1);
+  background: var(--apple-blue);
+  color: var(--white);
 }
 
 .word-pronounce-button:active:not(:disabled) {
-  transform: scale(0.95);
+  background: var(--apple-blue-dark);
+  transform: scale(0.98);
 }
 
 .word-pronounce-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+  background: var(--gray-50);
+}
+
+.word-pronounce-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* 提示按钮样式 */
@@ -4789,6 +4843,103 @@ button:focus-visible:not(:disabled) {
 }
 
 /* ============================================
+   课文选择器
+   ============================================ */
+
+.lesson-selector {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.lesson-selector-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.lesson-selector-title {
+  font-size: var(--text-title-2);
+  font-weight: var(--font-semibold);
+  color: var(--text-color);
+  margin: 0;
+  flex: 1;
+}
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.lesson-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+  width: 100%;
+}
+
+.lesson-item:hover {
+  background: var(--gray-50);
+  border-color: var(--apple-blue);
+  transform: translateX(4px);
+}
+
+.lesson-item.selected {
+  background: rgba(0, 122, 255, 0.08);
+  border-color: var(--apple-blue);
+}
+
+.lesson-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.lesson-number {
+  font-size: var(--text-body);
+  font-weight: var(--font-semibold);
+  color: var(--apple-blue);
+  min-width: 80px;
+}
+
+.lesson-title {
+  font-size: var(--text-body);
+  color: var(--text-color);
+  flex: 1;
+}
+
+.lesson-arrow {
+  color: var(--gray-400);
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.lesson-item:hover .lesson-arrow {
+  opacity: 1;
+  color: var(--apple-blue);
+}
+
+.lesson-item.selected .lesson-arrow {
+  opacity: 1;
+  color: var(--apple-blue);
+}
+
+/* ============================================
    PRACTICE STATS SECTION - Apple Design Style
    ============================================ */
 
@@ -6348,6 +6499,55 @@ button:focus-visible:not(:disabled) {
   color: var(--text-color);
 }
 
+.mobile-nav-item-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav-arrow {
+  margin-left: auto;
+  transition: transform var(--transition-fast);
+}
+
+.mobile-nav-arrow.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.mobile-nav-submenu {
+  background: var(--gray-50);
+  border-radius: 8px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.mobile-nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 12px var(--spacing-md) 12px 44px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  width: 100%;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.mobile-nav-subitem:hover {
+  background: var(--gray-100);
+  color: var(--text-color);
+}
+
+.subitem-icon {
+  font-size: 16px;
+}
+
+.subitem-label {
+  flex: 1;
+}
+
 .mobile-nav-active {
   background: rgba(0, 122, 255, 0.08) !important;
   color: var(--apple-blue) !important;
@@ -6441,6 +6641,10 @@ button:focus-visible:not(:disabled) {
   flex: 1;
   margin-top: var(--navbar-height);
   min-height: calc(100vh - var(--navbar-height));
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8vh;
   transition: opacity var(--transition-normal);
 }
 

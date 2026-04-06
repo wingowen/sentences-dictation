@@ -22,7 +22,8 @@ const PracticeCard = React.memo(({
     handleSubmit,
     listenMode,
     isSupported: speechSupported,
-    play: onPlay,
+    handlePlay,
+    handlePlayWord,
     inputRefs,
     setShowSettingsModal: setShowSettingsModal,
     setCurrentIndex,
@@ -109,7 +110,7 @@ const PracticeCard = React.memo(({
         <button
           type="button"
           className="play-button small"
-          onClick={onPlay}
+          onClick={handlePlay}
           disabled={!speechSupported || listenMode}
           title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
         >
@@ -161,50 +162,51 @@ const PracticeCard = React.memo(({
       </div>
 
       {/* 输入区域 */}
-      <form className="word-inputs-form" onSubmit={onSubmit}>
+      <form className="word-inputs-form" onSubmit={handleSubmit}>
         <div className="word-inputs">
           {wordInputs.map((input, index) => {
             const isCorrect = input.trim() && currentWords[index] && normalize(input) === normalize(currentWords[index].word)
             const wordLength = currentWords[index]?.word?.length || 5
             const currentInputLength = input.length || wordLength
             const maxLength = Math.max(wordLength, currentInputLength)
-            const calculatedWidth = maxLength * 1.2 + 2
+            const calculatedWidth = Math.max(5, wordLength * 1.2 + 2);
             const clampedWidth = Math.max(4, Math.min(40, calculatedWidth))
             const inputWidth = `${clampedWidth}ch`
             const underlinePlaceholder = '_'.repeat(wordLength)
-            const inputCharCount = input.replace(/\s/g, '').length
 
             return (
               <div key={index} className="word-input-wrapper">
-                <input
-                  ref={(el) => {
-                    const refs = inputRefs?.current || inputRefsLocal.current
-                    if (refs) refs[index] = el
-                  }}
-                  type="text"
-                  className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-                  style={{ width: inputWidth }}
-                  value={input}
-                  onChange={(e) => onWordChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onFocus={() => handleInputFocus(index)}
-                  placeholder={underlinePlaceholder}
-                  autoFocus={index === 0}
-                />
-                <button
-                  type="button"
-                  className="word-pronounce-button"
-                  onClick={() => onPlayWord?.(currentWords[index]?.word)}
-                  disabled={!speechSupported || !currentWords[index]?.word}
-                  title="发音"
-                >
-                  🔊
-                </button>
-                {showCounter && (
-                  <div className="word-input-counter">
-                    {inputCharCount} / {wordLength}
-                  </div>
-                )}
+                <div className="word-input-container">
+                  <input
+                    ref={(el) => {
+                      const refs = inputRefs?.current || inputRefsLocal.current
+                      if (refs) refs[index] = el
+                    }}
+                    type="text"
+                    className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                    style={{ width: inputWidth }}
+                    value={input}
+                    onChange={(e) => onWordChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onFocus={() => handleInputFocus(index)}
+                    onClick={() => handlePlayWord?.(currentWords[index]?.word)}
+                    placeholder={underlinePlaceholder}
+                    autoFocus={index === 0}
+                  />
+                  <button
+                    type="button"
+                    className="word-pronounce-button"
+                    onClick={() => handlePlayWord?.(currentWords[index]?.word)}
+                    disabled={!speechSupported || !currentWords[index]?.word}
+                    title="点击发音"
+                    tabIndex={-1}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                  </button>
+                </div>
               </div>
             )
           })}

@@ -63,39 +63,8 @@ export const DATA_SOURCE_CATEGORIES = {
   CLOUD: 'cloud',
 };
 
-// 数据源树形配置（多级菜单）
+// 数据源树形配置（多级菜单）- 只保留已上线资源
 export const DATA_SOURCE_TREE = [
-  {
-    id: 'practice',
-    name: '练习模式',
-    icon: '📚',
-    children: [
-      {
-        id: 'flashcard-learn',
-        name: '闪卡学习',
-        icon: '🎴',
-        description: '使用间隔重复算法学习闪卡',
-        requiresLogin: false,
-        view: 'flashcard-learner'
-      },
-      {
-        id: 'flashcard-manage',
-        name: '闪卡管理',
-        icon: '📝',
-        description: '创建和管理闪卡',
-        requiresLogin: false,
-        view: 'flashcard-manager'
-      },
-      {
-        id: 'vocab-review',
-        name: '生词本复习',
-        icon: '📖',
-        description: '复习生词本中的单词（需登录）',
-        requiresLogin: true,
-        view: 'vocab-review'
-      }
-    ]
-  },
   {
     id: 'textbook',
     name: '教材资源',
@@ -110,23 +79,7 @@ export const DATA_SOURCE_TREE = [
           { id: DATA_SOURCE_TYPES.NEW_CONCEPT_2, name: '第二册', icon: '2️⃣', local: false },
           { id: DATA_SOURCE_TYPES.NEW_CONCEPT_3, name: '第三册', icon: '3️⃣', local: false }
         ]
-      },
-      {
-        id: DATA_SOURCE_TYPES.LOCAL,
-        name: '简单句练习',
-        icon: '📝',
-        description: '基础简单句子练习',
-        local: true
       }
-    ]
-  },
-  {
-    id: 'cloud',
-    name: '云端资源',
-    icon: '☁️',
-    children: [
-      { id: DATA_SOURCE_TYPES.NOTION, name: 'Notion', icon: '📋', requiresLogin: false },
-      { id: DATA_SOURCE_TYPES.SUPABASE, name: 'Supabase 文章', icon: '🗄️', requiresLogin: true }
     ]
   }
 ];

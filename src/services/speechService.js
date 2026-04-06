@@ -34,7 +34,9 @@ const speakWithBrowserSpeech = (text, rate = 1.0) => {
 
   const synthesis = window.speechSynthesis;
   const utterance = new SynthesisUtterance(text);
-  utterance.rate = rate;
+  // 确保 rate 是有效的数字
+  const validRate = (typeof rate === 'number' && isFinite(rate) && rate > 0) ? rate : 1.0;
+  utterance.rate = validRate;
 
   return new Promise((resolve, reject) => {
     utterance.onend = () => resolve();

@@ -1,0 +1,80 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - button "返回" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e10]: 返回
+      - heading "练习模式" [level=2] [ref=e12]
+      - generic [ref=e13]:
+        - list [ref=e14]:
+          - listitem [ref=e15]:
+            - button "🏠 首页" [ref=e16] [cursor=pointer]:
+              - generic [ref=e17]: 🏠
+              - generic [ref=e18]: 首页
+          - listitem [ref=e19]:
+            - generic [ref=e20] [cursor=pointer]:
+              - generic [ref=e21]: 📖
+              - generic [ref=e22]: 新概念
+              - img [ref=e23]
+          - listitem [ref=e25]:
+            - button "📚 生词本" [ref=e26] [cursor=pointer]:
+              - generic [ref=e27]: 📚
+              - generic [ref=e28]: 生词本
+        - button "登录" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e35]: 登录
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]: 导航菜单
+        - button "关闭" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+      - generic [ref=e42]:
+        - button "🏠 首页" [ref=e44] [cursor=pointer]:
+          - generic [ref=e45]: 🏠
+          - generic [ref=e46]: 首页
+        - button "📖 新概念" [ref=e48] [cursor=pointer]:
+          - generic [ref=e49]: 📖
+          - generic [ref=e50]: 新概念
+          - img [ref=e51]
+        - button "📚 生词本" [ref=e54] [cursor=pointer]:
+          - generic [ref=e55]: 📚
+          - generic [ref=e56]: 生词本
+      - button "🔐 登录账户" [ref=e58] [cursor=pointer]
+  - main [ref=e59]:
+    - generic [ref=e61]:
+      - generic [ref=e64]: Question 1 of 94
+      - generic [ref=e65]:
+        - button "播放" [ref=e66] [cursor=pointer]
+        - button "设置" [active] [ref=e67] [cursor=pointer]
+        - button "下一句" [ref=e68] [cursor=pointer]
+        - button "💡" [ref=e70] [cursor=pointer]
+        - button "📖 加入生词" [ref=e71]
+      - generic [ref=e73]:
+        - generic [ref=e75]:
+          - textbox "______" [ref=e76]
+          - button "点击发音" [ref=e77] [cursor=pointer]:
+            - img [ref=e78]
+        - generic [ref=e82]:
+          - textbox "__" [ref=e83]
+          - button "点击发音" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+        - generic [ref=e89]:
+          - textbox "__" [ref=e90]
+          - button "点击发音" [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+        - generic [ref=e96]:
+          - textbox "____" [ref=e97]
+          - button "点击发音" [ref=e98] [cursor=pointer]:
+            - img [ref=e99]
+        - generic [ref=e103]:
+          - textbox "____" [ref=e104]
+          - button "点击发音" [ref=e105] [cursor=pointer]:
+            - img [ref=e106]
+        - generic [ref=e110]:
+          - textbox "_______" [ref=e111]
+          - button "点击发音" [ref=e112] [cursor=pointer]:
+            - img [ref=e113]
+```

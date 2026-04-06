@@ -8,6 +8,8 @@ import LoadingIndicator from './components/LoadingIndicator';
 import PageSkeleton from './components/PageSkeleton';
 import AppNavbar from './components/AppNavbar';
 import LoginModal from './components/LoginModal';
+import SettingsModal from './components/SettingsModal';
+import LessonSelector from './components/LessonSelector';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { addVocabulary } from './services/vocabularyService';
 
@@ -128,7 +130,8 @@ function useHashRouter(initialView) {
 
 // PracticeCard 包装组件，用于传递 onAddToVocabulary 函数
 function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
-  const { currentWords, currentIndex, sentences } = useApp();
+  const appContext = useApp();
+  const { currentWords, currentIndex, sentences, selectedLesson, dataSource } = appContext || {};
   
   const handleAddToVocabulary = useCallback(async (wordData) => {
     if (!currentUser) {
@@ -137,7 +140,7 @@ function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
     }
     
     try {
-      const currentSentence = sentences[currentIndex];
+      const currentSentence = sentences?.[currentIndex];
       const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
       
       await addVocabulary({
@@ -155,6 +158,16 @@ function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
     }
   }, [currentUser, sentences, currentIndex, onRequireLogin]);
   
+  // 检查是否需要显示课文选择器（第二册或第三册且没有选择课文）
+  const isNce2 = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2;
+  const isNce3 = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3;
+  const shouldShowLessonSelector = (isNce2 || isNce3) && !selectedLesson;
+  
+  // 如果需要选择课文，显示课文选择器
+  if (shouldShowLessonSelector) {
+    return <LessonSelector onBack={onBack} />;
+  }
+  
   return (
     <PracticeCard
       onBack={onBack}
@@ -165,15 +178,38 @@ function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
   );
 }
 
-function AppContent() {
+function AppContent({ onSelectedDataSourceChange }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isContentLoading, setIsContentLoading] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [selectedDataSource, setSelectedDataSource] = useState(null);
   const contentAreaRef = useRef(null);
 
   const { currentView, navigateTo, navigateBack, canGoBack } = useHashRouter(VIEWS.HOME);
+  
+  // 获取设置模态框的状态和方法
+  const {
+    showSettingsModal,
+    setShowSettingsModal,
+    autoPlay,
+    setAutoPlay,
+    randomMode,
+    setRandomMode,
+    listenMode,
+    setListenMode,
+    autoNext,
+    setAutoNext,
+    showCounter,
+    setShowCounter,
+    speechRate,
+    setSpeechRate,
+    showTranslation,
+    setShowTranslation,
+    showOriginalText,
+    setShowOriginalText,
+    currentTranslation,
+    isSupported: speechSupported,
+  } = useApp() || {};
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged((user) => {
@@ -245,12 +281,32 @@ function AppContent() {
     } else if (node.view === 'vocab-review') {
       handleNavigate(VIEWS.VOCAB_REVIEW);
     } else if (node.id) {
-      setSelectedDataSource(node.id);
+      onSelectedDataSourceChange(node.id);
       handleNavigate(VIEWS.PRACTICE);
     } else {
       handleNavigate(VIEWS.HOME);
     }
-  }, [handleNavigate]);
+  }, [handleNavigate, onSelectedDataSourceChange]);
+  
+  // 处理新概念选择（从导航栏）
+  const handleNewConceptSelect = useCallback((conceptId) => {
+    const conceptMap = {
+      'new-concept-1': DATA_SOURCE_TYPES.NEW_CONCEPT_1,
+      'new-concept-2': DATA_SOURCE_TYPES.NEW_CONCEPT_2,
+      'new-concept-3': DATA_SOURCE_TYPES.NEW_CONCEPT_3,
+    };
+    const dataSource = conceptMap[conceptId] || DATA_SOURCE_TYPES.LOCAL;
+    
+    // 第一册直接进入练习，第二册和第三册需要先选择课文
+    if (conceptId === 'new-concept-1') {
+      onSelectedDataSourceChange(dataSource);
+      handleNavigate(VIEWS.PRACTICE);
+    } else {
+      // 第二册和第三册：设置数据源并进入练习模式，在练习模式中显示课文选择
+      onSelectedDataSourceChange(dataSource);
+      handleNavigate(VIEWS.PRACTICE);
+    }
+  }, [handleNavigate, onSelectedDataSourceChange]);
 
   const showBackButton = VIEW_CONFIG[currentView]?.showBackButton && canGoBack;
   const pageTitle = VIEW_TITLES[currentView];
@@ -269,13 +325,11 @@ function AppContent() {
       
       case VIEWS.PRACTICE:
         return (
-          <AppProvider dataSource={selectedDataSource || DATA_SOURCE_TYPES.LOCAL}>
-            <PracticeCardWrapper
-              onBack={() => navigateTo(VIEWS.HOME)}
-              currentUser={currentUser}
-              onRequireLogin={() => setIsLoginModalOpen(true)}
-            />
-          </AppProvider>
+          <PracticeCardWrapper
+            onBack={() => navigateTo(VIEWS.HOME)}
+            currentUser={currentUser}
+            onRequireLogin={() => setIsLoginModalOpen(true)}
+          />
         );
       
       case VIEWS.FLASHCARD_LEARN:
@@ -315,6 +369,7 @@ function AppContent() {
           <Suspense fallback={<PageSkeleton type="vocabulary" />}>
             <VocabularyApp
               onBack={() => navigateTo(VIEWS.HOME)}
+              onNavigateToReview={() => navigateTo(VIEWS.VOCAB_REVIEW)}
               currentUser={currentUser}
             />
           </Suspense>
@@ -355,14 +410,15 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      <AppNavbar
+      <AppNavbar 
         currentView={currentView}
         onNavigate={handleNavigate}
         currentUser={currentUser}
         onLoginClick={handleLoginClick}
         showBackButton={showBackButton}
-        onBack={handleBack}
+        onBack={navigateBack}
         title={pageTitle}
+        onNewConceptSelect={handleNewConceptSelect}
       />
       
       <main 
@@ -379,8 +435,41 @@ function AppContent() {
         onClose={handleCloseLoginModal}
         onLogin={handleLoginSuccess}
       />
+
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        autoPlay={autoPlay}
+        onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
+        randomMode={randomMode}
+        onToggleRandomMode={() => setRandomMode(!randomMode)}
+        listenMode={listenMode}
+        onToggleListenMode={() => setListenMode(!listenMode)}
+        autoNext={autoNext}
+        onToggleAutoNext={() => setAutoNext(!autoNext)}
+        showCounter={showCounter}
+        onToggleShowCounter={() => setShowCounter(!showCounter)}
+        speechRate={speechRate}
+        onSpeechRateChange={setSpeechRate}
+        speechSupported={speechSupported}
+        showTranslation={showTranslation}
+        onToggleTranslation={() => setShowTranslation(!showTranslation)}
+        showOriginalText={showOriginalText}
+        onToggleOriginalText={() => setShowOriginalText(!showOriginalText)}
+        currentTranslation={currentTranslation}
+      />
     </div>
   );
 }
 
-export default AppContent;
+function App() {
+  const [selectedDataSource, setSelectedDataSource] = useState(null);
+  
+  return (
+    <AppProvider dataSource={selectedDataSource || DATA_SOURCE_TYPES.LOCAL}>
+      <AppContent onSelectedDataSourceChange={setSelectedDataSource} />
+    </AppProvider>
+  );
+}
+
+export default App;

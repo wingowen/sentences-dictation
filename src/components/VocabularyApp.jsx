@@ -7,7 +7,7 @@ import {
 } from '../services/vocabularyService';
 import LoadingIndicator from './LoadingIndicator';
 
-const VocabularyApp = ({ onBack }) => {
+const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [vocabularies, setVocabularies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,6 +23,8 @@ const VocabularyApp = ({ onBack }) => {
     part_of_speech: '',
     notes: ''
   });
+  
+
 
   // 加载生词列表
   const loadVocabularies = useCallback(async () => {
@@ -93,6 +95,13 @@ const VocabularyApp = ({ onBack }) => {
   const cancelDelete = () => {
     setDeleteConfirmId(null);
   };
+  
+  // 复习生词
+  const handleReview = useCallback(() => {
+    if (onNavigateToReview) {
+      onNavigateToReview();
+    }
+  }, [onNavigateToReview]);
 
   // 编辑生词
   const handleEdit = (vocab) => {
@@ -116,17 +125,25 @@ const VocabularyApp = ({ onBack }) => {
 
   return (
     <div className="vocabulary-app">
-      <div className="app-header">
+      <div className="vocabulary-app__header">
         <button className="back-button" onClick={onBack}>
           ← 返回
         </button>
         <h2>📚 生词本</h2>
-        <button 
-          className="add-button"
-          onClick={() => setShowAddForm(true)}
-        >
-          + 添加生词
-        </button>
+        <div className="header-actions">
+          <button 
+            className="add-button"
+            onClick={() => setShowAddForm(true)}
+          >
+            + 添加生词
+          </button>
+          <button 
+            className="review-button"
+            onClick={handleReview}
+          >
+            📖 复习生词
+          </button>
+        </div>
       </div>
 
       <div className="app-content">
@@ -275,16 +292,22 @@ const VocabularyApp = ({ onBack }) => {
           margin: 0 auto;
         }
         
-        .vocabulary-app .app-header {
+        .vocabulary-app__header {
           display: flex;
           align-items: center;
           gap: 15px;
           margin-bottom: 20px;
         }
         
-        .vocabulary-app .app-header h2 {
+        .vocabulary-app__header h2 {
           flex: 1;
           margin: 0;
+        }
+        
+        .header-actions {
+          display: flex;
+          gap: 10px;
+          align-items: center;
         }
         
         .vocabulary-app .add-button {
@@ -294,6 +317,24 @@ const VocabularyApp = ({ onBack }) => {
           border: none;
           border-radius: 6px;
           cursor: pointer;
+          font-size: 14px;
+        }
+        
+        .vocabulary-app .review-button {
+          padding: 8px 16px;
+          background: #10B981;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .vocabulary-app .review-button:hover {
+          background: #059669;
         }
         
         .vocabulary-list {

@@ -26,18 +26,6 @@ const SectionCard = ({ node, onSelect, currentUser }) => {
 const DataSourceTree = ({ tree, onSelect, currentUser, onLoginClick }) => {
   return (
     <div className="homepage">
-      {/* Navbar */}
-      <nav className="homepage-navbar">
-        <div className="homepage-logo">📚 Sentence Dictation</div>
-        <button
-          className="homepage-login-btn"
-          onClick={onLoginClick}
-          title={currentUser ? currentUser.email : '登录'}
-        >
-          {currentUser ? '👤 已登录' : '登录'}
-        </button>
-      </nav>
-
       {/* Hero Section */}
       <div className="homepage-hero">
         <div className="homepage-hero-icon">🎧</div>
