@@ -114,8 +114,9 @@ const PracticeCard = React.memo(({
           onClick={handlePlay}
           disabled={!speechSupported || listenMode}
           title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
+          aria-label="播放句子"
         >
-          <Icon name="Play" size={16} />
+          <Icon name="Play" size={16} aria-hidden="true" />
           播放
         </button>
 
@@ -124,8 +125,9 @@ const PracticeCard = React.memo(({
           className="settings-button small"
           onClick={onToggleSettings}
           title="设置"
+          aria-label="打开设置"
         >
-          <Icon name="Settings" size={16} />
+          <Icon name="Settings" size={16} aria-hidden="true" />
           设置
         </button>
 
@@ -135,8 +137,9 @@ const PracticeCard = React.memo(({
           onClick={onNext}
           disabled={listenMode}
           title="切换到下一句"
+          aria-label="下一句"
         >
-          <Icon name="ChevronRight" size={16} />
+          <Icon name="ChevronRight" size={16} aria-hidden="true" />
           下一句
         </button>
 
@@ -144,6 +147,7 @@ const PracticeCard = React.memo(({
           hintText={currentWords.length > 0 ? currentWords[focusedInputIndex]?.word : '暂无提示'}
           position="right"
           className="hint-button-wrapper"
+          aria-label="查看提示"
         />
 
         <button
@@ -160,15 +164,17 @@ const PracticeCard = React.memo(({
             }
           }}
           title={currentUser ? '将当前单词加入生词本' : '登录后可使用生词本功能'}
+          aria-label={currentUser ? '将当前单词加入生词本' : '登录后可使用生词本功能'}
+          aria-disabled={!currentUser}
         >
-          <Icon name="Book" size={16} />
+          <Icon name="Book" size={16} aria-hidden="true" />
           加入生词
         </button>
       </div>
 
       {/* 输入区域 */}
-      <form className="word-inputs-form" onSubmit={handleSubmit}>
-        <div className="word-inputs">
+      <form className="word-inputs-form" onSubmit={handleSubmit} aria-label="单词输入表单">
+        <div className="word-inputs" role="group" aria-label="单词输入">
           {wordInputs.map((input, index) => {
             const isCorrect = input.trim() && currentWords[index] && normalize(input) === normalize(currentWords[index].word)
             const wordLength = currentWords[index]?.word?.length || 5
@@ -197,6 +203,9 @@ const PracticeCard = React.memo(({
                     onClick={() => handlePlayWord?.(currentWords[index]?.word)}
                     placeholder={underlinePlaceholder}
                     autoFocus={index === 0}
+                    aria-label={`第${index + 1}个单词`}
+                    aria-invalid={!isCorrect && input.trim() !== ''}
+                    aria-describedby={`word-hint-${index}`}
                   />
                   <button
                     type="button"
@@ -205,8 +214,9 @@ const PracticeCard = React.memo(({
                     disabled={!speechSupported || !currentWords[index]?.word}
                     title="点击发音"
                     tabIndex={-1}
+                    aria-label="发音"
                   >
-                    <Icon name="Volume2" size={16} />
+                    <Icon name="Volume2" size={16} aria-hidden="true" />
                   </button>
                 </div>
               </div>

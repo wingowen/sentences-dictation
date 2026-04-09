@@ -137,41 +137,64 @@ const AppNavbar = ({
         {/* Right Section: Navigation Items / User */}
         <div className="navbar-right">
           {/* Desktop Navigation */}
-          <ul className="navbar-nav desktop-nav">
+          <ul className="navbar-nav desktop-nav" role="navigation">
             {navItemsToShow.map(item => (
-              <li key={item.id} className={`nav-item ${isActive(item.id) ? 'nav-active' : ''}`}>
+              <li key={item.id} className={`nav-item ${isActive(item.id) ? 'nav-active' : ''}`} role="none">
                 {item.children ? (
                   <div 
                     className="nav-dropdown-trigger"
                     onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveDropdown(activeDropdown === item.id ? null : item.id);
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setActiveDropdown(item.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-haspopup="true"
+                    aria-expanded={activeDropdown === item.id}
+                    aria-controls={`dropdown-${item.id}`}
                   >
-                    <Icon name={item.icon} size={16} className="nav-icon" />
+                    <Icon name={item.icon} size={16} className="nav-icon" aria-hidden="true" />
                     <span className="nav-label">{item.label}</span>
                     <Icon 
                       name="ChevronDown" 
                       size={12} 
                       className={`nav-dropdown-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
+                      aria-hidden="true"
                     />
                   </div>
                 ) : (
                   <button 
                     className="nav-link"
                     onClick={() => handleNavClick(item.id)}
+                    aria-label={item.label}
                   >
-                    <Icon name={item.icon} size={16} className="nav-icon" />
+                    <Icon name={item.icon} size={16} className="nav-icon" aria-hidden="true" />
                     <span className="nav-label">{item.label}</span>
                   </button>
                 )}
                 
                 {item.children && activeDropdown === item.id && (
-                  <div className="navbar-dropdown">
+                  <div 
+                    id={`dropdown-${item.id}`}
+                    className="navbar-dropdown"
+                    role="menu"
+                    aria-labelledby={`nav-${item.id}`}
+                  >
                     {item.children.map(child => (
                       <button
                         key={child.id}
                         className={`dropdown-item ${isActive(child.id) ? 'dropdown-active' : ''}`}
                         onClick={() => handleDropdownClick(child.id)}
+                        role="menuitem"
+                        aria-label={child.label}
                       >
-                        <Icon name={child.icon} size={14} />
+                        <Icon name={child.icon} size={14} aria-hidden="true" />
                         <span>{child.label}</span>
                       </button>
                     ))}
@@ -187,12 +210,13 @@ const AppNavbar = ({
               className={`navbar-user-btn ${currentUser ? 'user-logged-in' : ''}`}
               onClick={() => currentUser ? null : onLoginClick?.()}
               title={currentUser ? `${currentUser.email}` : '点击登录'}
+              aria-label={currentUser ? `用户: ${currentUser.email}` : '登录'}
             >
               <span className="user-avatar">
                 {currentUser ? (
-                  <Icon name="User" size={18} className="user-avatar-icon" />
+                  <Icon name="User" size={18} className="user-avatar-icon" aria-hidden="true" />
                 ) : (
-                  <Icon name="User" size={18} />
+                  <Icon name="User" size={18} aria-hidden="true" />
                 )}
               </span>
               <span className="user-name desktop-only">
@@ -207,26 +231,33 @@ const AppNavbar = ({
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? '关闭菜单' : '打开菜单'}
             aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-nav-menu"
           >
             <div className={`hamburger ${isMobileMenuOpen ? 'hamburger-active' : ''}`}>
-              <span></span>
-              <span></span>
-              <span></span>
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
             </div>
           </button>
         </div>
       </div>
 
       {/* Mobile Navigation Menu */}
-      <div className={`mobile-nav-menu ${isMobileMenuOpen ? 'mobile-nav-open' : ''}`}>
+      <div 
+        id="mobile-nav-menu"
+        className={`mobile-nav-menu ${isMobileMenuOpen ? 'mobile-nav-open' : ''}`}
+        role="navigation"
+        aria-label="移动导航菜单"
+      >
         <div className="mobile-nav-header">
           <span className="mobile-nav-title">导航菜单</span>
           <button 
             className="mobile-nav-close"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="关闭"
+            aria-controls="mobile-nav-menu"
           >
-            <Icon name="X" size={24} />
+            <Icon name="X" size={24} aria-hidden="true" />
           </button>
         </div>
         
@@ -238,24 +269,43 @@ const AppNavbar = ({
                   <button
                     className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
                     onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveDropdown(activeDropdown === item.id ? null : item.id);
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setActiveDropdown(item.id);
+                      }
+                    }}
+                    aria-haspopup="true"
+                    aria-expanded={activeDropdown === item.id}
+                    aria-controls={`mobile-dropdown-${item.id}`}
                   >
-                    <Icon name={item.icon} size={20} className="mobile-nav-icon" />
+                    <Icon name={item.icon} size={20} className="mobile-nav-icon" aria-hidden="true" />
                     <span className="mobile-nav-label">{item.label}</span>
                     <Icon 
                       name="ChevronDown" 
                       size={16} 
                       className={`mobile-nav-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
+                      aria-hidden="true"
                     />
                   </button>
                   {activeDropdown === item.id && (
-                    <div className="mobile-nav-submenu">
+                    <div 
+                      id={`mobile-dropdown-${item.id}`}
+                      className="mobile-nav-submenu"
+                      role="menu"
+                    >
                       {item.children.map(child => (
                         <button
                           key={child.id}
                           className="mobile-nav-subitem"
                           onClick={() => handleDropdownClick(child.id)}
+                          role="menuitem"
+                          aria-label={child.label}
                         >
-                          <Icon name={child.icon} size={16} className="subitem-icon" />
+                          <Icon name={child.icon} size={16} className="subitem-icon" aria-hidden="true" />
                           <span className="subitem-label">{child.label}</span>
                         </button>
                       ))}
@@ -266,10 +316,11 @@ const AppNavbar = ({
                 <button
                   className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
                   onClick={() => handleNavClick(item.id)}
+                  aria-label={item.label}
                 >
-                  <Icon name={item.icon} size={20} className="mobile-nav-icon" />
+                  <Icon name={item.icon} size={20} className="mobile-nav-icon" aria-hidden="true" />
                   <span className="mobile-nav-label">{item.label}</span>
-                  {isActive(item.id) && <span className="mobile-nav-indicator"></span>}
+                  {isActive(item.id) && <span className="mobile-nav-indicator" aria-hidden="true"></span>}
                 </button>
               )}
             </div>
@@ -283,15 +334,16 @@ const AppNavbar = ({
               if (!currentUser) onLoginClick?.();
               setIsMobileMenuOpen(false);
             }}
+            aria-label={currentUser ? `用户: ${currentUser.email}` : '登录账户'}
           >
             <span>
               {currentUser ? (
                 <>
-                  <Icon name="User" size={16} className="inline-icon" /> {currentUser.email}
+                  <Icon name="User" size={16} className="inline-icon" aria-hidden="true" /> {currentUser.email}
                 </>
               ) : (
                 <>
-                  <Icon name="Lock" size={16} className="inline-icon" /> 登录账户
+                  <Icon name="Lock" size={16} className="inline-icon" aria-hidden="true" /> 登录账户
                 </>
               )}
             </span>
