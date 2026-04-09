@@ -170,12 +170,12 @@
   --z-tooltip: 1200;
 
   /* === Responsive Breakpoints === */
-  --breakpoint-xs: 480px;
-  --breakpoint-sm: 576px;
+  --breakpoint-xs: 360px;
+  --breakpoint-sm: 480px;
   --breakpoint-md: 768px;
-  --breakpoint-lg: 992px;
-  --breakpoint-xl: 1200px;
-  --breakpoint-2xl: 1400px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
 
 /* Global Styles */
@@ -2476,9 +2476,124 @@ html {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 360px) {
+  .app {
+    padding: 0.25rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .play-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    min-width: 120px;
+  }
+
+  .data-source-card {
+    padding: var(--spacing-lg);
+  }
+
+  .settings-modal-content {
+    max-width: 98%;
+    padding: var(--spacing-md);
+  }
+
+  .settings-tabs {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .settings-tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+  }
+
+  .settings-tab.active::after {
+    display: none;
+  }
+
+  .tab-label {
+    font-size: var(--text-caption-1);
+  }
+
+  .input-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .practice-card {
+    padding: 24px var(--spacing-md);
+  }
+
+  .word-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .word-input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .word-input-container {
+    flex-direction: column;
+  }
+
+  .word-pronounce-button {
+    border-left: none;
+    border-top: 1px solid var(--gray-200);
+  }
+}
+
+@media (min-width: 361px) and (max-width: 480px) {
   .app {
     padding: 0.5rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.375rem;
+  }
+
+  .play-button {
+    padding: 0.7rem 1.3rem;
+    font-size: 0.95rem;
+    min-width: 130px;
+  }
+
+  .settings-modal-content {
+    max-width: 95%;
+    padding: var(--spacing-lg);
+  }
+
+  .settings-tabs {
+    gap: var(--spacing-xs);
+  }
+
+  .settings-tab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .tab-label {
+    font-size: var(--text-caption-1);
+  }
+
+  .input-controls {
+    flex-wrap: wrap;
+  }
+
+  .practice-card {
+    padding: 32px var(--spacing-md);
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .app {
+    padding: 1rem;
   }
 
   .app-header {
@@ -2503,7 +2618,7 @@ html {
 
   /* Settings Modal Responsive */
   .settings-modal-content {
-    max-width: 95%;
+    max-width: 90%;
     padding: var(--spacing-lg);
   }
 
@@ -2582,34 +2697,53 @@ html {
   }
 }
 
-@media (max-width: 480px) {
-  .app-header h1 {
-    font-size: 1.3rem;
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app {
+    padding: 1.5rem;
   }
-  
-  .sentence-section, .input-form, .result {
-    padding: 0.8rem;
+
+  .data-source-cards {
+    grid-template-columns: repeat(2, 1fr);
   }
-  
-  .input-form textarea {
-    padding: 0.8rem;
-    min-height: 100px;
+
+  .settings-modal-content {
+    max-width: 80%;
   }
-  
-  .input-controls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .speech-rate-selector {
-    width: 100%;
-  }
-  
-  .speech-rate-selector select {
-    flex: 1;
-    min-width: auto;
+
+  .practice-card {
+    padding: 40px var(--spacing-xl);
   }
 }
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .app {
+    padding: 2rem;
+  }
+
+  .data-source-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .settings-modal-content {
+    max-width: 70%;
+  }
+}
+
+@media (min-width: 1281px) {
+  .app {
+    padding: 2.5rem;
+  }
+
+  .data-source-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .settings-modal-content {
+    max-width: 60%;
+  }
+}
+
+
 
 /* App Controls */
 .app-controls {
