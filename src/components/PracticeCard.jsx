@@ -1,5 +1,6 @@
 import React from 'react'
 import HintButton from './HintButton'
+import Icon from './Icon'
 import { useApp } from '../contexts/AppContext'
 
 const PracticeCard = React.memo(({
@@ -114,6 +115,7 @@ const PracticeCard = React.memo(({
           disabled={!speechSupported || listenMode}
           title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
         >
+          <Icon name="Play" size={16} />
           播放
         </button>
 
@@ -123,6 +125,7 @@ const PracticeCard = React.memo(({
           onClick={onToggleSettings}
           title="设置"
         >
+          <Icon name="Settings" size={16} />
           设置
         </button>
 
@@ -133,6 +136,7 @@ const PracticeCard = React.memo(({
           disabled={listenMode}
           title="切换到下一句"
         >
+          <Icon name="ChevronRight" size={16} />
           下一句
         </button>
 
@@ -157,7 +161,8 @@ const PracticeCard = React.memo(({
           }}
           title={currentUser ? '将当前单词加入生词本' : '登录后可使用生词本功能'}
         >
-          📖 加入生词
+          <Icon name="Book" size={16} />
+          加入生词
         </button>
       </div>
 
@@ -201,10 +206,7 @@ const PracticeCard = React.memo(({
                     title="点击发音"
                     tabIndex={-1}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    </svg>
+                    <Icon name="Volume2" size={16} />
                   </button>
                 </div>
               </div>

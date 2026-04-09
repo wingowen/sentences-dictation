@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Icon from './Icon';
 
 const NAV_ITEMS = [
-  { id: 'home', icon: '🏠', label: '首页', requiresAuth: false },
+  { id: 'home', icon: 'Home', label: '首页', requiresAuth: false },
   { 
     id: 'practice', 
-    icon: '📖', 
+    icon: 'Book', 
     label: '新概念', 
     requiresAuth: false,
     children: [
-      { id: 'new-concept-1', icon: '1️⃣', label: '第一册' },
-      { id: 'new-concept-2', icon: '2️⃣', label: '第二册' },
-      { id: 'new-concept-3', icon: '3️⃣', label: '第三册' },
+      { id: 'new-concept-1', icon: 'Number1', label: '第一册' },
+      { id: 'new-concept-2', icon: 'Number2', label: '第二册' },
+      { id: 'new-concept-3', icon: 'Number3', label: '第三册' },
     ]
   },
-  { id: 'vocabulary', icon: '📚', label: '生词本', requiresAuth: false },
+  { id: 'vocabulary', icon: 'BookOpen', label: '生词本', requiresAuth: false },
 ];
 
 const AppNavbar = ({ 
@@ -111,9 +112,7 @@ const AppNavbar = ({
               onClick={onBack}
               aria-label="返回"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-              </svg>
+              <Icon name="ArrowLeft" size={20} />
               <span className="navbar-back-text">返回</span>
             </button>
           ) : (
@@ -122,7 +121,7 @@ const AppNavbar = ({
               onClick={() => handleNavClick('home')}
               aria-label="返回首页"
             >
-              <span className="navbar-logo">📚</span>
+              <Icon name="BookOpen" size={24} className="navbar-logo" />
               <span className="navbar-title">Sentence Dictation</span>
             </button>
           )}
@@ -146,26 +145,20 @@ const AppNavbar = ({
                     className="nav-dropdown-trigger"
                     onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
                   >
-                    <span className="nav-icon">{item.icon}</span>
+                    <Icon name={item.icon} size={16} className="nav-icon" />
                     <span className="nav-label">{item.label}</span>
-                    <svg 
+                    <Icon 
+                      name="ChevronDown" 
+                      size={12} 
                       className={`nav-dropdown-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
-                      width="12" 
-                      height="12" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2"
-                    >
-                      <path d="M6 9l6 6 6-6"/>
-                    </svg>
+                    />
                   </div>
                 ) : (
                   <button 
                     className="nav-link"
                     onClick={() => handleNavClick(item.id)}
                   >
-                    <span className="nav-icon">{item.icon}</span>
+                    <Icon name={item.icon} size={16} className="nav-icon" />
                     <span className="nav-label">{item.label}</span>
                   </button>
                 )}
@@ -178,7 +171,7 @@ const AppNavbar = ({
                         className={`dropdown-item ${isActive(child.id) ? 'dropdown-active' : ''}`}
                         onClick={() => handleDropdownClick(child.id)}
                       >
-                        <span>{child.icon}</span>
+                        <Icon name={child.icon} size={14} />
                         <span>{child.label}</span>
                       </button>
                     ))}
@@ -197,12 +190,9 @@ const AppNavbar = ({
             >
               <span className="user-avatar">
                 {currentUser ? (
-                  <span className="user-avatar-icon">👤</span>
+                  <Icon name="User" size={18} className="user-avatar-icon" />
                 ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
+                  <Icon name="User" size={18} />
                 )}
               </span>
               <span className="user-name desktop-only">
@@ -236,9 +226,7 @@ const AppNavbar = ({
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="关闭"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
+            <Icon name="X" size={24} />
           </button>
         </div>
         
@@ -251,19 +239,13 @@ const AppNavbar = ({
                     className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
                     onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
                   >
-                    <span className="mobile-nav-icon">{item.icon}</span>
+                    <Icon name={item.icon} size={20} className="mobile-nav-icon" />
                     <span className="mobile-nav-label">{item.label}</span>
-                    <svg 
+                    <Icon 
+                      name="ChevronDown" 
+                      size={16} 
                       className={`mobile-nav-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2"
-                    >
-                      <path d="M6 9l6 6 6-6"/>
-                    </svg>
+                    />
                   </button>
                   {activeDropdown === item.id && (
                     <div className="mobile-nav-submenu">
@@ -273,7 +255,7 @@ const AppNavbar = ({
                           className="mobile-nav-subitem"
                           onClick={() => handleDropdownClick(child.id)}
                         >
-                          <span className="subitem-icon">{child.icon}</span>
+                          <Icon name={child.icon} size={16} className="subitem-icon" />
                           <span className="subitem-label">{child.label}</span>
                         </button>
                       ))}
@@ -285,7 +267,7 @@ const AppNavbar = ({
                   className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
                   onClick={() => handleNavClick(item.id)}
                 >
-                  <span className="mobile-nav-icon">{item.icon}</span>
+                  <Icon name={item.icon} size={20} className="mobile-nav-icon" />
                   <span className="mobile-nav-label">{item.label}</span>
                   {isActive(item.id) && <span className="mobile-nav-indicator"></span>}
                 </button>
@@ -302,7 +284,17 @@ const AppNavbar = ({
               setIsMobileMenuOpen(false);
             }}
           >
-            <span>{currentUser ? `👤 ${currentUser.email}` : '🔐 登录账户'}</span>
+            <span>
+              {currentUser ? (
+                <>
+                  <Icon name="User" size={16} className="inline-icon" /> {currentUser.email}
+                </>
+              ) : (
+                <>
+                  <Icon name="Lock" size={16} className="inline-icon" /> 登录账户
+                </>
+              )}
+            </span>
           </button>
         </div>
       </div>
