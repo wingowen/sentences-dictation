@@ -21,7 +21,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run netlify-dev',
     url: 'http://localhost:8888',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
   },
 });

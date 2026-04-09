@@ -34,6 +34,7 @@
         "npm:globals@^16.5.0",
         "npm:jest-environment-jsdom@^30.2.0",
         "npm:jsdom@^27.4.0",
+        "npm:lucide-react@^1.8.0",
         "npm:netlify-cli@^23.13.5",
         "npm:node-edge-tts@^1.2.10",
         "npm:playwright@^1.58.2",
