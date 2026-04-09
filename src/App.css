@@ -361,6 +361,7 @@ html {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   cursor: pointer;
+  will-change: transform, box-shadow, border-color;
   transition: all var(--transition-spring);
   box-shadow: var(--shadow-md);
   position: relative;
@@ -509,6 +510,7 @@ html {
   box-shadow: var(--shadow-2xl);
   z-index: 9999;
   min-width: 280px;
+  will-change: transform, opacity;
   animation: slideDown var(--transition-spring);
 }
 
@@ -718,6 +720,7 @@ html {
   border: none;
   border-radius: var(--radius-full);
   cursor: pointer;
+  will-change: transform, box-shadow;
   transition: all var(--transition-spring);
   min-width: 200px;
   min-height: 48px;
@@ -814,6 +817,7 @@ html {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-md);
   cursor: pointer;
+  will-change: transform, box-shadow, background, border-color;
   transition: all var(--transition-fast);
   min-width: 48px;
   min-height: 48px;
@@ -1400,6 +1404,7 @@ html {
   border: none;
   border-left: 1px solid var(--gray-200);
   cursor: pointer;
+  will-change: background, color, transform;
   transition: all var(--transition-fast);
   color: var(--gray-600);
 }
@@ -1701,6 +1706,7 @@ html {
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  will-change: opacity;
   animation: fadeIn var(--transition-spring);
 }
 
@@ -1723,6 +1729,7 @@ html {
   max-width: 500px;
   width: 90%;
   box-shadow: var(--shadow-2xl);
+  will-change: transform, opacity;
   animation: slideUp var(--transition-spring);
 }
 
