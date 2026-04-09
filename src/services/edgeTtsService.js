@@ -72,6 +72,11 @@ export const isEdgeTtsAvailable = () => {
  * @returns {Promise<Audio>} Audio element
  */
 const fetchTtsAudio = async (text, rate = 1.0, voice = 'en-US-AriaNeural') => {
+  // Validate text parameter
+  if (typeof text !== 'string' || !text.trim()) {
+    throw new Error('Invalid text parameter for TTS');
+  }
+  
   // Generate cache key
   const cacheKey = generateCacheKey(text, rate, voice);
 
@@ -86,16 +91,18 @@ const fetchTtsAudio = async (text, rate = 1.0, voice = 'en-US-AriaNeural') => {
   }
 
   // Fetch new audio
+  const requestBody = {
+    text: text.trim(),
+    voice,
+    rate
+  };
+  
   const response = await fetch(API_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      text,
-      voice,
-      rate
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
@@ -146,6 +153,9 @@ const fetchTtsAudio = async (text, rate = 1.0, voice = 'en-US-AriaNeural') => {
  * @returns {Promise<void>}
  */
 export const speak = async (text, rate = 1.0, voice = 'en-US-AriaNeural') => {
+  // Validate and normalize rate parameter
+  const validRate = (typeof rate === 'number' && isFinite(rate) && rate > 0) ? rate : 1.0;
+  
   // Debounce handling
   const now = Date.now();
   if (now - lastSpeakTime < SPEAK_DEBOUNCE_DELAY) {
@@ -163,7 +173,7 @@ export const speak = async (text, rate = 1.0, voice = 'en-US-AriaNeural') => {
     }
 
     // Fetch and play audio
-    const audio = await fetchTtsAudio(text, rate, voice);
+    const audio = await fetchTtsAudio(text, validRate, voice);
     currentAudio = audio;
 
     // Return promise that resolves when audio finishes playing

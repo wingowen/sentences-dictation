@@ -22,7 +22,7 @@ export const DATA_SOURCE_TYPES = {
   SUPABASE: 'supabase',
 };
 
-// 数据源配置
+// 数据源配置（保留兼容）
 export const DATA_SOURCES = [
   {
     id: DATA_SOURCE_TYPES.FLASHCARDS,
@@ -55,6 +55,62 @@ export const DATA_SOURCES = [
     description: '从网页动态获取新概念英语第三册文章',
   },
 ];
+
+// 数据源分类
+export const DATA_SOURCE_CATEGORIES = {
+  PRACTICE: 'practice',
+  TEXTBOOK: 'textbook',
+  CLOUD: 'cloud',
+};
+
+// 数据源树形配置（多级菜单）- 只保留已上线资源
+export const DATA_SOURCE_TREE = [
+  {
+    id: 'textbook',
+    name: '教材资源',
+    icon: '📖',
+    children: [
+      {
+        id: 'new-concept',
+        name: '新概念英语',
+        icon: '📗',
+        children: [
+          { id: DATA_SOURCE_TYPES.NEW_CONCEPT_1, name: '第一册', icon: '1️⃣', local: true },
+          { id: DATA_SOURCE_TYPES.NEW_CONCEPT_2, name: '第二册', icon: '2️⃣', local: false },
+          { id: DATA_SOURCE_TYPES.NEW_CONCEPT_3, name: '第三册', icon: '3️⃣', local: false }
+        ]
+      }
+    ]
+  }
+];
+
+/**
+ * 获取树节点的扁平列表（用于查找）
+ * @param {Array} tree - 树形配置
+ * @returns {Array} 扁平节点列表
+ */
+export const flattenTree = (tree) => {
+  const result = [];
+  const traverse = (nodes) => {
+    for (const node of nodes) {
+      result.push(node);
+      if (node.children) {
+        traverse(node.children);
+      }
+    }
+  };
+  traverse(tree);
+  return result;
+};
+
+/**
+ * 根据ID查找树节点
+ * @param {string} id - 节点ID
+ * @returns {Object|null} 找到的节点
+ */
+export const findTreeNode = (id) => {
+  return flattenTree(DATA_SOURCE_TREE).find(node => node.id === id) || null;
+};
 
 /**
  * 从本地JSON文件获取句子

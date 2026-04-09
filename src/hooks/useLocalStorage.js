@@ -1,55 +1,72 @@
-// src/hooks/useLocalStorage.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react'
 
 /**
- * localStorage Hook(带防抖)
- * @param {string} key - localStorage键
- * @param {*} initialValue - 初始值
- * @param {number} debounceDelay - 防抖延迟(毫秒)，默认1000ms
- * @returns {Array} [value, setValue, error, isLoading]
+ * 自定义hook用于处理localStorage的读写
+ * @param {string} key - 存储键名
+ * @param {any} initialValue - 初始值
+ * @returns {[any, function, function]} - [值, 设置值的函数, 清除值的函数]
  */
-export function useLocalStorage(key, initialValue, debounceDelay = 1000) {
-  const [value, setValue] = useState(initialValue);
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const useLocalStorage = (key, initialValue) => {
+  // 从localStorage读取初始值
+  const readValue = () => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
 
-  // 加载初始值
-  useEffect(() => {
     try {
-      const item = localStorage.getItem(key);
-      if (item !== null) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setValue(JSON.parse(item));
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.warn(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  };
+
+  // 状态保存值
+  const [storedValue, setStoredValue] = useState(readValue);
+
+  // 返回一个包装版的setState，将新值保存到localStorage
+  const setValue = (value) => {
+    try {
+      // 允许value是一个函数，类似于setState
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      
+      // 保存状态
+      setStoredValue(valueToStore);
+      
+      // 保存到localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-      setIsLoading(false);
-    } catch (err) {
-      console.error(`Error loading ${key} from localStorage:`, err);
-      setError(err);
-      setIsLoading(false);
+    } catch (error) {
+      console.warn(`Error setting localStorage key "${key}":`, error);
     }
-  }, [key]);
+  };
 
-  // 防抖保存
-  const debouncedSave = useCallback((newValue) => {
+  // 清除值
+  const clearValue = () => {
     try {
-      localStorage.setItem(key, JSON.stringify(newValue));
-      setError(null);
-    } catch (err) {
-      console.error(`Error saving ${key} to localStorage:`, err);
-      setError(err);
+      setStoredValue(initialValue);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(key);
+      }
+    } catch (error) {
+      console.warn(`Error clearing localStorage key "${key}":`, error);
     }
+  };
+
+  // 监听其他窗口的变化
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === key && event.newValue) {
+        setStoredValue(JSON.parse(event.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [key]);
 
-  // 当value变化时，防抖保存
-  useEffect(() => {
-    if (isLoading) return; // 避免初始加载时触发保存
-
-    const timer = setTimeout(() => {
-      debouncedSave(value);
-    }, debounceDelay);
-
-    return () => clearTimeout(timer);
-  }, [value, debouncedSave, debounceDelay, isLoading]);
-
-  return [value, setValue, error, isLoading];
-}
+  return [storedValue, setValue, clearValue];
+};

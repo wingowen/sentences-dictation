@@ -25,12 +25,27 @@
 
 [[redirects]]
   from = "/api/vocabulary/*"
-  to = "/.netlify/functions/api-vocabulary"
+  to = "/.netlify/functions/api-vocabulary/:splat"
   status = 200
 
 [[redirects]]
   from = "/api/vocabulary"
   to = "/.netlify/functions/api-vocabulary"
+  status = 200
+
+[[redirects]]
+  from = "/api/flashcards/*"
+  to = "/.netlify/functions/api-flashcards"
+  status = 200
+
+[[redirects]]
+  from = "/api/flashcards"
+  to = "/.netlify/functions/api-flashcards"
+  status = 200
+
+[[redirects]]
+  from = "/api/flashcard-history"
+  to = "/.netlify/functions/api-flashcard-history"
   status = 200
 
 [[redirects]]

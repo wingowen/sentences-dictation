@@ -3,12 +3,13 @@ import FlashcardManager from './FlashcardManager';
 import FlashcardLearner from './FlashcardLearner';
 import FlashcardStats from './FlashcardStats';
 import { checkAndImportDefaultFlashcards } from '../services/flashcardImportService';
+import { isLoggedIn, syncLocalToCloud } from '../services/flashcardService';
 
 const FlashcardApp = ({ onBack }) => {
-  const [activeView, setActiveView] = useState(null); // manager, learner, stats
+  const [activeView, setActiveView] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [syncStatus, setSyncStatus] = useState(null);
 
-  // 初始化时自动导入默认闪卡数据
   useEffect(() => {
     const initializeFlashcards = async () => {
       try {
@@ -22,6 +23,27 @@ const FlashcardApp = ({ onBack }) => {
     
     initializeFlashcards();
   }, []);
+
+  const handleSync = async () => {
+    if (!isLoggedIn()) {
+      setSyncStatus({ type: 'error', message: '请先登录' });
+      setTimeout(() => setSyncStatus(null), 3000);
+      return;
+    }
+
+    setSyncStatus({ type: 'loading', message: '同步中...' });
+    try {
+      const result = await syncLocalToCloud();
+      if (result.synced > 0) {
+        setSyncStatus({ type: 'success', message: `已同步 ${result.synced} 张闪卡` });
+      } else {
+        setSyncStatus({ type: 'success', message: '没有新闪卡需要同步' });
+      }
+    } catch (error) {
+      setSyncStatus({ type: 'error', message: '同步失败: ' + error.message });
+    }
+    setTimeout(() => setSyncStatus(null), 3000);
+  };
 
   const renderView = () => {
     if (isInitializing) {
@@ -59,6 +81,11 @@ const FlashcardApp = ({ onBack }) => {
               <h2>闪卡功能</h2>
             </div>
             <div className="app-content">
+              {syncStatus && (
+                <div className={`sync-status sync-${syncStatus.type}`}>
+                  {syncStatus.message}
+                </div>
+              )}
               <div className="feature-grid">
                 <div
                   className="feature-card"
@@ -81,6 +108,15 @@ const FlashcardApp = ({ onBack }) => {
                   <h3>学习统计</h3>
                   <p>查看学习进度和历史记录</p>
                 </div>
+                {isLoggedIn() && (
+                  <div
+                    className="feature-card sync-card"
+                    onClick={handleSync}
+                  >
+                    <h3>同步数据</h3>
+                    <p>将本地闪卡同步到云端</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

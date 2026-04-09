@@ -5,7 +5,7 @@ import { usePracticeProgress } from '../hooks/usePracticeProgress';
 import { useSpeechVoices } from '../hooks/useSpeechVoices';
 import { useSpeechPlayback } from '../hooks/useSpeechPlayback';
 import { useSentences } from '../hooks/useSentences';
-import { DATA_SOURCE_TYPES } from '../services/dataService';
+import { DATA_SOURCE_TYPES, newConcept2Data, newConcept3Data } from '../services/dataService';
 import { speak, isSpeechSupported, cancelSpeech } from '../services/speechService';
 import { parseSentenceForPhonetics } from '../services/pronunciationService';
 import { getTranslation, getWordTranslation } from '../services/translationService';
@@ -14,14 +14,17 @@ import { getTranslation, getWordTranslation } from '../services/translationServi
 const AppContext = createContext();
 
 // Context Provider组件
-export function AppProvider({ children }) {
+export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) {
   // 基本状态
   const [currentIndex, setCurrentIndex] = useState(0);
   const [wordInputs, setWordInputs] = useState([]);
   const [result, setResult] = useState(null);
   const [showOriginalText, setShowOriginalText] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false);
+  const [showLessonSelector, setShowLessonSelector] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState(null);
   const [autoPlay, setAutoPlay] = useState(true);
   const [speechRate, setSpeechRate] = useState(1);
   const [randomMode, setRandomMode] = useState(false);
@@ -32,20 +35,14 @@ export function AppProvider({ children }) {
   // 输入框引用
   const inputRefs = useRef([]);
 
-  // 使用自定义hooks
+  // 使用自定义 hooks
   const practiceStats = usePracticeStats();
-  const sentences = useSentences(DATA_SOURCE_TYPES.LOCAL);
+  const sentences = useSentences(dataSource);
   const speechVoices = useSpeechVoices(speechService);
-  const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate }) || {
-    isPlaying: false,
-    isSupported: false,
-    currentText: '',
-    error: null,
-    play: () => {},
-    stop: () => {},
-    toggle: () => {},
-    checkSupport: () => false
-  };
+  const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate });
+  
+  // 解构 sentences 对象
+  const { sentences: sentencesData, isLoading: sentencesLoading, error: sentencesError } = sentences;
 
   // 处理句子数据，将字符串转换为带有words属性的对象
   const processedSentences = useMemo(() => {
@@ -97,12 +94,22 @@ export function AppProvider({ children }) {
 
   const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
 
+  const rawArticles = useMemo(() => {
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && newConcept2Data?.success && newConcept2Data?.articles) {
+      return newConcept2Data.articles;
+    }
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && newConcept3Data?.success && newConcept3Data?.articles) {
+      return newConcept3Data.articles;
+    }
+    return null;
+  }, [dataSource]);
+
   // 计算派生状态
   const currentWords = processedSentences[currentIndex]?.words || [];
   const currentTranslation = processedSentences[currentIndex]?.translation || '翻译暂无';
   const hasSelectedDataSource = sentences.currentDataSource !== null;
 
-  // 初始化wordInputs数组，确保与currentWords长度一致
+  // 初始化 wordInputs 数组，确保与 currentWords 长度一致
   useEffect(() => {
     if (currentWords.length > 0) {
       const initialWordInputs = currentWords.map(() => '');
@@ -111,6 +118,25 @@ export function AppProvider({ children }) {
       inputRefs.current = new Array(currentWords.length).fill(null);
     }
   }, [currentWords.length, currentWords]);
+
+  // 当 currentIndex 变化时，如果启用了自动播放，则自动播放句子（只播放一次）
+  useEffect(() => {
+    if (autoPlay && currentWords.length > 0) {
+      const sentenceText = currentWords
+        .filter(w => w && w.word)
+        .map(w => w.word)
+        .join(' ');
+      
+      if (sentenceText) {
+        // 使用 setTimeout 确保在渲染完成后播放
+        const timer = setTimeout(() => {
+          speechPlayback.play(sentenceText);
+        }, 100);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentIndex, autoPlay]); // 只依赖 currentIndex 和 autoPlay，避免重复触发
 
   // 标准化字符串比较
   const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);
@@ -153,8 +179,25 @@ export function AppProvider({ children }) {
   }, [wordInputs, currentWords, normalize]);
 
   const handlePlay = useCallback(() => {
-    speechPlayback.play(currentWords.map(w => w.word).join(' '));
+    const sentenceText = currentWords
+      .filter(w => w && w.word)
+      .map(w => w.word)
+      .join(' ');
+    
+    if (sentenceText) {
+      speechPlayback.play(sentenceText);
+    }
   }, [speechPlayback, currentWords]);
+
+  const handlePlayWord = useCallback((word) => {
+    console.log('[AppContext] Playing word:', word);
+    if (word && speechPlayback) {
+      console.log('[AppContext] speechPlayback.play called with:', word);
+      speechPlayback.play(word);
+    } else {
+      console.warn('[AppContext] Cannot play word - word:', word, 'speechPlayback:', !!speechPlayback);
+    }
+  }, [speechPlayback]);
 
   const handleToggleAutoPlay = useCallback(() => {
     setAutoPlay(!autoPlay);
@@ -174,6 +217,10 @@ export function AppProvider({ children }) {
     setAutoNext(!autoNext);
   }, [autoNext]);
 
+  const handleToggleSettings = useCallback(() => {
+    setShowSettingsModal(prev => !prev);
+  }, []);
+
   // 上下文值
   const value = {
     // 基本状态
@@ -187,6 +234,8 @@ export function AppProvider({ children }) {
     setShowOriginalText,
     showModal,
     setShowModal,
+    showSettingsModal,
+    setShowSettingsModal,
     showDataSourceSelector,
     setShowDataSourceSelector,
     autoPlay,
@@ -207,26 +256,39 @@ export function AppProvider({ children }) {
     handleWordInputChange,
     handleSubmit,
     handlePlay,
+    handlePlayWord,
     handleToggleAutoPlay,
     handleToggleRandomMode,
     handleToggleListenMode,
 
     handleToggleAutoNext,
+    handleToggleSettings,
+
+    // 课文选择
+    showLessonSelector,
+    setShowLessonSelector,
+    selectedLesson,
+    setSelectedLesson,
+
+    // 数据源和加载状态
+    dataSource,
+    sentencesLoading,
+    rawArticles,
 
     // 派生状态
     currentWords,
     currentTranslation,
     hasSelectedDataSource,
 
-    // Hooks状态和方法
+    // Hooks 状态和方法
     ...practiceStats,
     ...practiceProgress,
     ...speechVoices,
     ...speechPlayback,
 
-    // 修改sentences以使用处理后的句子数据
+    // 修改 sentences 以使用处理后的句子数据
     sentences: processedSentences,
-    sentencesData: sentences // 保留原始sentences对象以防需要
+    sentencesData: sentencesData // 保留原始 sentences 对象以防需要
   };
 
   return (
