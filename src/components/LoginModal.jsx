@@ -8,6 +8,71 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
   const [loading, setLoading] = useState(false)
   const [isSignup, setIsSignup] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [validationErrors, setValidationErrors] = useState({})
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validatePassword = (password) => {
+    return password.length >= 6
+  }
+
+  const validateConfirmPassword = (password, confirmPassword) => {
+    return password === confirmPassword
+  }
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value
+    setEmail(value)
+    if (value && !validateEmail(value)) {
+      setValidationErrors(prev => ({ ...prev, email: '请输入有效的邮箱地址' }))
+    } else {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.email
+        return newErrors
+      })
+    }
+  }
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value
+    setPassword(value)
+    if (isSignup && value && !validatePassword(value)) {
+      setValidationErrors(prev => ({ ...prev, password: '密码长度至少6位' }))
+    } else {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.password
+        return newErrors
+      })
+    }
+    if (isSignup && confirmPassword && value !== confirmPassword) {
+      setValidationErrors(prev => ({ ...prev, confirmPassword: '两次输入的密码不一致' }))
+    } else if (isSignup && confirmPassword && value === confirmPassword) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.confirmPassword
+        return newErrors
+      })
+    }
+  }
+
+  const handleConfirmPasswordChange = (e) => {
+    const value = e.target.value
+    setConfirmPassword(value)
+    if (value && value !== password) {
+      setValidationErrors(prev => ({ ...prev, confirmPassword: '两次输入的密码不一致' }))
+    } else {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.confirmPassword
+        return newErrors
+      })
+    }
+  }
 
   if (!isOpen) return null
 
@@ -15,6 +80,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
     setIsSignup(!isSignup)
     setError('')
     setSuccessMessage('')
+    setValidationErrors({})
   }
 
   const handleSubmit = async (e) => {
@@ -23,8 +89,20 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
     setSuccessMessage('')
     setLoading(true)
 
-    if (isSignup && password !== confirmPassword) {
-      setError('两次输入的密码不一致')
+    // 验证表单
+    const newValidationErrors = {}
+    if (!validateEmail(email)) {
+      newValidationErrors.email = '请输入有效的邮箱地址'
+    }
+    if (isSignup && !validatePassword(password)) {
+      newValidationErrors.password = '密码长度至少6位'
+    }
+    if (isSignup && !validateConfirmPassword(password, confirmPassword)) {
+      newValidationErrors.confirmPassword = '两次输入的密码不一致'
+    }
+
+    if (Object.keys(newValidationErrors).length > 0) {
+      setValidationErrors(newValidationErrors)
       setLoading(false)
       return
     }
@@ -88,10 +166,14 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
               type="email"
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               placeholder="your@email.com"
               required
+              className={validationErrors.email ? 'input-error' : ''}
             />
+            {validationErrors.email && (
+              <div className="validation-error">{validationErrors.email}</div>
+            )}
           </div>
           
           <div className="form-group auth-form-group">
@@ -100,11 +182,15 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               placeholder={isSignup ? '至少6位字符' : '请输入密码'}
               required
               minLength={isSignup ? 6 : undefined}
+              className={validationErrors.password ? 'input-error' : ''}
             />
+            {validationErrors.password && (
+              <div className="validation-error">{validationErrors.password}</div>
+            )}
           </div>
 
           {isSignup && (
@@ -114,10 +200,14 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 type="password"
                 id="confirmPassword"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={handleConfirmPasswordChange}
                 placeholder="再次输入密码"
                 required
+                className={validationErrors.confirmPassword ? 'input-error' : ''}
               />
+              {validationErrors.confirmPassword && (
+                <div className="validation-error">{validationErrors.confirmPassword}</div>
+              )}
             </div>
           )}
           
