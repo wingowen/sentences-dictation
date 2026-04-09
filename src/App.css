@@ -720,6 +720,10 @@ html {
   cursor: pointer;
   transition: all var(--transition-spring);
   min-width: 200px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-blue);
   letter-spacing: var(--letter-spacing-normal);
 }
@@ -802,7 +806,7 @@ html {
 
 /* 统一按钮样式 - 简约风格 */
 .btn {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: var(--text-subhead);
   font-weight: var(--font-medium);
   color: var(--gray-700);
@@ -811,7 +815,11 @@ html {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-width: auto;
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-xs);
 }
 
@@ -859,7 +867,7 @@ html {
 }
 
 .play-button.small {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: var(--text-subhead);
   font-weight: var(--font-medium);
   color: var(--white);
@@ -868,7 +876,11 @@ html {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-width: auto;
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-xs);
 }
 
@@ -1581,7 +1593,7 @@ html {
 }
 
 .next-sentence-button {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: var(--text-subhead);
   font-weight: var(--font-medium);
   color: var(--gray-700);
@@ -1590,7 +1602,11 @@ html {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-width: auto;
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-xs);
 }
 
@@ -1614,13 +1630,18 @@ html {
 }
 
 .next-sentence-button.small {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: var(--text-subhead);
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 设置按钮 */
 .settings-button {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: var(--text-subhead);
   font-weight: var(--font-medium);
   color: var(--gray-700);
@@ -1629,7 +1650,11 @@ html {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-width: auto;
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-xs);
 }
 
@@ -1653,8 +1678,13 @@ html {
 }
 
 .settings-button.small {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   font-size: var(--text-subhead);
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Modal Styles */
@@ -1751,6 +1781,10 @@ html {
   cursor: pointer;
   transition: all var(--transition-spring);
   min-width: 120px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-blue);
 }
 
@@ -1780,8 +1814,8 @@ html {
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   border: none;
   background: var(--gray-100);
   border-radius: 50%;
@@ -1799,8 +1833,8 @@ html {
 }
 
 .settings-close-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Login Modal Styles */
@@ -1949,8 +1983,8 @@ html {
   position: absolute;
   top: 16px;
   left: 16px;
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   border: none;
   background: transparent;
   border-radius: 50%;
