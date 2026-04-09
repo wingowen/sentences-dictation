@@ -1,7 +1,7 @@
 import React from 'react'
 import HintButton from '../HintButton'
 
-const PracticeCard = React.memo(function PracticeCard({
+const PracticeCard = React.memo(({
   // PhoneticsSection props
   sentences,
   currentIndex,
