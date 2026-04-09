@@ -2,17 +2,18 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, laz
 import './App.css';
 import { onAuthStateChanged, getCurrentUser } from './services/firebase';
 import { DATA_SOURCE_TREE, DATA_SOURCE_TYPES } from './services/dataService';
-import DataSourceTree from './components/DataSourceTree';
-import PracticeCard from './components/PracticeCard';
-import LoadingIndicator from './components/LoadingIndicator';
-import PageSkeleton from './components/PageSkeleton';
-import AppNavbar from './components/AppNavbar';
-import LoginModal from './components/LoginModal';
-import SettingsModal from './components/SettingsModal';
-import LessonSelector from './components/LessonSelector';
-import { AppProvider, useApp } from './contexts/AppContext';
 import { addVocabulary } from './services/vocabularyService';
+import { AppProvider, useApp } from './contexts/AppContext';
 
+// 懒加载组件
+const DataSourceTree = lazy(() => import('./components/DataSourceTree'));
+const PracticeCard = lazy(() => import('./components/PracticeCard'));
+const LoadingIndicator = lazy(() => import('./components/LoadingIndicator'));
+const PageSkeleton = lazy(() => import('./components/PageSkeleton'));
+const AppNavbar = lazy(() => import('./components/AppNavbar'));
+const LoginModal = lazy(() => import('./components/LoginModal'));
+const SettingsModal = lazy(() => import('./components/SettingsModal'));
+const LessonSelector = lazy(() => import('./components/LessonSelector'));
 const FlashcardApp = lazy(() => import('./components/FlashcardApp'));
 const FlashcardLearner = lazy(() => import('./components/FlashcardLearner'));
 const VocabularyApp = lazy(() => import('./components/VocabularyApp'));
@@ -165,16 +166,22 @@ function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
   
   // 如果需要选择课文，显示课文选择器
   if (shouldShowLessonSelector) {
-    return <LessonSelector onBack={onBack} />;
+    return (
+      <Suspense fallback={<PageSkeleton type="lesson-selector" />}>
+        <LessonSelector onBack={onBack} />
+      </Suspense>
+    );
   }
   
   return (
-    <PracticeCard
-      onBack={onBack}
-      currentUser={currentUser}
-      onAddToVocabulary={handleAddToVocabulary}
-      onRequireLogin={onRequireLogin}
-    />
+    <Suspense fallback={<PageSkeleton type="practice" />}>
+      <PracticeCard
+        onBack={onBack}
+        currentUser={currentUser}
+        onAddToVocabulary={handleAddToVocabulary}
+        onRequireLogin={onRequireLogin}
+      />
+    </Suspense>
   );
 }
 
@@ -315,21 +322,25 @@ function AppContent({ onSelectedDataSourceChange }) {
     switch (currentView) {
       case VIEWS.HOME:
         return (
-          <DataSourceTree
-            tree={DATA_SOURCE_TREE}
-            onSelect={handleSelectDataSource}
-            currentUser={currentUser}
-            onLoginClick={handleLoginClick}
-          />
+          <Suspense fallback={<PageSkeleton type="home" />}>
+            <DataSourceTree
+              tree={DATA_SOURCE_TREE}
+              onSelect={handleSelectDataSource}
+              currentUser={currentUser}
+              onLoginClick={handleLoginClick}
+            />
+          </Suspense>
         );
       
       case VIEWS.PRACTICE:
         return (
-          <PracticeCardWrapper
-            onBack={() => navigateTo(VIEWS.HOME)}
-            currentUser={currentUser}
-            onRequireLogin={() => setIsLoginModalOpen(true)}
-          />
+          <Suspense fallback={<PageSkeleton type="practice" />}>
+            <PracticeCardWrapper
+              onBack={() => navigateTo(VIEWS.HOME)}
+              currentUser={currentUser}
+              onRequireLogin={() => setIsLoginModalOpen(true)}
+            />
+          </Suspense>
         );
       
       case VIEWS.FLASHCARD_LEARN:
@@ -396,13 +407,17 @@ function AppContent({ onSelectedDataSourceChange }) {
   if (authLoading) {
     return (
       <div className="app-layout">
-        <AppNavbar 
-          currentView={VIEWS.HOME} 
-          onNavigate={() => {}}
-          currentUser={null}
-        />
+        <Suspense fallback={<div className="navbar-placeholder"></div>}>
+          <AppNavbar 
+            currentView={VIEWS.HOME} 
+            onNavigate={() => {}}
+            currentUser={null}
+          />
+        </Suspense>
         <div className="app-content-area">
-          <LoadingIndicator message="加载中..." type="spinner" size="large" fullscreen />
+          <Suspense fallback={<div className="loading-placeholder"></div>}>
+            <LoadingIndicator message="加载中..." type="spinner" size="large" fullscreen />
+          </Suspense>
         </div>
       </div>
     );
@@ -410,16 +425,18 @@ function AppContent({ onSelectedDataSourceChange }) {
 
   return (
     <div className="app-layout">
-      <AppNavbar 
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        currentUser={currentUser}
-        onLoginClick={handleLoginClick}
-        showBackButton={showBackButton}
-        onBack={navigateBack}
-        title={pageTitle}
-        onNewConceptSelect={handleNewConceptSelect}
-      />
+      <Suspense fallback={<div className="navbar-placeholder"></div>}>
+        <AppNavbar 
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          currentUser={currentUser}
+          onLoginClick={handleLoginClick}
+          showBackButton={showBackButton}
+          onBack={navigateBack}
+          title={pageTitle}
+          onNewConceptSelect={handleNewConceptSelect}
+        />
+      </Suspense>
       
       <main 
         ref={contentAreaRef}
@@ -430,34 +447,38 @@ function AppContent({ onSelectedDataSourceChange }) {
         </div>
       </main>
 
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={handleCloseLoginModal}
-        onLogin={handleLoginSuccess}
-      />
+      <Suspense fallback={null}>
+        <LoginModal
+          isOpen={isLoginModalOpen}
+          onClose={handleCloseLoginModal}
+          onLogin={handleLoginSuccess}
+        />
+      </Suspense>
 
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        autoPlay={autoPlay}
-        onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
-        randomMode={randomMode}
-        onToggleRandomMode={() => setRandomMode(!randomMode)}
-        listenMode={listenMode}
-        onToggleListenMode={() => setListenMode(!listenMode)}
-        autoNext={autoNext}
-        onToggleAutoNext={() => setAutoNext(!autoNext)}
-        showCounter={showCounter}
-        onToggleShowCounter={() => setShowCounter(!showCounter)}
-        speechRate={speechRate}
-        onSpeechRateChange={setSpeechRate}
-        speechSupported={speechSupported}
-        showTranslation={showTranslation}
-        onToggleTranslation={() => setShowTranslation(!showTranslation)}
-        showOriginalText={showOriginalText}
-        onToggleOriginalText={() => setShowOriginalText(!showOriginalText)}
-        currentTranslation={currentTranslation}
-      />
+      <Suspense fallback={null}>
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          autoPlay={autoPlay}
+          onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
+          randomMode={randomMode}
+          onToggleRandomMode={() => setRandomMode(!randomMode)}
+          listenMode={listenMode}
+          onToggleListenMode={() => setListenMode(!listenMode)}
+          autoNext={autoNext}
+          onToggleAutoNext={() => setAutoNext(!autoNext)}
+          showCounter={showCounter}
+          onToggleShowCounter={() => setShowCounter(!showCounter)}
+          speechRate={speechRate}
+          onSpeechRateChange={setSpeechRate}
+          speechSupported={speechSupported}
+          showTranslation={showTranslation}
+          onToggleTranslation={() => setShowTranslation(!showTranslation)}
+          showOriginalText={showOriginalText}
+          onToggleOriginalText={() => setShowOriginalText(!showOriginalText)}
+          currentTranslation={currentTranslation}
+        />
+      </Suspense>
     </div>
   );
 }
