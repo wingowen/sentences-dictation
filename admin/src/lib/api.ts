@@ -135,7 +135,7 @@ export const tagsApi = {
 // ============ Statistics API ============
 
 export const statisticsApi = {
-  get: () => api.get(`${STATISTICS_URL}/statistics`),
+  get: (): Promise<ApiResponse<Statistics>> => api.get(`${STATISTICS_URL}/statistics`),
 };
 
 // ============ Types ============

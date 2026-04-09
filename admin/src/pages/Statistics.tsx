@@ -20,7 +20,7 @@ export function StatisticsPage() {
   };
 
   if (isLoading) return <LoadingPage />;
-  if (error || !stats?.success) {
+  if (error || !stats?.success || !stats.data) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh]">
         <p className="text-red-500 mb-4">加载统计数据失败</p>
@@ -28,7 +28,7 @@ export function StatisticsPage() {
     );
   }
 
-  const { overview, by_source_type, by_difficulty, recent_activity } = stats.data;
+  const { overview, by_source_type, by_difficulty, recent_activity, top_tags, recent_articles } = stats.data;
 
   return (
     <div className="space-y-6">
@@ -164,7 +164,7 @@ export function StatisticsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-            {(stats.data.top_tags || []).slice(0, 10).map((tag: any, index: number) => (
+            {(top_tags || []).slice(0, 10).map((tag: any, index: number) => (
               <div
                 key={tag.id}
                 className="flex items-center justify-between p-3 rounded-lg bg-muted"
@@ -191,7 +191,7 @@ export function StatisticsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {(stats.data.recent_articles || []).map((article: any) => (
+            {(recent_articles || []).map((article: any) => (
               <div
                 key={article.id}
                 className="flex items-center justify-between p-3 rounded-lg border"
