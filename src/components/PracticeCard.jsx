@@ -1,45 +1,57 @@
 import React from 'react'
 import HintButton from './HintButton'
+import { useApp } from '../contexts/AppContext'
 
 const PracticeCard = React.memo(({
-  // PhoneticsSection props
-  sentences,
-  currentIndex,
-  totalSentences,
-  showOriginalText,
-  onToggleOriginalText,
-  showTranslation,
-  onToggleTranslation,
-  currentTranslation,
-  // WordInputs props
-  wordInputs,
-  currentWords,
-  onWordInputChange,
-  onSubmit,
-  listenMode,
-  speechSupported,
-  onPlay,
-  inputRefs,
-  onToggleSettings,
-  onNext,
-  showCounter,
-  // Vocabulary props
+  onBack,
   currentUser,
-  onAddToVocabulary
+  onAddToVocabulary,
+  onRequireLogin
 }) => {
-  const currentSentence = sentences[currentIndex];
+  const {
+    sentences,
+    currentIndex,
+    showOriginalText,
+    setShowOriginalText,
+    showTranslation,
+    setShowTranslation,
+    currentTranslation,
+    wordInputs,
+    currentWords,
+    handleWordInputChange,
+    handleSubmit,
+    listenMode,
+    isSupported: speechSupported,
+    handlePlay,
+    handlePlayWord,
+    inputRefs,
+    setShowSettingsModal: setShowSettingsModal,
+    setCurrentIndex,
+    totalSentences = sentences?.length || 0
+  } = useApp() || {}
+  
+  const onToggleSettings = () => {
+    if (setShowSettingsModal) setShowSettingsModal(prev => !prev)
+  }
+  
+  const onNext = () => {
+    if (setCurrentIndex) setCurrentIndex(prev => prev + 1)
+  }
+  
+  const currentSentence = sentences?.[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
   const [focusedInputIndex, setFocusedInputIndex] = React.useState(0);
+  const inputRefsLocal = React.useRef([]);
 
   // 聚焦第一个输入框
   React.useEffect(() => {
     setTimeout(() => {
-      inputRefs.current[0]?.focus()
+      (inputRefs?.current || inputRefsLocal.current)?.[0]?.focus()
     }, 100)
-  }, [wordInputs.length, inputRefs])
+  }, [wordInputs?.length])
 
-  const handleWordInputChange = (index, value) => {
-    onWordInputChange(index, value)
+  const onWordChange = (index, value) => {
+    if (handleWordInputChange) handleWordInputChange(index, value)
   }
 
   const handleInputFocus = (index) => {
@@ -56,7 +68,7 @@ const PracticeCard = React.memo(({
         const isCorrect = normalize(userWord) === normalize(correctWord)
         if (isCorrect && index < wordInputs.length - 1) {
           setTimeout(() => {
-            inputRefs.current[index + 1]?.focus()
+            (inputRefs?.current || inputRefsLocal.current)?.[index + 1]?.focus()
           }, 100)
         }
       }
@@ -98,7 +110,7 @@ const PracticeCard = React.memo(({
         <button
           type="button"
           className="play-button small"
-          onClick={onPlay}
+          onClick={handlePlay}
           disabled={!speechSupported || listenMode}
           title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
         >
@@ -130,55 +142,71 @@ const PracticeCard = React.memo(({
           className="hint-button-wrapper"
         />
 
-        {currentUser && (
-          <button
-            type="button"
-            className="add-vocab-button small"
-            onClick={() => {
-              if (currentWords[focusedInputIndex]) {
-                onAddToVocabulary(currentWords[focusedInputIndex])
-              }
-            }}
-            title="将当前单词加入生词本"
-          >
-            📖 加入生词
-          </button>
-        )}
+        <button
+          type="button"
+          className={`add-vocab-button small ${!currentUser ? 'disabled' : ''}`}
+          onClick={() => {
+            console.log('[PracticeCard] currentUser:', currentUser);
+            if (!currentUser) {
+              onRequireLogin?.()
+              return
+            }
+            if (currentWords[focusedInputIndex]) {
+              onAddToVocabulary(currentWords[focusedInputIndex])
+            }
+          }}
+          title={currentUser ? '将当前单词加入生词本' : '登录后可使用生词本功能'}
+        >
+          📖 加入生词
+        </button>
       </div>
 
       {/* 输入区域 */}
-      <form className="word-inputs-form" onSubmit={onSubmit}>
+      <form className="word-inputs-form" onSubmit={handleSubmit}>
         <div className="word-inputs">
           {wordInputs.map((input, index) => {
             const isCorrect = input.trim() && currentWords[index] && normalize(input) === normalize(currentWords[index].word)
             const wordLength = currentWords[index]?.word?.length || 5
             const currentInputLength = input.length || wordLength
             const maxLength = Math.max(wordLength, currentInputLength)
-            const calculatedWidth = maxLength * 1.2 + 2
+            const calculatedWidth = Math.max(5, wordLength * 1.2 + 2);
             const clampedWidth = Math.max(4, Math.min(40, calculatedWidth))
             const inputWidth = `${clampedWidth}ch`
             const underlinePlaceholder = '_'.repeat(wordLength)
-            const inputCharCount = input.replace(/\s/g, '').length
 
             return (
               <div key={index} className="word-input-wrapper">
-                <input
-                  ref={(el) => (inputRefs.current[index] = el)}
-                  type="text"
-                  className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-                  style={{ width: inputWidth }}
-                  value={input}
-                  onChange={(e) => handleWordInputChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onFocus={() => handleInputFocus(index)}
-                  placeholder={underlinePlaceholder}
-                  autoFocus={index === 0}
-                />
-                {showCounter && (
-                  <div className="word-input-counter">
-                    {inputCharCount} / {wordLength}
-                  </div>
-                )}
+                <div className="word-input-container">
+                  <input
+                    ref={(el) => {
+                      const refs = inputRefs?.current || inputRefsLocal.current
+                      if (refs) refs[index] = el
+                    }}
+                    type="text"
+                    className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                    style={{ width: inputWidth }}
+                    value={input}
+                    onChange={(e) => onWordChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onFocus={() => handleInputFocus(index)}
+                    onClick={() => handlePlayWord?.(currentWords[index]?.word)}
+                    placeholder={underlinePlaceholder}
+                    autoFocus={index === 0}
+                  />
+                  <button
+                    type="button"
+                    className="word-pronounce-button"
+                    onClick={() => handlePlayWord?.(currentWords[index]?.word)}
+                    disabled={!speechSupported || !currentWords[index]?.word}
+                    title="点击发音"
+                    tabIndex={-1}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                  </button>
+                </div>
               </div>
             )
           })}

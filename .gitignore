@@ -30,3 +30,5 @@ dist-ssr
 .netlify
 
 .history
+.playwright-mcp
+playwright-report

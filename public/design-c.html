@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方案C: Hero+分区式</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fafbfc;
+      min-height: 100vh;
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(20px);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .login-btn {
+      background: #1a1a2e;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 50px;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .login-btn:hover {
+      background: #667eea;
+      transform: scale(1.05);
+    }
+    .hero {
+      padding: 160px 32px 80px;
+      text-align: center;
+      background: linear-gradient(180deg, #f0f4ff 0%, #fafbfc 100%);
+    }
+    .hero-icon {
+      font-size: 80px;
+      margin-bottom: 24px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+    .hero p {
+      font-size: 20px;
+      color: #666;
+      margin-bottom: 40px;
+    }
+    .hero-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      padding: 16px 32px;
+      border-radius: 50px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 8px 24px rgba(102,126,234,0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(102,126,234,0.5);
+    }
+    .btn-secondary {
+      background: white;
+      border: 2px solid #e0e0e0;
+      padding: 16px 32px;
+      border-radius: 50px;
+      color: #1a1a2e;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-secondary:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+    .sections {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 60px 32px;
+    }
+    .section {
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      border: 1px solid rgba(0,0,0,0.04);
+      transition: all 0.3s;
+    }
+    .section:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .section-icon {
+      font-size: 32px;
+    }
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .section-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .section-item {
+      background: #f8f9fa;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-item:hover {
+      background: #667eea;
+      color: white;
+      transform: scale(1.05);
+    }
+    .section-item.locked {
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="logo">📚 Sentence Dictation</div>
+    <button class="login-btn">🔐 登录</button>
+  </div>
+  <div class="hero">
+    <div class="hero-icon">🎧</div>
+    <h1>Master Your English</h1>
+    <p>听写练习 · 间隔重复 · 高效记忆</p>
+    <div class="hero-buttons">
+      <button class="btn-primary">🎴 开始练习</button>
+      <button class="btn-secondary">📚 浏览资源</button>
+    </div>
+  </div>
+  <div class="sections">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🎴</span>
+        <span class="section-title">闪卡模式</span>
+      </div>
+      <div class="section-items">
+        <div class="section-item">🎴 闪卡学习</div>
+        <div class="section-item">📝 闪卡管理</div>
+        <div class="section-item locked">📖 生词本复习 🔒</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📖</span>
+        <span class="section-title">教材资源</span>
+      </div>
+      <div class="section-items">
+        <div class="section-item">📗 新概念一</div>
+        <div class="section-item">📗 新概念二</div>
+        <div class="section-item">📗 新概念三</div>
+        <div class="section-item">📝 简单句练习</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">☁️</span>
+        <span class="section-title">云端资源</span>
+      </div>
+      <div class="section-items">
+        <div class="section-item">📋 Notion</div>
+        <div class="section-item locked">🗄️ Supabase 🔒</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

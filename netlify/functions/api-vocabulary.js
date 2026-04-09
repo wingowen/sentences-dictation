@@ -15,17 +15,17 @@ const response = require('./supabase/response');
 async function getUserId(event) {
   const authHeader = event.headers.authorization;
   
-  // 如果是模拟 token
-  if (authHeader && (authHeader.startsWith('mock-') || authHeader.startsWith('env-'))) {
-    return 'mock-user-1';
-  }
-  
   // 如果没有认证，返回 null
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
   
   const token = authHeader.split(' ')[1];
+  
+  // 如果是模拟 token
+  if (token && (token.startsWith('mock-') || token.startsWith('env-'))) {
+    return '00000000-0000-0000-0000-000000000001'
+  }
   
   // 如果配置了 Supabase，验证 token 并获取用户 ID
   if (supabaseAdmin) {
@@ -282,10 +282,17 @@ async function deleteVocabulary(event) {
     return response.unauthorized('请先登录');
   }
   
-  const id = event.pathParameters?.id;
+  // 从路径中提取 ID
+  const path = event.path || '/';
+  const match = path.match(/\/api\/vocabulary\/(\d+)$/);
+  const id = match ? match[1] : event.pathParameters?.id;
+  
   if (!id) {
-    return response.validationError([{ field: 'id', message: '生词ID不能为空' }]);
+    console.error('[Vocabulary] Delete: ID not found in path:', path);
+    return response.validationError([{ field: 'id', message: '生词 ID 不能为空' }]);
   }
+  
+  console.log(`[Vocabulary] Delete: Deleting vocabulary ID ${id} for user ${userId}`);
   
   const { error } = await supabaseAdmin
     .from('user_vocabulary')

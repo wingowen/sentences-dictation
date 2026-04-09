@@ -35,6 +35,11 @@ const SettingsModal = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content settings-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="settings-close-btn" onClick={onClose} aria-label="关闭设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
         <h2>设置</h2>
 
         {/* Tab 导航 */}

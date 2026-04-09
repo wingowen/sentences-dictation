@@ -3,16 +3,17 @@ import {
   getVocabularies, 
   addVocabulary, 
   updateVocabulary, 
-  deleteVocabulary,
-  reviewVocabulary 
+  deleteVocabulary
 } from '../services/vocabularyService';
+import LoadingIndicator from './LoadingIndicator';
 
-const VocabularyApp = ({ onBack }) => {
+const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [vocabularies, setVocabularies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   
   // 新建/编辑表单状态
   const [formData, setFormData] = useState({
@@ -22,6 +23,8 @@ const VocabularyApp = ({ onBack }) => {
     part_of_speech: '',
     notes: ''
   });
+  
+
 
   // 加载生词列表
   const loadVocabularies = useCallback(async () => {
@@ -29,7 +32,7 @@ const VocabularyApp = ({ onBack }) => {
     setError(null);
     try {
       const data = await getVocabularies({ limit: 100 });
-      setVocabularies(data.items || []);
+      setVocabularies(data || []);
     } catch (err) {
       console.error('加载生词失败:', err);
       setError('加载生词失败，请确保已登录');
@@ -72,25 +75,33 @@ const VocabularyApp = ({ onBack }) => {
 
   // 删除生词
   const handleDelete = async (id) => {
-    if (!confirm('确定要删除这个生词吗？')) return;
+    setDeleteConfirmId(id);
+  };
+  
+  // 确认删除
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
     
     try {
-      await deleteVocabulary(id);
+      await deleteVocabulary(deleteConfirmId);
       loadVocabularies();
+      setDeleteConfirmId(null);
     } catch (err) {
       alert('删除失败');
     }
   };
-
-  // 标记复习
-  const handleReview = async (id, isCorrect) => {
-    try {
-      await reviewVocabulary(id, isCorrect);
-      loadVocabularies();
-    } catch (err) {
-      console.error('复习记录失败:', err);
-    }
+  
+  // 取消删除
+  const cancelDelete = () => {
+    setDeleteConfirmId(null);
   };
+  
+  // 复习生词
+  const handleReview = useCallback(() => {
+    if (onNavigateToReview) {
+      onNavigateToReview();
+    }
+  }, [onNavigateToReview]);
 
   // 编辑生词
   const handleEdit = (vocab) => {
@@ -114,22 +125,36 @@ const VocabularyApp = ({ onBack }) => {
 
   return (
     <div className="vocabulary-app">
-      <div className="app-header">
+      <div className="vocabulary-app__header">
         <button className="back-button" onClick={onBack}>
           ← 返回
         </button>
         <h2>📚 生词本</h2>
-        <button 
-          className="add-button"
-          onClick={() => setShowAddForm(true)}
-        >
-          + 添加生词
-        </button>
+        <div className="header-actions">
+          <button 
+            className="add-button"
+            onClick={() => setShowAddForm(true)}
+          >
+            + 添加生词
+          </button>
+          <button 
+            className="review-button"
+            onClick={handleReview}
+          >
+            📖 复习生词
+          </button>
+        </div>
       </div>
 
       <div className="app-content">
         {isLoading ? (
-          <div className="loading">加载中...</div>
+          <div className="vocabulary-app__loading">
+            <LoadingIndicator 
+              message="正在加载生词数据..."
+              type="spinner"
+              size="medium"
+            />
+          </div>
         ) : error ? (
           <div className="error-message">{error}</div>
         ) : vocabularies.length === 0 ? (
@@ -150,20 +175,6 @@ const VocabularyApp = ({ onBack }) => {
                 )}
 
                 <div className="vocab-actions">
-                  <button 
-                    className="review-btn correct"
-                    onClick={() => handleReview(vocab.id, true)}
-                    title="认识"
-                  >
-                    ✓
-                  </button>
-                  <button 
-                    className="review-btn incorrect"
-                    onClick={() => handleReview(vocab.id, false)}
-                    title="不认识"
-                  >
-                    ✗
-                  </button>
                   <button 
                     className="edit-btn"
                     onClick={() => handleEdit(vocab)}
@@ -254,6 +265,24 @@ const VocabularyApp = ({ onBack }) => {
             </div>
           </div>
         )}
+        
+        {/* 删除确认弹窗 */}
+        {deleteConfirmId && (
+          <div className="modal-overlay" onClick={cancelDelete}>
+            <div className="modal-content delete-confirm" onClick={e => e.stopPropagation()}>
+              <h3>确认删除</h3>
+              <p>确定要删除这个生词吗？此操作无法撤销。</p>
+              <div className="form-actions">
+                <button type="button" className="cancel-btn" onClick={cancelDelete}>
+                  取消
+                </button>
+                <button type="button" className="submit-btn danger" onClick={confirmDelete}>
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -263,16 +292,22 @@ const VocabularyApp = ({ onBack }) => {
           margin: 0 auto;
         }
         
-        .vocabulary-app .app-header {
+        .vocabulary-app__header {
           display: flex;
           align-items: center;
           gap: 15px;
           margin-bottom: 20px;
         }
         
-        .vocabulary-app .app-header h2 {
+        .vocabulary-app__header h2 {
           flex: 1;
           margin: 0;
+        }
+        
+        .header-actions {
+          display: flex;
+          gap: 10px;
+          align-items: center;
         }
         
         .vocabulary-app .add-button {
@@ -282,6 +317,24 @@ const VocabularyApp = ({ onBack }) => {
           border: none;
           border-radius: 6px;
           cursor: pointer;
+          font-size: 14px;
+        }
+        
+        .vocabulary-app .review-button {
+          padding: 8px 16px;
+          background: #10B981;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .vocabulary-app .review-button:hover {
+          background: #059669;
         }
         
         .vocabulary-list {
@@ -465,6 +518,24 @@ const VocabularyApp = ({ onBack }) => {
           border: none;
           border-radius: 6px;
           cursor: pointer;
+        }
+        
+        .submit-btn.danger {
+          background: #EF4444;
+        }
+        
+        .delete-confirm {
+          max-width: 360px;
+        }
+        
+        .delete-confirm h3 {
+          margin-top: 0;
+          color: #EF4444;
+        }
+        
+        .delete-confirm p {
+          color: #374151;
+          margin: 16px 0;
         }
         
         .empty-state {
