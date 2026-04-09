@@ -1,0 +1,193 @@
+import React from 'react'
+import HintButton from '../HintButton'
+
+const PracticeCard = React.memo(function PracticeCard({
+  // PhoneticsSection props
+  sentences,
+  currentIndex,
+  totalSentences,
+  showOriginalText,
+  onToggleOriginalText,
+  showTranslation,
+  onToggleTranslation,
+  currentTranslation,
+  // WordInputs props
+  wordInputs,
+  currentWords,
+  onWordInputChange,
+  onSubmit,
+  listenMode,
+  speechSupported,
+  onPlay,
+  inputRefs,
+  onToggleSettings,
+  onNext,
+  showCounter,
+  // Vocabulary props
+  currentUser,
+  onAddToVocabulary
+}) => {
+  const currentSentence = sentences[currentIndex];
+  const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
+  const [focusedInputIndex, setFocusedInputIndex] = React.useState(0);
+
+  // 聚焦第一个输入框
+  React.useEffect(() => {
+    setTimeout(() => {
+      inputRefs.current[0]?.focus()
+    }, 100)
+  }, [wordInputs.length, inputRefs])
+
+  const handleWordInputChange = (index, value) => {
+    onWordInputChange(index, value)
+  }
+
+  const handleInputFocus = (index) => {
+    setFocusedInputIndex(index)
+  }
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault()
+      const userWord = wordInputs[index]
+      const correctWord = currentWords[index]?.word
+
+      if (userWord.trim() && correctWord) {
+        const isCorrect = normalize(userWord) === normalize(correctWord)
+        if (isCorrect && index < wordInputs.length - 1) {
+          setTimeout(() => {
+            inputRefs.current[index + 1]?.focus()
+          }, 100)
+        }
+      }
+    }
+  }
+
+  const normalize = (str) => {
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/[.,!?;:"()\[\]{}_-]/g, '')
+      .replace(/\s+/g, ' ')
+  }
+
+  return (
+    <div className="practice-card">
+      <div className="practice-card-header">
+        <div className="progress small">
+          <span>Question {currentIndex + 1} of {totalSentences}</span>
+        </div>
+      </div>
+
+      {/* 翻译和原文显示区域 */}
+      <div className="practice-card-content">
+        {showTranslation && currentTranslation && (
+          <div className="sentence-translation">
+            <span className="translation-text">{currentTranslation}</span>
+          </div>
+        )}
+        {showOriginalText && sentenceText && (
+          <div className="original-text-display">
+            <span className="original-text-content">{sentenceText}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 控制按钮 - 所有按钮放一排 */}
+      <div className="practice-card-controls">
+        <button
+          type="button"
+          className="play-button small"
+          onClick={onPlay}
+          disabled={!speechSupported || listenMode}
+          title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
+        >
+          播放
+        </button>
+
+        <button
+          type="button"
+          className="settings-button small"
+          onClick={onToggleSettings}
+          title="设置"
+        >
+          设置
+        </button>
+
+        <button
+          type="button"
+          className="next-sentence-button small"
+          onClick={onNext}
+          disabled={listenMode}
+          title="切换到下一句"
+        >
+          下一句
+        </button>
+
+        <HintButton
+          hintText={currentWords.length > 0 ? currentWords[focusedInputIndex]?.word : '暂无提示'}
+          position="right"
+          className="hint-button-wrapper"
+        />
+
+        {currentUser && (
+          <button
+            type="button"
+            className="add-vocab-button small"
+            onClick={() => {
+              if (currentWords[focusedInputIndex]) {
+                onAddToVocabulary(currentWords[focusedInputIndex])
+              }
+            }}
+            title="将当前单词加入生词本"
+          >
+            📖 加入生词
+          </button>
+        )}
+      </div>
+
+      {/* 输入区域 */}
+      <form className="word-inputs-form" onSubmit={onSubmit}>
+        <div className="word-inputs">
+          {wordInputs.map((input, index) => {
+            const isCorrect = input.trim() && currentWords[index] && normalize(input) === normalize(currentWords[index].word)
+            const wordLength = currentWords[index]?.word?.length || 5
+            const currentInputLength = input.length || wordLength
+            const maxLength = Math.max(wordLength, currentInputLength)
+            const calculatedWidth = maxLength * 1.2 + 2
+            const clampedWidth = Math.max(4, Math.min(40, calculatedWidth))
+            const inputWidth = `${clampedWidth}ch`
+            const underlinePlaceholder = '_'.repeat(wordLength)
+            const inputCharCount = input.replace(/\s/g, '').length
+
+            return (
+              <div key={index} className="word-input-wrapper">
+                <input
+                  ref={(el) => (inputRefs.current[index] = el)}
+                  type="text"
+                  className={`word-input ${isCorrect ? 'word-correct success-animation' : ''}`}
+                  style={{ width: inputWidth }}
+                  value={input}
+                  onChange={(e) => handleWordInputChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onFocus={() => handleInputFocus(index)}
+                  placeholder={underlinePlaceholder}
+                  autoFocus={index === 0}
+                />
+                {showCounter && (
+                  <div className={`word-input-counter ${isCorrect ? 'success-animation' : ''}`}>
+                    {inputCharCount} / {wordLength}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </form>
+    </div>
+  )
+})
+
+PracticeCard.displayName = 'PracticeCard';
+
+export default PracticeCard
