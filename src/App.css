@@ -48,7 +48,7 @@
   --light-border: oklch(0.93 0 0);
   --dark-color: oklch(0.12 0 0);
   --text-color: oklch(0.12 0 0);
-  --text-muted: oklch(0.45 0 0);
+  --text-muted: oklch(0.35 0 0);
   --bg-color: oklch(0.98 0 0);
   --white: oklch(1 0 0);
 
@@ -828,7 +828,7 @@ html {
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -1022,7 +1022,7 @@ html {
 }
 
 .speech-rate-selector select:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -1188,7 +1188,7 @@ html {
 }
 
 .toggle-text-button:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
   pointer-events: none;
   box-shadow: none;
@@ -1364,14 +1364,14 @@ html {
 
 .word-input-counter {
   font-size: var(--text-caption-2);
-  color: var(--gray-400);
+  color: var(--text-muted);
   font-family: var(--font-family-mono);
   letter-spacing: 0.05em;
   font-weight: var(--font-medium);
 }
 
 .word-input-wrapper:hover .word-input-counter {
-  color: var(--gray-500);
+  color: var(--gray-600);
 }
 
 .word-input.word-correct + .word-input-counter {
@@ -1403,7 +1403,7 @@ html {
 }
 
 .word-pronounce-button:disabled {
-  opacity: 0.3;
+  opacity: 0.5;
   cursor: not-allowed;
   background: var(--gray-50);
 }
@@ -1607,7 +1607,7 @@ html {
 }
 
 .next-sentence-button:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -1646,7 +1646,7 @@ html {
 }
 
 .settings-button:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
