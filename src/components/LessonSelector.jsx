@@ -24,8 +24,15 @@ const LessonSelector = ({ onBack }) => {
       }));
       setLessons(lessonList);
       console.log('[LessonSelector] Lessons loaded:', lessonList.length);
+    } else {
+      setLessons([]);
     }
-  }, [rawArticles, dataSource]);
+  }, [rawArticles]);
+
+  // 当数据源变化时，重置lessons数组
+  useEffect(() => {
+    setLessons([]);
+  }, [dataSource]);
 
   const handleSelectLesson = (lesson) => {
     console.log('[LessonSelector] Selecting lesson:', lesson);
