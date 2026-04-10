@@ -72,6 +72,22 @@ const PracticeCard = React.memo(({
           }, 100)
         }
       }
+    } else if (e.key === 'ArrowRight' && index < wordInputs.length - 1) {
+      e.preventDefault()
+      (inputRefs?.current || inputRefsLocal.current)?.[index + 1]?.focus()
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault()
+      (inputRefs?.current || inputRefsLocal.current)?.[index - 1]?.focus()
+    }
+  }
+
+  const handleCardKeyDown = (e) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      onNext()
+    } else if (e.key === ' ') {
+      e.preventDefault()
+      handlePlay()
     }
   }
 
@@ -84,7 +100,7 @@ const PracticeCard = React.memo(({
   }
 
   return (
-    <div className="practice-card">
+    <div className="practice-card card" onKeyDown={handleCardKeyDown} tabIndex="0">
       <div className="practice-card-header">
         <div className="progress small">
           <span>Question {currentIndex + 1} of {totalSentences}</span>
@@ -105,11 +121,11 @@ const PracticeCard = React.memo(({
         )}
       </div>
 
-      {/* 控制按钮 - 所有按钮放一排 */}
+      {/* 控制按钮 - 响应式布局 */}
       <div className="practice-card-controls">
         <button
           type="button"
-          className="play-button small"
+          className="btn btn-primary"
           onClick={handlePlay}
           disabled={!speechSupported || listenMode}
           title={speechSupported ? 'Play sentence' : 'Speech synthesis not supported'}
@@ -119,7 +135,7 @@ const PracticeCard = React.memo(({
 
         <button
           type="button"
-          className="settings-button small"
+          className="btn btn-secondary"
           onClick={onToggleSettings}
           title="设置"
         >
@@ -128,7 +144,7 @@ const PracticeCard = React.memo(({
 
         <button
           type="button"
-          className="next-sentence-button small"
+          className="btn btn-secondary"
           onClick={onNext}
           disabled={listenMode}
           title="切换到下一句"
@@ -144,7 +160,7 @@ const PracticeCard = React.memo(({
 
         <button
           type="button"
-          className={`add-vocab-button small ${!currentUser ? 'disabled' : ''}`}
+          className={`btn ${!currentUser ? 'btn-secondary disabled' : 'btn-primary'}`}
           onClick={() => {
             console.log('[PracticeCard] currentUser:', currentUser);
             if (!currentUser) {
@@ -183,7 +199,7 @@ const PracticeCard = React.memo(({
                       if (refs) refs[index] = el
                     }}
                     type="text"
-                    className={`word-input ${isCorrect ? 'word-correct' : ''}`}
+                    className={`input word-input ${isCorrect ? 'word-correct' : ''}`}
                     style={{ width: inputWidth }}
                     value={input}
                     onChange={(e) => onWordChange(index, e.target.value)}
@@ -192,6 +208,8 @@ const PracticeCard = React.memo(({
                     onClick={() => handlePlayWord?.(currentWords[index]?.word)}
                     placeholder={underlinePlaceholder}
                     autoFocus={index === 0}
+                    aria-label={`输入单词 ${index + 1}`}
+                    aria-describedby={`word-hint-${index}`}
                   />
                   <button
                     type="button"
@@ -199,6 +217,7 @@ const PracticeCard = React.memo(({
                     onClick={() => handlePlayWord?.(currentWords[index]?.word)}
                     disabled={!speechSupported || !currentWords[index]?.word}
                     title="点击发音"
+                    aria-label="发音"
                     tabIndex={-1}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

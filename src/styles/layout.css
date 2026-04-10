@@ -1,0 +1,106 @@
+/* 布局样式 */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* 导航栏布局 */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: var(--spacing-md) 0;
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.navbar.scrolled {
+  background: var(--bg-glass-dark);
+  box-shadow: var(--shadow-md);
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 主内容布局 */
+.main-content {
+  margin-top: 80px;
+  min-height: calc(100vh - 80px);
+  padding: var(--spacing-xl) 0;
+}
+
+/* 卡片布局 */
+.card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* 网格布局 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* 响应式布局 */
+@media (max-width: var(--breakpoint-md)) {
+  .navbar-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .main-content {
+    padding: var(--spacing-lg) 0;
+  }
+  
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 优化布局断点 */
+@media (max-width: var(--breakpoint-sm)) {
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .navbar {
+    padding: var(--spacing-sm) 0;
+  }
+  
+  .main-content {
+    margin-top: 70px;
+    min-height: calc(100vh - 70px);
+  }
+}
+
+@media (min-width: var(--breakpoint-md)) and (max-width: var(--breakpoint-lg)) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: var(--breakpoint-lg)) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

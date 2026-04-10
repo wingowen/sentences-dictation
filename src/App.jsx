@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy, memo } from 'react';
+import './styles/theme.css';
+import './styles/layout.css';
+import './styles/components.css';
 import './App.css';
 import { onAuthStateChanged, getCurrentUser } from './services/firebase';
 import { DATA_SOURCE_TREE, DATA_SOURCE_TYPES } from './services/dataService';
@@ -6,7 +9,7 @@ import DataSourceTree from './components/DataSourceTree';
 import PracticeCard from './components/PracticeCard';
 import LoadingIndicator from './components/LoadingIndicator';
 import PageSkeleton from './components/PageSkeleton';
-import AppNavbar from './components/AppNavbar';
+import Navbar from './components/Navbar';
 import LoginModal from './components/LoginModal';
 import SettingsModal from './components/SettingsModal';
 import LessonSelector from './components/LessonSelector';
@@ -396,7 +399,7 @@ function AppContent({ onSelectedDataSourceChange }) {
   if (authLoading) {
     return (
       <div className="app-layout">
-        <AppNavbar 
+        <Navbar 
           currentView={VIEWS.HOME} 
           onNavigate={() => {}}
           currentUser={null}
@@ -410,7 +413,7 @@ function AppContent({ onSelectedDataSourceChange }) {
 
   return (
     <div className="app-layout">
-      <AppNavbar 
+      <Navbar 
         currentView={currentView}
         onNavigate={handleNavigate}
         currentUser={currentUser}

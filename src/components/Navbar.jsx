@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const NAV_ITEMS = [
   { id: 'home', icon: '🏠', label: '首页', requiresAuth: false },
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { id: 'vocabulary', icon: '📚', label: '生词本', requiresAuth: false },
 ];
 
-const AppNavbar = ({ 
+const Navbar = ({ 
   currentView, 
   onNavigate, 
   currentUser, 
@@ -29,6 +29,7 @@ const AppNavbar = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const navbarRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,7 +61,7 @@ const AppNavbar = ({
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
-  const handleNavClick = useCallback((itemId) => {
+  const handleNavClick = (itemId) => {
     // 检查是否需要登录（生词本相关功能）
     if (itemId === 'vocab-review' || itemId === 'vocabulary') {
       if (!currentUser) {
@@ -71,9 +72,9 @@ const AppNavbar = ({
     onNavigate(itemId);
     setIsMobileMenuOpen(false);
     setActiveDropdown(null);
-  }, [currentUser, onNavigate, onLoginClick]);
+  };
   
-  const handleDropdownClick = useCallback((childId) => {
+  const handleDropdownClick = (childId) => {
     if (onNewConceptSelect) {
       onNewConceptSelect(childId);
     } else {
@@ -81,27 +82,20 @@ const AppNavbar = ({
     }
     setActiveDropdown(null);
     setIsMobileMenuOpen(false);
-  }, [onNavigate, onNewConceptSelect]);
+  };
 
-  const isActive = useCallback((itemId) => {
+  const isActive = (itemId) => {
     if (currentView === itemId) return true;
     if (itemId === 'practice' && currentView?.startsWith('practice-')) return true;
     if (itemId === 'flashcard-learn' && currentView === 'flashcard-learn') return true;
     if (itemId === 'flashcard-manage' && currentView === 'flashcard-manage') return true;
     return false;
-  }, [currentView]);
+  };
 
-  const currentItem = useMemo(() => {
-    return NAV_ITEMS.find(item => item.id === currentView || 
-      (currentView?.startsWith(item.id + '-') && item.id !== 'home'));
-  }, [currentView]);
-
-  const navItemsToShow = useMemo(() => {
-    return NAV_ITEMS.filter(item => !item.requiresAuth || currentUser);
-  }, [currentUser]);
+  const navItemsToShow = NAV_ITEMS.filter(item => !item.requiresAuth || currentUser);
 
   return (
-    <nav className={`app-navbar ${isScrolled ? 'navbar-scrolled' : ''} ${showBackButton ? 'navbar-with-back' : ''}`}>
+    <nav className={`app-navbar ${isScrolled ? 'navbar-scrolled' : ''} ${showBackButton ? 'navbar-with-back' : ''}`} ref={navbarRef}>
       <div className="navbar-inner">
         {/* Left Section: Back Button / Logo */}
         <div className="navbar-left">
@@ -324,4 +318,4 @@ const AppNavbar = ({
   );
 };
 
-export default AppNavbar;
+export default Navbar;
