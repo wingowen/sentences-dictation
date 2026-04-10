@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
+import './styles/theme.css';
+import './styles/layout.css';
+import './styles/components.css';
 import './App.css';
 import { onAuthStateChanged, getCurrentUser } from './services/firebase';
 import { DATA_SOURCE_TREE, DATA_SOURCE_TYPES } from './services/dataService';
