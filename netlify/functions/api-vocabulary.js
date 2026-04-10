@@ -11,6 +11,11 @@
 const { supabaseAdmin } = require('./supabase/client');
 const response = require('./supabase/response');
 
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabaseAdmin;
+}
+
 // 获取请求体中的用户ID（从 Authorization header 或请求体）
 async function getUserId(event) {
   const authHeader = event.headers.authorization;
@@ -70,6 +75,10 @@ function validateVocabulary(data, isUpdate = false) {
  * 获取生词列表
  */
 async function getVocabularies(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('生词本功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const userId = await getUserId(event);
   if (!userId) {
     return response.unauthorized('请先登录');
@@ -124,6 +133,10 @@ async function getVocabularies(event) {
  * 添加生词
  */
 async function addVocabulary(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('生词本功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const userId = await getUserId(event);
   if (!userId) {
     return response.unauthorized('请先登录');
@@ -187,6 +200,10 @@ async function addVocabulary(event) {
  * 获取生词详情
  */
 async function getVocabulary(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('生词本功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const userId = await getUserId(event);
   if (!userId) {
     return response.unauthorized('请先登录');
@@ -219,6 +236,10 @@ async function getVocabulary(event) {
  * 更新生词
  */
 async function updateVocabulary(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('生词本功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const userId = await getUserId(event);
   if (!userId) {
     return response.unauthorized('请先登录');
@@ -277,6 +298,10 @@ async function updateVocabulary(event) {
  * 删除生词
  */
 async function deleteVocabulary(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('生词本功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const userId = await getUserId(event);
   if (!userId) {
     return response.unauthorized('请先登录');
@@ -312,6 +337,10 @@ async function deleteVocabulary(event) {
  * 标记复习
  */
 async function reviewVocabulary(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('生词本功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const userId = await getUserId(event);
   if (!userId) {
     return response.unauthorized('请先登录');

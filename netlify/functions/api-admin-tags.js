@@ -9,6 +9,11 @@
 const { supabaseAdmin } = require('./supabase/client');
 const response = require('./supabase/response');
 
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabaseAdmin;
+}
+
 /**
  * 验证标签数据
  */
@@ -36,6 +41,10 @@ function validateTag(data, isUpdate = false) {
  * 获取标签列表
  */
 async function getTags(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('标签管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const { data: tags, error } = await supabaseAdmin
     .from('tags')
     .select(`
@@ -65,6 +74,10 @@ async function getTags(event) {
  * 创建标签
  */
 async function createTag(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('标签管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   // 验证
@@ -105,6 +118,10 @@ async function createTag(event) {
  * 更新标签
  */
 async function updateTag(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('标签管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -165,6 +182,10 @@ async function updateTag(event) {
  * 删除标签
  */
 async function deleteTag(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('标签管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -194,6 +215,10 @@ async function deleteTag(event) {
  * 为文章添加标签
  */
 async function addTagToArticle(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('标签管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   if (!body.article_id || !body.tag_id) {
@@ -224,6 +249,10 @@ async function addTagToArticle(event) {
  * 从文章移除标签
  */
 async function removeTagFromArticle(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('标签管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   if (!body.article_id || !body.tag_id) {

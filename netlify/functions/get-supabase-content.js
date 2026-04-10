@@ -8,10 +8,19 @@
 const { supabaseAdmin } = require('./supabase/client');
 const { CORS_HEADERS, handleCorsPreflight, validateHttpMethod } = require('./shared/cors');
 
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabaseAdmin;
+}
+
 /**
  * 获取所有标签
  */
 async function getTags() {
+  if (!isSupabaseAvailable()) {
+    return [];
+  }
+  
   const { data, error } = await supabaseAdmin
     .from('tags')
     .select('*')
@@ -25,6 +34,10 @@ async function getTags() {
  * 按标签获取文章
  */
 async function getArticlesByTag(tagId) {
+  if (!isSupabaseAvailable()) {
+    return [];
+  }
+  
   let query = supabaseAdmin
     .from('articles')
     .select('id, title, description, total_sentences, created_at');
@@ -54,6 +67,10 @@ async function getArticlesByTag(tagId) {
  * 获取文章的句子
  */
 async function getSentencesByArticle(articleId) {
+  if (!isSupabaseAvailable()) {
+    return [];
+  }
+  
   const { data, error } = await supabaseAdmin
     .from('sentences')
     .select('id, content, sequence_order, extensions')

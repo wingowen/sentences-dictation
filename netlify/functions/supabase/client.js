@@ -2,8 +2,6 @@
  * Supabase 客户端配置
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
 // 服务端环境变量
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,6 +15,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
 let supabaseAdmin = null;
 
 try {
+  const { createClient } = require('@supabase/supabase-js');
+  
   if (supabaseUrl && supabaseServiceKey) {
     supabaseAdmin = createClient(
       supabaseUrl,
@@ -39,7 +39,7 @@ try {
     console.warn('[Supabase] Admin client not initialized - missing environment variables');
   }
 } catch (error) {
-  console.error('[Supabase] Failed to initialize admin client:', error.message);
+  console.warn('[Supabase] Supabase not available, running in fallback mode:', error.message);
 }
 
 // 为了兼容性，也导出普通客户端变量（指向 admin 客户端）
