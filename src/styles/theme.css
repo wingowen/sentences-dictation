@@ -1,11 +1,11 @@
 :root {
   /* 颜色变量 */
-  --primary-color: #007bff;
-  --secondary-color: #6c757d;
-  --success-color: #28a745;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-  --info-color: #17a2b8;
+  --primary-color: #0066cc;
+  --secondary-color: #5a6268;
+  --success-color: #218838;
+  --danger-color: #c82333;
+  --warning-color: #e0a800;
+  --info-color: #138496;
   --light-color: #f8f9fa;
   --dark-color: #343a40;
   
@@ -15,9 +15,9 @@
   --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   
   /* 文字变量 */
-  --text-primary: #333;
-  --text-secondary: #666;
-  --text-light: #fff;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --text-light: #f8f9fa;
   
   /* 字体变量 */
   --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

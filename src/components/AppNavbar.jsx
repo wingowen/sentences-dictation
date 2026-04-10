@@ -164,6 +164,7 @@ const AppNavbar = ({
                   <button 
                     className="nav-link"
                     onClick={() => handleNavClick(item.id)}
+                    aria-label={item.label}
                   >
                     <span className="nav-icon">{item.icon}</span>
                     <span className="nav-label">{item.label}</span>
@@ -177,6 +178,7 @@ const AppNavbar = ({
                         key={child.id}
                         className={`dropdown-item ${isActive(child.id) ? 'dropdown-active' : ''}`}
                         onClick={() => handleDropdownClick(child.id)}
+                        aria-label={child.label}
                       >
                         <span>{child.icon}</span>
                         <span>{child.label}</span>
@@ -248,23 +250,25 @@ const AppNavbar = ({
               {item.children ? (
                 <>
                   <button
-                    className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
-                    onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
-                  >
-                    <span className="mobile-nav-icon">{item.icon}</span>
-                    <span className="mobile-nav-label">{item.label}</span>
-                    <svg 
-                      className={`mobile-nav-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2"
+                      className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
+                      onClick={() => setActiveDropdown(activeDropdown === item.id ? null : item.id)}
+                      aria-label={item.label}
+                      aria-expanded={activeDropdown === item.id}
                     >
-                      <path d="M6 9l6 6 6-6"/>
-                    </svg>
-                  </button>
+                      <span className="mobile-nav-icon">{item.icon}</span>
+                      <span className="mobile-nav-label">{item.label}</span>
+                      <svg 
+                        className={`mobile-nav-arrow ${activeDropdown === item.id ? 'rotate-180' : ''}`}
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2"
+                      >
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
+                    </button>
                   {activeDropdown === item.id && (
                     <div className="mobile-nav-submenu">
                       {item.children.map(child => (
@@ -272,6 +276,7 @@ const AppNavbar = ({
                           key={child.id}
                           className="mobile-nav-subitem"
                           onClick={() => handleDropdownClick(child.id)}
+                          aria-label={child.label}
                         >
                           <span className="subitem-icon">{child.icon}</span>
                           <span className="subitem-label">{child.label}</span>
@@ -281,15 +286,16 @@ const AppNavbar = ({
                   )}
                 </>
               ) : (
-                <button
-                  className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
-                  onClick={() => handleNavClick(item.id)}
-                >
-                  <span className="mobile-nav-icon">{item.icon}</span>
-                  <span className="mobile-nav-label">{item.label}</span>
-                  {isActive(item.id) && <span className="mobile-nav-indicator"></span>}
-                </button>
-              )}
+                  <button
+                    className={`mobile-nav-item ${isActive(item.id) ? 'mobile-nav-active' : ''}`}
+                    onClick={() => handleNavClick(item.id)}
+                    aria-label={item.label}
+                  >
+                    <span className="mobile-nav-icon">{item.icon}</span>
+                    <span className="mobile-nav-label">{item.label}</span>
+                    {isActive(item.id) && <span className="mobile-nav-indicator"></span>}
+                  </button>
+                )}
             </div>
           ))}
         </div>
