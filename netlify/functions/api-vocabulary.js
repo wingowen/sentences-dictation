@@ -209,7 +209,10 @@ async function getVocabulary(event) {
     return response.unauthorized('请先登录');
   }
   
-  const id = event.pathParameters?.id;
+  // 从路径中提取 ID
+  const path = event.path || '/';
+  const match = path.match(/\/api\/vocabulary\/([^/]+)$/);
+  const id = match ? match[1] : event.pathParameters?.id || event.pathParameters?.splat;
   if (!id) {
     return response.validationError([{ field: 'id', message: '生词ID不能为空' }]);
   }
@@ -245,7 +248,10 @@ async function updateVocabulary(event) {
     return response.unauthorized('请先登录');
   }
   
-  const id = event.pathParameters?.id;
+  // 从路径中提取 ID
+  const path = event.path || '/';
+  const match = path.match(/\/api\/vocabulary\/([^/]+)$/);
+  const id = match ? match[1] : event.pathParameters?.id || event.pathParameters?.splat;
   if (!id) {
     return response.validationError([{ field: 'id', message: '生词ID不能为空' }]);
   }
