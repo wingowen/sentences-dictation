@@ -309,7 +309,7 @@ async function deleteVocabulary(event) {
   
   // 从路径中提取 ID
   const path = event.path || '/';
-  const match = path.match(/\/api\/vocabulary\/(\d+)$/);
+  const match = path.match(/\/api\/vocabulary\/([^/]+)$/);
   const id = match ? match[1] : event.pathParameters?.id;
   
   if (!id) {
@@ -434,15 +434,15 @@ exports.handler = async (event) => {
       return { ...await addVocabulary(event), headers };
     }
     
-    if (method === 'GET' && /^\/api\/vocabulary\/(\d+)$/.test(path)) {
+    if (method === 'GET' && /^\/api\/vocabulary\/([^/]+)$/.test(path)) {
       return { ...await getVocabulary(event), headers };
     }
     
-    if (method === 'PUT' && /^\/api\/vocabulary\/(\d+)$/.test(path)) {
+    if (method === 'PUT' && /^\/api\/vocabulary\/([^/]+)$/.test(path)) {
       return { ...await updateVocabulary(event), headers };
     }
     
-    if (method === 'DELETE' && /^\/api\/vocabulary\/(\d+)$/.test(path)) {
+    if (method === 'DELETE' && /^\/api\/vocabulary\/([^/]+)$/.test(path)) {
       return { ...await deleteVocabulary(event), headers };
     }
     
