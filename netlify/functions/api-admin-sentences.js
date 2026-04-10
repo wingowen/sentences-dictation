@@ -10,6 +10,11 @@
 const { supabaseAdmin } = require('./supabase/client');
 const response = require('./supabase/response');
 
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabaseAdmin;
+}
+
 /**
  * 验证句子数据
  */
@@ -37,6 +42,10 @@ function validateSentence(data, isUpdate = false) {
  * 获取句子详情
  */
 async function getSentence(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('句子管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -78,6 +87,10 @@ async function getSentence(event) {
  * 更新句子
  */
 async function updateSentence(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('句子管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -126,6 +139,10 @@ async function updateSentence(event) {
  * 删除句子（软删除）
  */
 async function deleteSentence(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('句子管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -153,6 +170,10 @@ async function deleteSentence(event) {
  * 批量更新句子
  */
 async function batchUpdateSentences(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('句子管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   if (!body.sentences || !Array.isArray(body.sentences)) {
@@ -211,6 +232,10 @@ async function batchUpdateSentences(event) {
  * 批量删除句子
  */
 async function batchDeleteSentences(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('句子管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   if (!body.ids || !Array.isArray(body.ids)) {

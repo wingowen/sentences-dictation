@@ -45,7 +45,7 @@ export function useSentences(initialDataSource = DATA_SOURCE_TYPES.LOCAL) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentDataSource, localResourceId]);
+  }, []); // 移除依赖项，避免无限循环
 
   // 切换数据源
   const changeDataSource = useCallback((newDataSource, resourceId = null) => {

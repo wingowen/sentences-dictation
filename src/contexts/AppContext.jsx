@@ -102,7 +102,7 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
       return newConcept3Data.articles;
     }
     return null;
-  }, [dataSource]);
+  }, [dataSource, newConcept2Data, newConcept3Data]);
 
   // 计算派生状态
   const currentWords = processedSentences[currentIndex]?.words || [];
@@ -137,6 +137,12 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
       }
     }
   }, [currentIndex, autoPlay]); // 只依赖 currentIndex 和 autoPlay，避免重复触发
+
+  // 当数据源变化时，重置状态
+  useEffect(() => {
+    setSelectedLesson(null);
+    setCurrentIndex(0);
+  }, [dataSource]);
 
   // 标准化字符串比较
   const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);

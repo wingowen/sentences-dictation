@@ -1,9 +1,19 @@
-const { createClient } = require('@supabase/supabase-js')
-
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+let supabase = null
+
+try {
+  const { createClient } = require('@supabase/supabase-js')
+  supabase = createClient(supabaseUrl, supabaseServiceKey)
+} catch (err) {
+  console.warn('[Flashcards] Supabase not available, running in fallback mode:', err.message)
+}
+
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabase
+}
 
 const getUserId = async (event) => {
   const authHeader = event.headers.authorization
@@ -16,6 +26,10 @@ const getUserId = async (event) => {
   // 如果是模拟 token
   if (token && (token.startsWith('mock-') || token.startsWith('env-'))) {
     return '00000000-0000-0000-0000-000000000001'
+  }
+  
+  if (!isSupabaseAvailable()) {
+    return null
   }
   
   try {
@@ -39,6 +53,14 @@ exports.handler = async (event, context) => {
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
+  }
+
+  if (!isSupabaseAvailable()) {
+    return {
+      statusCode: 503,
+      headers,
+      body: JSON.stringify({ success: false, error: { message: '闪卡功能暂不可用' } })
+    }
   }
 
   const userId = await getUserId(event)

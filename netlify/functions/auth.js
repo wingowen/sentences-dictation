@@ -4,7 +4,6 @@
  * GET  /.netlify/functions/auth - 获取当前用户
  */
 
-const { createClient } = require('@supabase/supabase-js');
 const { success, error, validationError, unauthorized } = require('./supabase/response.js');
 
 // 初始化 Supabase 客户端（服务端）
@@ -17,6 +16,8 @@ console.log('[Auth] SUPABASE_URL:', supabaseUrl ? 'set' : 'not set');
 let supabaseAdmin = null;
 
 try {
+  const { createClient } = require('@supabase/supabase-js');
+  
   if (supabaseUrl && supabaseServiceKey) {
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     console.log('[Auth] Supabase client initialized successfully');
@@ -24,7 +25,7 @@ try {
     console.log('[Auth] Using mock authentication (no Supabase credentials)');
   }
 } catch (err) {
-  console.error('[Auth] Supabase initialization failed:', err.message);
+  console.warn('[Auth] Supabase not available, running in fallback mode:', err.message);
 }
 
 /**

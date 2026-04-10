@@ -10,6 +10,11 @@
 const { supabaseAdmin } = require('./supabase/client');
 const response = require('./supabase/response');
 
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabaseAdmin;
+}
+
 /**
  * 验证请求数据
  */
@@ -41,6 +46,10 @@ function validateArticle(data, isUpdate = false) {
  * 获取文章列表
  */
 async function getArticles(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const params = event.queryStringParameters || {};
   
   const page = Math.max(1, parseInt(params.page) || 1);
@@ -98,6 +107,10 @@ async function getArticles(event) {
  * 创建文章
  */
 async function createArticle(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   // 验证
@@ -163,6 +176,10 @@ async function createArticle(event) {
  * 获取文章详情
  */
 async function getArticle(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -225,6 +242,10 @@ async function getArticle(event) {
  * 更新文章
  */
 async function updateArticle(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -274,6 +295,10 @@ async function updateArticle(event) {
  * 删除文章
  */
 async function deleteArticle(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const id = event.pathParameters?.id;
   
   if (!id || isNaN(parseInt(id))) {
@@ -309,6 +334,10 @@ async function deleteArticle(event) {
  * 批量导入文章
  */
 async function importArticles(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const body = JSON.parse(event.body || '{}');
   
   if (!body.articles || !Array.isArray(body.articles)) {
@@ -384,6 +413,10 @@ async function importArticles(event) {
  * 批量导入句子
  */
 async function batchImportSentences(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const articleId = event.pathParameters?.id;
   
   if (!articleId || isNaN(parseInt(articleId))) {
@@ -461,6 +494,10 @@ async function batchImportSentences(event) {
  * 重新排序句子
  */
 async function reorderSentences(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('文章管理功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   const articleId = event.pathParameters?.id;
   
   if (!articleId || isNaN(parseInt(articleId))) {

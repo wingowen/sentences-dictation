@@ -6,10 +6,19 @@
 const { supabaseAdmin } = require('./supabase/client');
 const response = require('./supabase/response');
 
+// 检查 Supabase 是否可用
+function isSupabaseAvailable() {
+  return !!supabaseAdmin;
+}
+
 /**
  * 获取统计数据
  */
 async function getStatistics(event) {
+  if (!isSupabaseAvailable()) {
+    return response.error('统计功能暂不可用', 'SERVICE_UNAVAILABLE', 'Supabase 服务未配置', 503);
+  }
+  
   try {
     // 1. 总体统计
     const [
