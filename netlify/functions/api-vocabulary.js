@@ -209,10 +209,11 @@ async function getVocabulary(event) {
     return response.unauthorized('请先登录');
   }
   
-  // 从路径中提取 ID
+  // 直接从路径中提取 ID，不依赖于 pathParameters
   const path = event.path || '/';
-  const match = path.match(/\/api\/vocabulary\/([^/]+)$/);
-  const id = match ? match[1] : event.pathParameters?.id || event.pathParameters?.splat;
+  const parts = path.split('/').filter(Boolean);
+  const id = parts[parts.length - 1];
+  
   if (!id) {
     return response.validationError([{ field: 'id', message: '生词ID不能为空' }]);
   }
@@ -248,10 +249,11 @@ async function updateVocabulary(event) {
     return response.unauthorized('请先登录');
   }
   
-  // 从路径中提取 ID
+  // 直接从路径中提取 ID，不依赖于 pathParameters
   const path = event.path || '/';
-  const match = path.match(/\/api\/vocabulary\/([^/]+)$/);
-  const id = match ? match[1] : event.pathParameters?.id || event.pathParameters?.splat;
+  const parts = path.split('/').filter(Boolean);
+  const id = parts[parts.length - 1];
+  
   if (!id) {
     return response.validationError([{ field: 'id', message: '生词ID不能为空' }]);
   }
@@ -426,12 +428,15 @@ exports.handler = async (event) => {
   }
   
   try {
+    // 处理Netlify函数路径
+    let normalizedPath = path.replace('/.netlify/functions/api-vocabulary', '');
+    
     // 路由匹配
-    if (method === 'GET' && /^\/api\/vocabulary\/?$/.test(path)) {
+    if (method === 'GET' && (normalizedPath === '' || normalizedPath === '/')) {
       return { ...await getVocabularies(event), headers };
     }
     
-    if (method === 'POST' && path === '/api/vocabulary') {
+    if (method === 'POST' && (normalizedPath === '' || normalizedPath === '/')) {
       // 检查是否是复习操作
       const body = JSON.parse(event.body || '{}');
       if (body.action === 'review') {
@@ -440,16 +445,31 @@ exports.handler = async (event) => {
       return { ...await addVocabulary(event), headers };
     }
     
-    if (method === 'GET' && /^\/api\/vocabulary\/([^/]+)$/.test(path)) {
-      return { ...await getVocabulary(event), headers };
-    }
+    // 处理带 ID 的路由
+    // 直接从原始路径中提取 ID，确保能正确处理 /api/vocabulary/1 格式的路径
+    console.log('[Vocabulary] Original path:', path);
+    const parts = path.split('/').filter(Boolean);
+    console.log('[Vocabulary] Path parts:', parts);
+    const id = parts[parts.length - 1];
+    console.log('[Vocabulary] Extracted ID:', id);
     
-    if (method === 'PUT' && /^\/api\/vocabulary\/([^/]+)$/.test(path)) {
-      return { ...await updateVocabulary(event), headers };
-    }
-    
-    if (method === 'DELETE' && /^\/api\/vocabulary\/([^/]+)$/.test(path)) {
-      return { ...await deleteVocabulary(event), headers };
+    if (id) {
+      // 直接修改 event 对象，确保 pathParameters 存在
+      event.pathParameters = event.pathParameters || {};
+      event.pathParameters.id = id;
+      console.log('[Vocabulary] event.pathParameters:', event.pathParameters);
+      
+      if (method === 'GET') {
+        return { ...await getVocabulary(event), headers };
+      }
+      
+      if (method === 'PUT') {
+        return { ...await updateVocabulary(event), headers };
+      }
+      
+      if (method === 'DELETE') {
+        return { ...await deleteVocabulary(event), headers };
+      }
     }
     
     return { ...response.error('接口不存在', 'NOT_FOUND', null, 404), headers };
