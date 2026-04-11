@@ -67,6 +67,8 @@ export async function syncToRemote() {
               meaning: vocab.meaning,
               part_of_speech: vocab.part_of_speech,
               sentence_context: vocab.sentence_context,
+              source_sentence_id: vocab.source_sentence_id,
+              source_article_id: vocab.source_article_id,
               notes: vocab.notes
             });
             updateSyncStatus(vocab.id, 'synced');

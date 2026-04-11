@@ -30,6 +30,9 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     phonetic: '',
     meaning: '',
     part_of_speech: '',
+    sentence_context: '',
+    source_sentence_id: null,
+    source_article_id: null,
     notes: ''
   });
   
@@ -104,7 +107,7 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       }
       
       // 重置表单并刷新列表
-      setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', notes: '' });
+      setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', sentence_context: '', source_sentence_id: null, source_article_id: null, notes: '' });
       setShowAddForm(false);
       setEditingId(null);
       loadVocabularies();
@@ -212,6 +215,9 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       phonetic: vocab.phonetic || '',
       meaning: vocab.meaning || '',
       part_of_speech: vocab.part_of_speech || '',
+      sentence_context: vocab.sentence_context || '',
+      source_sentence_id: vocab.source_sentence_id || null,
+      source_article_id: vocab.source_article_id || null,
       notes: vocab.notes || ''
     });
     setEditingId(vocab.id);
@@ -220,7 +226,7 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
 
   // 取消编辑
   const handleCancelEdit = () => {
-    setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', notes: '' });
+    setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', sentence_context: '', source_sentence_id: null, source_article_id: null, notes: '' });
     setEditingId(null);
     setShowAddForm(false);
   };
@@ -359,6 +365,15 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
                     <option value="conjunction">连词 (conj.)</option>
                     <option value="interjection">感叹词 (int.)</option>
                   </select>
+                </div>
+                <div className="form-group">
+                  <label>例句上下文</label>
+                  <textarea
+                    value={formData.sentence_context}
+                    onChange={e => setFormData({...formData, sentence_context: e.target.value})}
+                    placeholder="输入包含该单词的例句..."
+                    rows={2}
+                  />
                 </div>
                 <div className="form-group">
                   <label>笔记</label>
