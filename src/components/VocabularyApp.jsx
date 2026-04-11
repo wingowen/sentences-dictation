@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   getVocabularies, 
   addVocabulary, 
   updateVocabulary, 
   deleteVocabulary,
   syncVocabularies,
-  getSyncStatus
+  getSyncStatus,
+  isSyncNeeded
 } from '../services/vocabularyServiceNew';
 import LoadingIndicator from './LoadingIndicator';
+
+const AUTO_SYNC_INTERVAL = 300000; // 5分钟自动同步
 
 const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [vocabularies, setVocabularies] = useState([]);
@@ -18,6 +21,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [syncStatus, setSyncStatus] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [detailedSyncStatus, setDetailedSyncStatus] = useState('');
+  const autoSyncTimerRef = useRef(null);
   
   // 新建/编辑表单状态
   const [formData, setFormData] = useState({
@@ -51,7 +56,36 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     loadVocabularies();
     // 初始化同步状态
     setSyncStatus(getSyncStatus());
-  }, [loadVocabularies]);
+    updateDetailedSyncStatus();
+    
+    // 设置自动同步定时器
+    autoSyncTimerRef.current = setInterval(() => {
+      autoSync();
+    }, AUTO_SYNC_INTERVAL);
+    
+    // 初始时也进行一次同步检查
+    setTimeout(() => {
+      autoSync();
+    }, 5000); // 5秒后进行一次初始同步
+    
+    // 组件卸载时清理定时器
+    return () => {
+      if (autoSyncTimerRef.current) {
+        clearInterval(autoSyncTimerRef.current);
+      }
+    };
+  }, [loadVocabularies, updateDetailedSyncStatus, autoSync]);
+  
+  // 当操作完成后更新详细同步状态
+  useEffect(() => {
+    updateDetailedSyncStatus();
+    // 每次有变更后，30秒后自动同步检查
+    const timeout = setTimeout(() => {
+      autoSync();
+    }, 30000);
+    
+    return () => clearTimeout(timeout);
+  }, [vocabularies, updateDetailedSyncStatus, autoSync]);
 
   // 提交表单
   const handleSubmit = async (e) => {
@@ -113,9 +147,37 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     }
   }, [onNavigateToReview]);
 
+  // 更新详细同步状态文本
+  const updateDetailedSyncStatus = useCallback(() => {
+    const status = getSyncStatus();
+    const needsSync = isSyncNeeded();
+    
+    if (isSyncing) {
+      setDetailedSyncStatus('⏳ 正在同步...');
+    } else if (needsSync) {
+      setDetailedSyncStatus(`🔄 ${status?.pending || 0} 项待同步`);
+    } else if (status?.last_sync) {
+      const lastSync = new Date(status.last_sync);
+      const now = new Date();
+      const diff = Math.floor((now - lastSync) / 1000);
+      
+      if (diff < 60) {
+        setDetailedSyncStatus('✅ 刚刚同步');
+      } else if (diff < 3600) {
+        const minutes = Math.floor(diff / 60);
+        setDetailedSyncStatus(`✅ ${minutes} 分钟前同步`);
+      } else {
+        setDetailedSyncStatus(`✅ ${new Date(status.last_sync).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 同步`);
+      }
+    } else {
+      setDetailedSyncStatus('📊 未同步');
+    }
+  }, [isSyncing]);
+
   // 执行同步
   const handleSync = async () => {
     setIsSyncing(true);
+    setDetailedSyncStatus('⏳ 正在同步...');
     try {
       const result = await syncVocabularies();
       if (result.success) {
@@ -128,8 +190,20 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       setIsSyncing(false);
       // 更新同步状态
       setSyncStatus(getSyncStatus());
+      updateDetailedSyncStatus();
     }
   };
+
+  // 自动同步
+  const autoSync = useCallback(async () => {
+    if (isSyncing) return;
+    
+    const needsSync = isSyncNeeded();
+    if (needsSync) {
+      console.log('Auto sync triggered');
+      await handleSync();
+    }
+  }, [isSyncing, isSyncNeeded]);
 
   // 编辑生词
   const handleEdit = (vocab) => {
@@ -179,16 +253,13 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
             {isSyncing ? '⏳ 同步中...' : '🔄 同步'}
           </button>
         </div>
-        {syncStatus && (
-          <div className="sync-status">
-            {syncStatus.pending > 0 && (
-              <span className="pending-sync">{syncStatus.pending} 项待同步</span>
-            )}
-            {syncStatus.last_sync && (
-              <span className="last-sync">上次同步: {new Date(syncStatus.last_sync).toLocaleString()}</span>
-            )}
-          </div>
-        )}
+        <div className="detailed-sync-status">
+          <span className="sync-status-text">{detailedSyncStatus}</span>
+          {syncStatus && (
+            <span className="auto-sync-hint">
+              (每5分钟自动同步)</span>
+          )}
+        </div>
       </div>
 
       <div className="app-content">
@@ -423,6 +494,24 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
         
         .last-sync {
           color: #6B7280;
+        }
+        
+        .detailed-sync-status {
+          margin-top: 10px;
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-size: 12px;
+        }
+        
+        .sync-status-text {
+          font-weight: 500;
+          color: #4B5563;
+        }
+        
+        .auto-sync-hint {
+          color: #9CA3AF;
+          font-weight: 400;
         }
         
         .vocabulary-list {
