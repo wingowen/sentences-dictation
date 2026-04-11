@@ -21,6 +21,7 @@ import {
 
 import {
   getVocabularies as getRemoteVocabularies,
+  getVocabulary as getRemoteVocabulary,
   addVocabulary as addRemoteVocabulary,
   updateVocabulary as updateRemoteVocabulary,
   deleteVocabulary as deleteRemoteVocabulary,
