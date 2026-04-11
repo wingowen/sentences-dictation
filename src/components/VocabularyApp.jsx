@@ -3,8 +3,10 @@ import {
   getVocabularies, 
   addVocabulary, 
   updateVocabulary, 
-  deleteVocabulary
-} from '../services/vocabularyService';
+  deleteVocabulary,
+  syncVocabularies,
+  getSyncStatus
+} from '../services/vocabularyServiceNew';
 import LoadingIndicator from './LoadingIndicator';
 
 const VocabularyApp = ({ onBack, onNavigateToReview }) => {
@@ -14,6 +16,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // 新建/编辑表单状态
   const [formData, setFormData] = useState({
@@ -45,6 +49,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
 
   useEffect(() => {
     loadVocabularies();
+    // 初始化同步状态
+    setSyncStatus(getSyncStatus());
   }, [loadVocabularies]);
 
   // 提交表单
@@ -68,6 +74,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       setShowAddForm(false);
       setEditingId(null);
       loadVocabularies();
+      // 更新同步状态
+      setSyncStatus(getSyncStatus());
     } catch (err) {
       alert(err.message || '操作失败');
     }
@@ -86,6 +94,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       await deleteVocabulary(deleteConfirmId);
       loadVocabularies();
       setDeleteConfirmId(null);
+      // 更新同步状态
+      setSyncStatus(getSyncStatus());
     } catch (err) {
       alert('删除失败');
     }
@@ -102,6 +112,24 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       onNavigateToReview();
     }
   }, [onNavigateToReview]);
+
+  // 执行同步
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await syncVocabularies();
+      if (result.success) {
+        // 同步成功后重新加载数据
+        await loadVocabularies();
+      }
+    } catch (err) {
+      console.error('Sync failed:', err);
+    } finally {
+      setIsSyncing(false);
+      // 更新同步状态
+      setSyncStatus(getSyncStatus());
+    }
+  };
 
   // 编辑生词
   const handleEdit = (vocab) => {
@@ -143,7 +171,24 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
           >
             📖 复习生词
           </button>
+          <button 
+            className={`sync-button ${isSyncing ? 'syncing' : ''}`}
+            onClick={handleSync}
+            disabled={isSyncing}
+          >
+            {isSyncing ? '⏳ 同步中...' : '🔄 同步'}
+          </button>
         </div>
+        {syncStatus && (
+          <div className="sync-status">
+            {syncStatus.pending > 0 && (
+              <span className="pending-sync">{syncStatus.pending} 项待同步</span>
+            )}
+            {syncStatus.last_sync && (
+              <span className="last-sync">上次同步: {new Date(syncStatus.last_sync).toLocaleString()}</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="app-content">
@@ -335,6 +380,49 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
         
         .vocabulary-app .review-button:hover {
           background: #059669;
+        }
+        
+        .vocabulary-app .sync-button {
+          padding: 8px 16px;
+          background: #8B5CF6;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .vocabulary-app .sync-button:hover:not(:disabled) {
+          background: #7C3AED;
+        }
+        
+        .vocabulary-app .sync-button:disabled {
+          background: #9CA3AF;
+          cursor: not-allowed;
+        }
+        
+        .vocabulary-app .sync-button.syncing {
+          background: #F59E0B;
+        }
+        
+        .sync-status {
+          margin-top: 10px;
+          display: flex;
+          gap: 15px;
+          font-size: 12px;
+          color: #6B7280;
+        }
+        
+        .pending-sync {
+          color: #F59E0B;
+          font-weight: 500;
+        }
+        
+        .last-sync {
+          color: #6B7280;
         }
         
         .vocabulary-list {
