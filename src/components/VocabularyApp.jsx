@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   getVocabularies, 
   addVocabulary, 
   updateVocabulary, 
-  deleteVocabulary
-} from '../services/vocabularyService';
+  deleteVocabulary,
+  syncVocabularies,
+  getSyncStatus,
+  isSyncNeeded
+} from '../services/vocabularyServiceNew';
 import LoadingIndicator from './LoadingIndicator';
+
+const AUTO_SYNC_INTERVAL = 300000; // 5分钟自动同步
 
 const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [vocabularies, setVocabularies] = useState([]);
@@ -14,6 +19,10 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [detailedSyncStatus, setDetailedSyncStatus] = useState('');
+  const autoSyncTimerRef = useRef(null);
   
   // 新建/编辑表单状态
   const [formData, setFormData] = useState({
@@ -21,6 +30,9 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     phonetic: '',
     meaning: '',
     part_of_speech: '',
+    sentence_context: '',
+    source_sentence_id: null,
+    source_article_id: null,
     notes: ''
   });
   
@@ -45,7 +57,38 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
 
   useEffect(() => {
     loadVocabularies();
-  }, [loadVocabularies]);
+    // 初始化同步状态
+    setSyncStatus(getSyncStatus());
+    updateDetailedSyncStatus();
+    
+    // 设置自动同步定时器
+    autoSyncTimerRef.current = setInterval(() => {
+      autoSync();
+    }, AUTO_SYNC_INTERVAL);
+    
+    // 初始时也进行一次同步检查
+    setTimeout(() => {
+      autoSync();
+    }, 5000); // 5秒后进行一次初始同步
+    
+    // 组件卸载时清理定时器
+    return () => {
+      if (autoSyncTimerRef.current) {
+        clearInterval(autoSyncTimerRef.current);
+      }
+    };
+  }, [loadVocabularies, updateDetailedSyncStatus, autoSync]);
+  
+  // 当操作完成后更新详细同步状态
+  useEffect(() => {
+    updateDetailedSyncStatus();
+    // 每次有变更后，30秒后自动同步检查
+    const timeout = setTimeout(() => {
+      autoSync();
+    }, 30000);
+    
+    return () => clearTimeout(timeout);
+  }, [vocabularies, updateDetailedSyncStatus, autoSync]);
 
   // 提交表单
   const handleSubmit = async (e) => {
@@ -64,10 +107,12 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       }
       
       // 重置表单并刷新列表
-      setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', notes: '' });
+      setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', sentence_context: '', source_sentence_id: null, source_article_id: null, notes: '' });
       setShowAddForm(false);
       setEditingId(null);
       loadVocabularies();
+      // 更新同步状态
+      setSyncStatus(getSyncStatus());
     } catch (err) {
       alert(err.message || '操作失败');
     }
@@ -86,6 +131,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       await deleteVocabulary(deleteConfirmId);
       loadVocabularies();
       setDeleteConfirmId(null);
+      // 更新同步状态
+      setSyncStatus(getSyncStatus());
     } catch (err) {
       alert('删除失败');
     }
@@ -103,6 +150,64 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     }
   }, [onNavigateToReview]);
 
+  // 更新详细同步状态文本
+  const updateDetailedSyncStatus = useCallback(() => {
+    const status = getSyncStatus();
+    const needsSync = isSyncNeeded();
+    
+    if (isSyncing) {
+      setDetailedSyncStatus('⏳ 正在同步...');
+    } else if (needsSync) {
+      setDetailedSyncStatus(`🔄 ${status?.pending || 0} 项待同步`);
+    } else if (status?.last_sync) {
+      const lastSync = new Date(status.last_sync);
+      const now = new Date();
+      const diff = Math.floor((now - lastSync) / 1000);
+      
+      if (diff < 60) {
+        setDetailedSyncStatus('✅ 刚刚同步');
+      } else if (diff < 3600) {
+        const minutes = Math.floor(diff / 60);
+        setDetailedSyncStatus(`✅ ${minutes} 分钟前同步`);
+      } else {
+        setDetailedSyncStatus(`✅ ${new Date(status.last_sync).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 同步`);
+      }
+    } else {
+      setDetailedSyncStatus('📊 未同步');
+    }
+  }, [isSyncing]);
+
+  // 执行同步
+  const handleSync = async () => {
+    setIsSyncing(true);
+    setDetailedSyncStatus('⏳ 正在同步...');
+    try {
+      const result = await syncVocabularies();
+      if (result.success) {
+        // 同步成功后重新加载数据
+        await loadVocabularies();
+      }
+    } catch (err) {
+      console.error('Sync failed:', err);
+    } finally {
+      setIsSyncing(false);
+      // 更新同步状态
+      setSyncStatus(getSyncStatus());
+      updateDetailedSyncStatus();
+    }
+  };
+
+  // 自动同步
+  const autoSync = useCallback(async () => {
+    if (isSyncing) return;
+    
+    const needsSync = isSyncNeeded();
+    if (needsSync) {
+      console.log('Auto sync triggered');
+      await handleSync();
+    }
+  }, [isSyncing, isSyncNeeded]);
+
   // 编辑生词
   const handleEdit = (vocab) => {
     setFormData({
@@ -110,6 +215,9 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       phonetic: vocab.phonetic || '',
       meaning: vocab.meaning || '',
       part_of_speech: vocab.part_of_speech || '',
+      sentence_context: vocab.sentence_context || '',
+      source_sentence_id: vocab.source_sentence_id || null,
+      source_article_id: vocab.source_article_id || null,
       notes: vocab.notes || ''
     });
     setEditingId(vocab.id);
@@ -118,7 +226,7 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
 
   // 取消编辑
   const handleCancelEdit = () => {
-    setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', notes: '' });
+    setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', sentence_context: '', source_sentence_id: null, source_article_id: null, notes: '' });
     setEditingId(null);
     setShowAddForm(false);
   };
@@ -143,6 +251,20 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
           >
             📖 复习生词
           </button>
+          <button 
+            className={`sync-button ${isSyncing ? 'syncing' : ''}`}
+            onClick={handleSync}
+            disabled={isSyncing}
+          >
+            {isSyncing ? '⏳ 同步中...' : '🔄 同步'}
+          </button>
+        </div>
+        <div className="detailed-sync-status">
+          <span className="sync-status-text">{detailedSyncStatus}</span>
+          {syncStatus && (
+            <span className="auto-sync-hint">
+              (每5分钟自动同步)</span>
+          )}
         </div>
       </div>
 
@@ -245,6 +367,15 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
                   </select>
                 </div>
                 <div className="form-group">
+                  <label>例句上下文</label>
+                  <textarea
+                    value={formData.sentence_context}
+                    onChange={e => setFormData({...formData, sentence_context: e.target.value})}
+                    placeholder="输入包含该单词的例句..."
+                    rows={2}
+                  />
+                </div>
+                <div className="form-group">
                   <label>笔记</label>
                   <textarea
                     value={formData.notes}
@@ -335,6 +466,67 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
         
         .vocabulary-app .review-button:hover {
           background: #059669;
+        }
+        
+        .vocabulary-app .sync-button {
+          padding: 8px 16px;
+          background: #8B5CF6;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .vocabulary-app .sync-button:hover:not(:disabled) {
+          background: #7C3AED;
+        }
+        
+        .vocabulary-app .sync-button:disabled {
+          background: #9CA3AF;
+          cursor: not-allowed;
+        }
+        
+        .vocabulary-app .sync-button.syncing {
+          background: #F59E0B;
+        }
+        
+        .sync-status {
+          margin-top: 10px;
+          display: flex;
+          gap: 15px;
+          font-size: 12px;
+          color: #6B7280;
+        }
+        
+        .pending-sync {
+          color: #F59E0B;
+          font-weight: 500;
+        }
+        
+        .last-sync {
+          color: #6B7280;
+        }
+        
+        .detailed-sync-status {
+          margin-top: 10px;
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-size: 12px;
+        }
+        
+        .sync-status-text {
+          font-weight: 500;
+          color: #4B5563;
+        }
+        
+        .auto-sync-hint {
+          color: #9CA3AF;
+          font-weight: 400;
         }
         
         .vocabulary-list {
