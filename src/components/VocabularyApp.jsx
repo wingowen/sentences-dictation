@@ -7,7 +7,7 @@ import {
 } from '../services/vocabularyService';
 import LoadingIndicator from './LoadingIndicator';
 
-const VocabularyApp = ({ onBack, onNavigateToReview }) => {
+const VocabularyApp = ({ onBack, onNavigateToReview, currentUser }) => {
   const [vocabularies, setVocabularies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);

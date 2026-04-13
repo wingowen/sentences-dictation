@@ -3,7 +3,7 @@
  * 与后端 /api/vocabulary 接口交互
  */
 
-const API_BASE = '/api/vocabulary';
+const API_BASE = 'http://localhost:3001/api/vocabulary';
 
 /**
  * 获取认证 token
