@@ -281,7 +281,7 @@ CREATE TABLE user_vocabulary (
     next_review_at TIMESTAMP WITH TIME ZONE,  -- 下次复习时间
     is_learned BOOLEAN DEFAULT FALSE, -- 是否已掌握
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 生词本索引
