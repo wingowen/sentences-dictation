@@ -34,6 +34,9 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
 
   // 输入框引用
   const inputRefs = useRef([]);
+  
+  // 用于跟踪上次播放的句子索引，避免重复播放
+  const lastPlayedIndexRef = useRef(-1);
 
   // 使用自定义 hooks
   const practiceStats = usePracticeStats();
@@ -44,9 +47,28 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
   // 解构 sentences 对象
   const { sentences: sentencesData, isLoading: sentencesLoading, error: sentencesError } = sentences;
 
+  // 当数据源变化时，清除已选择的课程
+  useEffect(() => {
+    setSelectedLesson(null);
+    setCurrentIndex(0);
+    lastPlayedIndexRef.current = -1;
+  }, [dataSource]);
+
   // 处理句子数据，将字符串转换为带有words属性的对象
+  // 如果选择了特定课程（selectedLesson），只使用该课程的句子
   const processedSentences = useMemo(() => {
-    return sentences.sentences.map(sentence => {
+    // 确定要处理的句子数据源
+    let sentencesToProcess = [];
+    
+    if (selectedLesson && selectedLesson.sentences) {
+      // 如果选择了特定课程，使用该课程的句子
+      sentencesToProcess = selectedLesson.sentences;
+    } else if (sentences.sentences && sentences.sentences.length > 0) {
+      // 否则使用默认的句子数据
+      sentencesToProcess = sentences.sentences;
+    }
+    
+    return sentencesToProcess.map((sentence, index) => {
       if (typeof sentence === 'string') {
         // 如果是字符串，将其解析为单词对象
         const words = parseSentenceForPhonetics(sentence);
@@ -61,6 +83,7 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
         }));
 
         return {
+          id: index + 1, // 使用索引+1作为句子ID，用于匹配预加载音频
           text: sentence,
           translation: translation,
           words: wordsWithTranslation
@@ -78,19 +101,37 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
 
         return {
           ...sentence,
+          id: sentence.id || index + 1, // 保留原有ID或使用索引+1
           translation: translation,
+          words: wordsWithTranslation
+        };
+      } else if (sentence && sentence.text) {
+        // 对象格式但只有 text 属性（如新概念二/三的数据）
+        const words = parseSentenceForPhonetics(sentence.text);
+        
+        // 为每个单词添加翻译
+        const wordsWithTranslation = words.map(word => ({
+          ...word,
+          translation: getWordTranslation(word.word)
+        }));
+        
+        return {
+          id: sentence.id || index + 1,
+          text: sentence.text,
+          translation: sentence.translation || null,
           words: wordsWithTranslation
         };
       } else {
         // 其他情况，返回空对象
         return {
-          text: sentence || '',
-          translation: null,
+          id: index + 1,
+          text: sentence.text || sentence || '',
+          translation: sentence.translation || null,
           words: []
         };
       }
     });
-  }, [sentences.sentences]);
+  }, [sentences.sentences, selectedLesson]);
 
   const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
 
@@ -121,22 +162,26 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
 
   // 当 currentIndex 变化时，如果启用了自动播放，则自动播放句子（只播放一次）
   useEffect(() => {
-    if (autoPlay && currentWords.length > 0) {
+    if (autoPlay && currentWords.length > 0 && currentIndex !== lastPlayedIndexRef.current) {
       const sentenceText = currentWords
         .filter(w => w && w.word)
         .map(w => w.word)
         .join(' ');
-      
+
+      const currentSentence = processedSentences[currentIndex];
+      const sentenceId = currentSentence?.id;
+
       if (sentenceText) {
         // 使用 setTimeout 确保在渲染完成后播放
         const timer = setTimeout(() => {
-          speechPlayback.play(sentenceText);
+          speechPlayback.play(sentenceText, { sentenceId });
+          lastPlayedIndexRef.current = currentIndex;
         }, 100);
-        
+
         return () => clearTimeout(timer);
       }
     }
-  }, [currentIndex, autoPlay]); // 只依赖 currentIndex 和 autoPlay，避免重复触发
+  }, [currentIndex, autoPlay, currentWords.length]); // 只依赖 currentIndex 和 autoPlay，避免 processedSentences 和 speechPlayback 导致的重复触发
 
   // 标准化字符串比较
   const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);
@@ -183,11 +228,14 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
       .filter(w => w && w.word)
       .map(w => w.word)
       .join(' ');
-    
+
+    const currentSentence = processedSentences[currentIndex];
+    const sentenceId = currentSentence?.id;
+
     if (sentenceText) {
-      speechPlayback.play(sentenceText);
+      speechPlayback.play(sentenceText, { sentenceId });
     }
-  }, [speechPlayback, currentWords]);
+  }, [speechPlayback, currentWords, processedSentences, currentIndex]);
 
   const handlePlayWord = useCallback((word) => {
     console.log('[AppContext] Playing word:', word);
@@ -268,7 +316,11 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
     showLessonSelector,
     setShowLessonSelector,
     selectedLesson,
-    setSelectedLesson,
+    setSelectedLesson: (lesson) => {
+      setSelectedLesson(lesson);
+      setCurrentIndex(0); // 选择新课程时重置索引
+      lastPlayedIndexRef.current = -1; // 重置播放记录
+    },
 
     // 数据源和加载状态
     dataSource,

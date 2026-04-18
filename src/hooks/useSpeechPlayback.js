@@ -1,11 +1,14 @@
 // src/hooks/useSpeechPlayback.js
 import React, { useState, useCallback, useRef } from 'react';
 import { speak, isSpeechSupported, cancelSpeech } from '../services/speechService';
-import { speak as externalSpeak, cancelSpeech as externalCancelSpeech } from '../services/externalSpeechService';
 
 /**
  * 语音播放控制Hook
- * @param {string} speechService - 语音服务类型 ('web_speech' | 'uberduck')
+ * 使用 speechService.js 的智能降级逻辑：
+ * 1. 预加载音频 (Supabase Storage) - 优先级最高
+ * 2. Edge TTS 在线合成
+ * 3. 浏览器原生 SpeechSynthesis - 降级方案
+ * @param {string} speechService - 语音服务类型 (保留参数用于兼容性，实际逻辑由 speechService.js 处理)
  * @param {Object} options - 播放选项
  * @returns {Object} 播放控制和状态
  */
@@ -17,23 +20,13 @@ export function useSpeechPlayback(speechService = 'web_speech', options = {}) {
 
   // 播放状态引用
   const isPlayingRef = useRef(false);
-  
-  // 缓存 speechSynthesis 实例 (web_speech)
-  const synthesisRef = useRef(null);
 
   // 检查语音支持
   const checkSupport = useCallback(() => {
     const supported = isSpeechSupported();
     setIsSupported(supported);
-    if (supported && speechService === 'web_speech') {
-      // 提前初始化并预热 speechSynthesis，减少首次延迟
-      const synthesis = window.speechSynthesis;
-      synthesisRef.current = synthesis;
-      // 预加载语音列表（触发浏览器异步加载）
-      synthesis.getVoices();
-    }
     return supported;
-  }, [speechService]);
+  }, []);
 
   // 开始播放
   const play = useCallback(async (text, playOptions = {}) => {
@@ -52,14 +45,9 @@ export function useSpeechPlayback(speechService = 'web_speech', options = {}) {
         ...playOptions
       };
 
-      if (speechService === 'web_speech') {
-        // 使用缓存的 speechSynthesis 实例
-        const synthesis = synthesisRef.current || window.speechSynthesis;
-        if (!synthesis) throw new Error('speechSynthesis not available');
-        await speak(text, { ...mergedOptions, synthesis });
-      } else if (speechService === 'uberduck') {
-        await externalSpeak(text, mergedOptions.rate || 1.0, mergedOptions.voice);
-      }
+      // 使用 speechService.js 的智能降级逻辑
+      // 优先级：预加载音频 → Edge TTS → 浏览器 SpeechSynthesis
+      await speak(text, mergedOptions.rate, mergedOptions.sentenceId);
 
       // 播放完成后清理状态
       setIsPlaying(false);
@@ -75,16 +63,12 @@ export function useSpeechPlayback(speechService = 'web_speech', options = {}) {
 
       throw err;
     }
-  }, [speechService, options]);
+  }, [options]);
 
   // 停止播放
   const stop = useCallback(() => {
     try {
-      if (speechService === 'web_speech') {
-        cancelSpeech();
-      } else if (speechService === 'uberduck') {
-        externalCancelSpeech();
-      }
+      cancelSpeech();
 
       setIsPlaying(false);
       setCurrentText('');
@@ -94,7 +78,7 @@ export function useSpeechPlayback(speechService = 'web_speech', options = {}) {
       console.error('Speech stop error:', err);
       setError(err);
     }
-  }, [speechService]);
+  }, []);
 
   // 切换播放/暂停
   const toggle = useCallback((text, playOptions = {}) => {
