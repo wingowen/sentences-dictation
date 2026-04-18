@@ -38,11 +38,13 @@ async function request(method, path, data = null, params = null) {
   
   if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
     options.body = JSON.stringify(data);
+    console.log('[vocabularyService] Sending data:', method, url, data);
   }
   
   try {
     const response = await fetch(url, options);
     const result = await response.json();
+    console.log('[vocabularyService] Response:', result);
     
     if (!result.success) {
       throw new Error(result.error?.message || '请求失败');

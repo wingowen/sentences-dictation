@@ -47,7 +47,17 @@ async function getUserId(event) {
  * 验证生词数据
  */
 function validateVocabulary(data, isUpdate = false) {
+  console.log('[validateVocabulary] Received data:', JSON.stringify(data, null, 2));
+  console.log('[validateVocabulary] isUpdate:', isUpdate);
+  
   const errors = [];
+  
+  // 确保 data 是一个对象
+  if (!data || typeof data !== 'object') {
+    errors.push({ field: 'body', message: '请求数据格式错误' });
+    console.log('[validateVocabulary] Validation errors:', errors);
+    return errors;
+  }
   
   if (!isUpdate) {
     if (!data.word || data.word.trim() === '') {
@@ -55,14 +65,47 @@ function validateVocabulary(data, isUpdate = false) {
     }
   }
   
-  if (data.word && data.word.length > 255) {
-    errors.push({ field: 'word', message: '单词长度不能超过 255 个字符' });
+  if (data.word !== undefined && data.word !== null) {
+    if (typeof data.word !== 'string') {
+      errors.push({ field: 'word', message: '单词必须是字符串' });
+    } else if (data.word.length > 255) {
+      errors.push({ field: 'word', message: '单词长度不能超过 255 个字符' });
+    }
   }
   
-  if (data.part_of_speech && data.part_of_speech.length > 50) {
-    errors.push({ field: 'part_of_speech', message: '词性长度不能超过 50 个字符' });
+  if (data.part_of_speech !== undefined && data.part_of_speech !== null) {
+    if (typeof data.part_of_speech !== 'string') {
+      errors.push({ field: 'part_of_speech', message: '词性必须是字符串' });
+    } else if (data.part_of_speech.length > 50) {
+      errors.push({ field: 'part_of_speech', message: '词性长度不能超过 50 个字符' });
+    }
   }
   
+  if (data.phonetic !== undefined && data.phonetic !== null) {
+    if (typeof data.phonetic !== 'string') {
+      errors.push({ field: 'phonetic', message: '音标必须是字符串' });
+    } else if (data.phonetic.length > 100) {
+      errors.push({ field: 'phonetic', message: '音标长度不能超过 100 个字符' });
+    }
+  }
+  
+  if (data.meaning !== undefined && data.meaning !== null) {
+    if (typeof data.meaning !== 'string') {
+      errors.push({ field: 'meaning', message: '含义必须是字符串' });
+    } else if (data.meaning.length > 500) {
+      errors.push({ field: 'meaning', message: '含义长度不能超过 500 个字符' });
+    }
+  }
+  
+  if (data.notes !== undefined && data.notes !== null) {
+    if (typeof data.notes !== 'string') {
+      errors.push({ field: 'notes', message: '笔记必须是字符串' });
+    } else if (data.notes.length > 1000) {
+      errors.push({ field: 'notes', message: '笔记长度不能超过 1000 个字符' });
+    }
+  }
+  
+  console.log('[validateVocabulary] Validation errors:', errors);
   return errors;
 }
 
@@ -391,6 +434,10 @@ exports.handler = async (event) => {
   }
   
   try {
+    // 从路径中提取 ID（如果存在）
+    const idMatch = path.match(/^\/api\/vocabulary\/(\d+)$/);
+    const vocabId = idMatch ? idMatch[1] : null;
+    
     // 路由匹配
     if (method === 'GET' && /^\/api\/vocabulary\/?$/.test(path)) {
       return { ...await getVocabularies(event), headers };
@@ -405,16 +452,16 @@ exports.handler = async (event) => {
       return { ...await addVocabulary(event), headers };
     }
     
-    if (method === 'GET' && /^\/api\/vocabulary\/(\d+)$/.test(path)) {
-      return { ...await getVocabulary(event), headers };
+    if (method === 'GET' && vocabId) {
+      return { ...await getVocabulary({ ...event, pathParameters: { id: vocabId } }), headers };
     }
     
-    if (method === 'PUT' && /^\/api\/vocabulary\/(\d+)$/.test(path)) {
-      return { ...await updateVocabulary(event), headers };
+    if (method === 'PUT' && vocabId) {
+      return { ...await updateVocabulary({ ...event, pathParameters: { id: vocabId } }), headers };
     }
     
-    if (method === 'DELETE' && /^\/api\/vocabulary\/(\d+)$/.test(path)) {
-      return { ...await deleteVocabulary(event), headers };
+    if (method === 'DELETE' && vocabId) {
+      return { ...await deleteVocabulary({ ...event, pathParameters: { id: vocabId } }), headers };
     }
     
     return { ...response.error('接口不存在', 'NOT_FOUND', null, 404), headers };

@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  getVocabularies, 
-  addVocabulary, 
-  updateVocabulary, 
+import {
+  getVocabularies,
+  addVocabulary,
+  updateVocabulary,
   deleteVocabulary
 } from '../services/vocabularyService';
 import LoadingIndicator from './LoadingIndicator';
+
+// 词性映射表
+const POS_MAP = {
+  'noun': '名词',
+  'verb': '动词',
+  'adjective': '形容词',
+  'adverb': '副词',
+  'pronoun': '代词',
+  'preposition': '介词',
+  'conjunction': '连词',
+  'interjection': '感叹词'
+};
 
 const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [vocabularies, setVocabularies] = useState([]);
@@ -14,7 +26,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-  
+  const [showMeaning, setShowMeaning] = useState(true); // 控制含义显示/隐藏
+
   // 新建/编辑表单状态
   const [formData, setFormData] = useState({
     word: '',
@@ -47,20 +60,33 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     loadVocabularies();
   }, [loadVocabularies]);
 
+  // 提示浮窗状态
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+
+  // 显示提示浮窗
+  const showNotification = (message, type = 'info') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: 'info' });
+    }, 3000);
+  };
+
   // 提交表单
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.word.trim()) {
-      alert('请输入单词');
+      showNotification('请输入单词', 'error');
       return;
     }
 
     try {
       if (editingId) {
         await updateVocabulary(editingId, formData);
+        showNotification('生词更新成功', 'success');
       } else {
         await addVocabulary(formData);
+        showNotification('生词添加成功', 'success');
       }
       
       // 重置表单并刷新列表
@@ -69,7 +95,7 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       setEditingId(null);
       loadVocabularies();
     } catch (err) {
-      alert(err.message || '操作失败');
+      showNotification(err.message || '操作失败', 'error');
     }
   };
 
@@ -86,8 +112,9 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       await deleteVocabulary(deleteConfirmId);
       loadVocabularies();
       setDeleteConfirmId(null);
+      showNotification('生词删除成功', 'success');
     } catch (err) {
-      alert('删除失败');
+      showNotification('删除失败', 'error');
     }
   };
   
@@ -166,22 +193,58 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
           <div className="vocabulary-list">
             {vocabularies.map(vocab => (
               <div key={vocab.id} className="vocabulary-card">
-                <div className="vocab-word">
-                  <span className="word">{vocab.word}</span>
+                <div className="vocab-header">
+                  <div className="vocab-word">
+                    <span className="word">{vocab.word}</span>
+                    {vocab.phonetic && (
+                      <span className="phonetic">{vocab.phonetic}</span>
+                    )}
+                  </div>
+                  <div className="vocab-header-right">
+                    {vocab.part_of_speech && vocab.part_of_speech !== 'none' && (
+                      <span className="part-of-speech">
+                        {POS_MAP[vocab.part_of_speech] || vocab.part_of_speech}
+                      </span>
+                    )}
+                    <button
+                      className="toggle-meaning-btn"
+                      onClick={() => setShowMeaning(!showMeaning)}
+                      title={showMeaning ? '隐藏含义' : '显示含义'}
+                    >
+                      {showMeaning ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
                 </div>
-                
+
+                {vocab.meaning && showMeaning && (
+                  <div className="vocab-meaning">
+                    <span className="meaning-label">含义:</span>
+                    <span className="meaning-text">{vocab.meaning}</span>
+                  </div>
+                )}
+
+                {vocab.notes && showMeaning && (
+                  <div className="vocab-notes">
+                    <span className="notes-label">笔记:</span>
+                    <span className="notes-text">{vocab.notes}</span>
+                  </div>
+                )}
+
                 {vocab.sentence_context && (
-                  <div className="vocab-sentence">{vocab.sentence_context}</div>
+                  <div className="vocab-sentence">
+                    <span className="sentence-label">例句:</span>
+                    <span className="sentence-text">{vocab.sentence_context}</span>
+                  </div>
                 )}
 
                 <div className="vocab-actions">
-                  <button 
+                  <button
                     className="edit-btn"
                     onClick={() => handleEdit(vocab)}
                   >
                     编辑
                   </button>
-                  <button 
+                  <button
                     className="delete-btn"
                     onClick={() => handleDelete(vocab.id)}
                   >
@@ -285,6 +348,13 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
         )}
       </div>
 
+        {/* 提示浮窗 */}
+        {notification.show && (
+          <div className={`notification ${notification.type}`}>
+            {notification.message}
+          </div>
+        )}
+
       <style>{`
         .vocabulary-app {
           padding: 20px;
@@ -350,30 +420,58 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
           padding: 16px;
         }
         
+        .vocab-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
         .vocab-word {
           display: flex;
           align-items: baseline;
           gap: 8px;
           flex-wrap: wrap;
         }
-        
+
         .vocab-word .word {
           font-size: 1.25rem;
           font-weight: 600;
           color: #1f2937;
         }
-        
+
         .vocab-word .phonetic {
           color: #6b7280;
           font-size: 0.9rem;
         }
-        
-        .vocab-word .pos {
+
+        .vocab-header-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .part-of-speech {
           background: #e5e7eb;
           padding: 2px 8px;
           border-radius: 4px;
           font-size: 0.8rem;
           color: #4b5563;
+        }
+
+        .toggle-meaning-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1.1rem;
+          padding: 4px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .toggle-meaning-btn:hover {
+          background-color: #f3f4f6;
         }
         
         .vocab-meaning {
@@ -555,6 +653,41 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
           padding: 12px;
           border-radius: 6px;
           text-align: center;
+        }
+        
+        .notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 12px 20px;
+          border-radius: 6px;
+          color: white;
+          font-weight: 500;
+          z-index: 10000;
+          animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification.success {
+          background: #10B981;
+        }
+        
+        .notification.error {
+          background: #EF4444;
+        }
+        
+        .notification.info {
+          background: #3B82F6;
+        }
+        
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
         }
       `}</style>
     </div>
