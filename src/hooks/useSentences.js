@@ -7,13 +7,13 @@ import { getSentences, DATA_SOURCE_TYPES, getLocalResources, getSentencesByLocal
  * @param {string} initialDataSource - 初始数据源
  * @returns {Object} 句子数据和控制函数
  */
-export function useSentences(initialDataSource = DATA_SOURCE_TYPES.LOCAL) {
+export function useSentences(initialDataSource = DATA_SOURCE_TYPES.NEW_CONCEPT_2) {
   const [sentences, setSentences] = useState([]);
   const [currentDataSource, setCurrentDataSource] = useState(initialDataSource);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [localResources, setLocalResources] = useState([]);
-  const [localResourceId, setLocalResourceId] = useState('simple');
+  const [localResourceId, setLocalResourceId] = useState('new-concept-1');
 
   // 加载句子数据
   const loadSentences = useCallback(async (dataSource = currentDataSource, resourceId = localResourceId) => {
@@ -21,22 +21,11 @@ export function useSentences(initialDataSource = DATA_SOURCE_TYPES.LOCAL) {
       setIsLoading(true);
       setError(null);
 
-      let data;
-
-      if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
-        // 本地数据源，使用本地资源ID
-        data = await getSentencesByLocalResource(resourceId);
-      } else {
-        // 其他数据源
-        data = await getSentences(dataSource);
-      }
+      // 获取句子数据
+      const data = await getSentences(dataSource);
 
       setSentences(data);
       setCurrentDataSource(dataSource);
-
-      if (dataSource === DATA_SOURCE_TYPES.LOCAL) {
-        setLocalResourceId(resourceId);
-      }
 
     } catch (err) {
       console.error('Error loading sentences:', err);
@@ -49,16 +38,15 @@ export function useSentences(initialDataSource = DATA_SOURCE_TYPES.LOCAL) {
 
   // 切换数据源
   const changeDataSource = useCallback((newDataSource, resourceId = null) => {
-    const resourceToUse = resourceId || (newDataSource === DATA_SOURCE_TYPES.LOCAL ? 'simple' : null);
-    loadSentences(newDataSource, resourceToUse);
+    loadSentences(newDataSource, resourceId);
   }, [loadSentences]);
 
   // 切换本地资源
   const changeLocalResource = useCallback((resourceId) => {
-    if (currentDataSource === DATA_SOURCE_TYPES.LOCAL) {
-      loadSentences(DATA_SOURCE_TYPES.LOCAL, resourceId);
-    }
-  }, [currentDataSource, loadSentences]);
+    setLocalResourceId(resourceId);
+    // 加载新概念一的句子
+    loadSentences(DATA_SOURCE_TYPES.NEW_CONCEPT_1, resourceId);
+  }, [loadSentences]);
 
   // 重新加载当前数据
   const reload = useCallback(() => {

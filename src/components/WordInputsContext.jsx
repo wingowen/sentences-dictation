@@ -111,33 +111,34 @@ function WordInputsContext() {
       {/* 输入区域 */}
       <form onSubmit={handleSubmit} className="word-inputs-form">
         <div className="word-inputs">
-          {currentWords.map((wordData, index) => (
-            <div key={index} className="word-input-group">
-              <label className="word-label">
-                {wordData.word}
-                {wordData.translation && (
-                  <span className="translation">{wordData.translation}</span>
-                )}
-              </label>
-              <input
-                ref={(el) => inputRefs.current[index] = el}
-                type="text"
-                value={wordInputs[index] || ''}
-                onChange={(e) => handleWordInputChange(index, e.target.value)}
-                className={`word-input ${
-                  wordInputs[index] && wordInputs[index].trim() &&
-                  normalize(wordInputs[index]) === normalize(wordData.word)
-                    ? 'correct'
-                    : wordInputs[index] && wordInputs[index].trim() &&
-                      normalize(wordInputs[index]) !== normalize(wordData.word)
-                    ? 'incorrect'
-                    : ''
-                }`}
-                placeholder={`输入单词 ${index + 1}`}
-                disabled={listenMode}
-              />
-            </div>
-          ))}
+          {currentWords.map((wordData, index) => {
+            const hasInput = wordInputs[index] && wordInputs[index].trim();
+            const isCorrect = hasInput && normalize(wordInputs[index]) === normalize(wordData.word);
+            const isIncorrect = hasInput && normalize(wordInputs[index]) !== normalize(wordData.word);
+
+            return (
+              <div key={index} className="word-input-group">
+                <label className="word-label">
+                  {/* 只有填写后才显示单词 */}
+                  {hasInput ? wordData.word : '\u00A0'}
+                  {wordData.translation && hasInput && (
+                    <span className="translation">{wordData.translation}</span>
+                  )}
+                </label>
+                <input
+                  ref={(el) => inputRefs.current[index] = el}
+                  type="text"
+                  value={wordInputs[index] || ''}
+                  onChange={(e) => handleWordInputChange(index, e.target.value)}
+                  className={`word-input ${
+                    isCorrect ? 'correct' : isIncorrect ? 'incorrect' : ''
+                  }`}
+                  placeholder={`输入单词 ${index + 1}`}
+                  disabled={listenMode}
+                />
+              </div>
+            );
+          })}
         </div>
 
         <button

@@ -158,10 +158,11 @@ function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
     }
   }, [currentUser, sentences, currentIndex, onRequireLogin]);
   
-  // 检查是否需要显示课文选择器（第二册或第三册且没有选择课文）
+  // 检查是否需要显示课文选择器（新概念一、二、三且没有选择课文）
+  const isNce1 = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_1;
   const isNce2 = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2;
   const isNce3 = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3;
-  const shouldShowLessonSelector = (isNce2 || isNce3) && !selectedLesson;
+  const shouldShowLessonSelector = (isNce1 || isNce2 || isNce3) && !selectedLesson;
   
   // 如果需要选择课文，显示课文选择器
   if (shouldShowLessonSelector) {
@@ -192,21 +193,21 @@ function AppContent({ onSelectedDataSourceChange }) {
     showSettingsModal,
     setShowSettingsModal,
     autoPlay,
-    setAutoPlay,
+    handleToggleAutoPlay,
     randomMode,
-    setRandomMode,
+    handleToggleRandomMode,
     listenMode,
-    setListenMode,
+    handleToggleListenMode,
     autoNext,
-    setAutoNext,
+    handleToggleAutoNext,
     showCounter,
-    setShowCounter,
+    handleToggleShowCounter,
     speechRate,
-    setSpeechRate,
+    handleSpeechRateChange,
     showTranslation,
-    setShowTranslation,
+    handleToggleShowTranslation,
     showOriginalText,
-    setShowOriginalText,
+    handleToggleShowOriginalText,
     currentTranslation,
     isSupported: speechSupported,
   } = useApp() || {};
@@ -295,7 +296,7 @@ function AppContent({ onSelectedDataSourceChange }) {
       'new-concept-2': DATA_SOURCE_TYPES.NEW_CONCEPT_2,
       'new-concept-3': DATA_SOURCE_TYPES.NEW_CONCEPT_3,
     };
-    const dataSource = conceptMap[conceptId] || DATA_SOURCE_TYPES.LOCAL;
+    const dataSource = conceptMap[conceptId] || DATA_SOURCE_TYPES.NEW_CONCEPT_2;
     
     // 第一册直接进入练习，第二册和第三册需要先选择课文
     if (conceptId === 'new-concept-1') {
@@ -440,22 +441,22 @@ function AppContent({ onSelectedDataSourceChange }) {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         autoPlay={autoPlay}
-        onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
+        onToggleAutoPlay={handleToggleAutoPlay}
         randomMode={randomMode}
-        onToggleRandomMode={() => setRandomMode(!randomMode)}
+        onToggleRandomMode={handleToggleRandomMode}
         listenMode={listenMode}
-        onToggleListenMode={() => setListenMode(!listenMode)}
+        onToggleListenMode={handleToggleListenMode}
         autoNext={autoNext}
-        onToggleAutoNext={() => setAutoNext(!autoNext)}
+        onToggleAutoNext={handleToggleAutoNext}
         showCounter={showCounter}
-        onToggleShowCounter={() => setShowCounter(!showCounter)}
+        onToggleShowCounter={handleToggleShowCounter}
         speechRate={speechRate}
-        onSpeechRateChange={setSpeechRate}
+        onSpeechRateChange={handleSpeechRateChange}
         speechSupported={speechSupported}
         showTranslation={showTranslation}
-        onToggleTranslation={() => setShowTranslation(!showTranslation)}
+        onToggleTranslation={handleToggleShowTranslation}
         showOriginalText={showOriginalText}
-        onToggleOriginalText={() => setShowOriginalText(!showOriginalText)}
+        onToggleOriginalText={handleToggleShowOriginalText}
         currentTranslation={currentTranslation}
       />
     </div>
@@ -463,11 +464,23 @@ function AppContent({ onSelectedDataSourceChange }) {
 }
 
 function App() {
-  const [selectedDataSource, setSelectedDataSource] = useState(null);
-  
+  // 从 localStorage 读取上次选择的数据源
+  const [selectedDataSource, setSelectedDataSource] = useState(() => {
+    const saved = localStorage.getItem('selectedDataSource');
+    return saved || null;
+  });
+
+  // 当数据源变化时，保存到 localStorage
+  const handleDataSourceChange = useCallback((dataSource) => {
+    setSelectedDataSource(dataSource);
+    if (dataSource) {
+      localStorage.setItem('selectedDataSource', dataSource);
+    }
+  }, []);
+
   return (
-    <AppProvider dataSource={selectedDataSource || DATA_SOURCE_TYPES.LOCAL}>
-      <AppContent onSelectedDataSourceChange={setSelectedDataSource} />
+    <AppProvider dataSource={selectedDataSource}>
+      <AppContent onSelectedDataSourceChange={handleDataSourceChange} />
     </AppProvider>
   );
 }

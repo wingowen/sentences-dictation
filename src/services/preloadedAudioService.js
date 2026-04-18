@@ -11,6 +11,22 @@ const CACHE_MAX_SIZE = 50;
 // 当前播放的 Audio 对象
 let currentAudio = null;
 
+// 检测浏览器是否支持 Opus 格式
+const canPlayOpus = () => {
+  const audio = document.createElement('audio');
+  // 检测 audio/ogg; codecs=opus 或 audio/opus
+  return audio.canPlayType('audio/ogg; codecs=opus') !== '' ||
+         audio.canPlayType('audio/opus') !== '';
+};
+
+const isOpusSupported = canPlayOpus();
+console.log(`[PreloadAudio] Opus 格式支持: ${isOpusSupported}`);
+
+// 详细的 Opus 支持检测
+const audioTest = document.createElement('audio');
+console.log(`[PreloadAudio] canPlayType('audio/ogg; codecs=opus'): "${audioTest.canPlayType('audio/ogg; codecs=opus')}"`);
+console.log(`[PreloadAudio] canPlayType('audio/opus'): "${audioTest.canPlayType('audio/opus')}"`);
+
 /**
  * 构建音频公共 URL
  * @param {number|string} sentenceId - 句子 ID
@@ -20,15 +36,75 @@ const getAudioUrl = (sentenceId) => {
   return `${SUPABASE_URL}/storage/v1/object/public/${AUDIO_BUCKET}/${sentenceId}.opus`;
 };
 
+// 音频存在性缓存（基于实际播放结果）
+const audioExistsCache = new Map();
+
 /**
  * 检查句子是否有预加载音频
- * 简化版：只要有 sentenceId 就假设有音频（948句全部已生成）
- * 播放失败时自动降级到下一级 TTS
+ * 通过 HEAD 请求验证文件是否实际存在于 Supabase Storage
  */
 export const hasPreloadedAudio = async (sentenceId) => {
   if (!sentenceId) return false;
-  // 所有句子都有预生成音频，跳过 HEAD 检查（避免 CORS/超时问题）
-  return true;
+
+  // 如果浏览器不支持 Opus 格式，直接返回 false
+  if (!isOpusSupported) {
+    console.log(`[PreloadAudio] 浏览器不支持 Opus 格式，跳过预加载音频`);
+    return false;
+  }
+
+  const cacheKey = String(sentenceId);
+
+  // 检查缓存：已知存在的音频
+  if (audioExistsCache.get(cacheKey) === true) {
+    console.log(`[PreloadAudio] ✅ 缓存命中(存在): sentence ${sentenceId}`);
+    return true;
+  }
+
+  // 检查缓存：已知不存在的音频
+  if (audioExistsCache.get(cacheKey) === false) {
+    console.log(`[PreloadAudio] ❌ 缓存命中(不存在): sentence ${sentenceId}`);
+    return false;
+  }
+
+  // 发送 HEAD 请求验证文件是否存在
+  try {
+    const url = getAudioUrl(sentenceId);
+    console.log(`[PreloadAudio] 🔍 检查音频存在性: sentence ${sentenceId}`);
+
+    // 使用 AbortController 设置超时，避免请求挂起
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal,
+      // 不发送 cookies，避免 CORS 预检问题
+      credentials: 'omit',
+      // 跟随重定向
+      redirect: 'follow'
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      console.log(`[PreloadAudio] ✅ 音频存在: sentence ${sentenceId}`);
+      audioExistsCache.set(cacheKey, true);
+      return true;
+    } else {
+      console.log(`[PreloadAudio] ❌ 音频不存在: sentence ${sentenceId} (HTTP ${response.status})`);
+      audioExistsCache.set(cacheKey, false);
+      return false;
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.warn(`[PreloadAudio] ⏱️ 检查超时: sentence ${sentenceId}`);
+    } else {
+      console.warn(`[PreloadAudio] ⚠️ 检查失败: sentence ${sentenceId} -`, error.message);
+    }
+    // 网络错误时保守处理，假设不存在
+    audioExistsCache.set(cacheKey, false);
+    return false;
+  }
 };
 
 /**
@@ -56,9 +132,11 @@ export const preloadAudio = async (sentenceId) => {
         audioCache.delete(firstKey);
       }
 
-      const blobUrl = URL.createObjectURL(blob);
+      // 明确指定 MIME 类型为 audio/ogg
+      const audioBlob = new Blob([blob], { type: 'audio/ogg; codecs=opus' });
+      const blobUrl = URL.createObjectURL(audioBlob);
       audioCache.set(cacheKey, blobUrl);
-      audioExistsCache.set(sentenceId, true);
+      audioExistsCache.set(cacheKey, true);
       console.log(`[PreloadAudio] 预加载完成: sentence ${sentenceId}`);
     }
   } catch (e) {
@@ -96,7 +174,10 @@ export const speak = async (sentenceId) => {
       currentAudio = null;
     }
 
-    currentAudio = new Audio(audioUrl);
+    currentAudio = new Audio();
+    // 设置音频类型，帮助浏览器正确解码
+    currentAudio.type = 'audio/ogg; codecs=opus';
+    currentAudio.src = audioUrl;
     currentAudio.onended = () => {
       console.log(`[PreloadAudio] ✅ 播放完成: sentence ${sentenceId}`);
       currentAudio = null;
@@ -105,6 +186,10 @@ export const speak = async (sentenceId) => {
     currentAudio.onerror = (e) => {
       const err = currentAudio?.error;
       console.error(`[PreloadAudio] ❌ 播放失败: sentence ${sentenceId}`, err?.code, err?.message);
+
+      // 标记该音频不存在，下次跳过
+      audioExistsCache.set(cacheKey, false);
+
       currentAudio = null;
       reject(new Error(`Audio playback failed for sentence ${sentenceId}: ${err?.message || 'unknown'}`));
     };

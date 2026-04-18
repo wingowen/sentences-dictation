@@ -1,19 +1,18 @@
 // 数据服务 - 处理不同数据源的读取逻辑
 
 // 本地JSON文件数据源
-import localSentences from '../data/简单句.json';
-import newConcept1Sentences from '../data/新概念一.json';
+import newConcept1Data from '../data/new-concept-1.json';
 import newConcept3Data from '../data/new-concept-3.json';
 import newConcept2Data from '../data/new-concept-2.json';
 import cacheService from './cacheService';
 import { getAllFlashcards } from './flashcardService';
+import { generateSentenceId } from '../utils/sentenceId.js';
 
-// 导出新概念三数据
-export { newConcept3Data };
+// 导出新概念一、二、三数据
+export { newConcept1Data, newConcept2Data, newConcept3Data };
 
 // 数据源类型常量
 export const DATA_SOURCE_TYPES = {
-  LOCAL: 'local',
   NOTION: 'notion',
   NEW_CONCEPT_1: 'new-concept-1',
   NEW_CONCEPT_2: 'new-concept-2',
@@ -28,11 +27,6 @@ export const DATA_SOURCES = [
     id: DATA_SOURCE_TYPES.FLASHCARDS,
     name: '闪卡模式',
     description: '使用闪卡进行单词和句子学习',
-  },
-  {
-    id: DATA_SOURCE_TYPES.LOCAL,
-    name: '本地数据',
-    description: '使用本地 JSON 文件中的句子',
   },
   {
     id: DATA_SOURCE_TYPES.NOTION,
@@ -75,7 +69,7 @@ export const DATA_SOURCE_TREE = [
         name: '新概念英语',
         icon: '📗',
         children: [
-          { id: DATA_SOURCE_TYPES.NEW_CONCEPT_1, name: '第一册', icon: '1️⃣', local: true },
+          { id: DATA_SOURCE_TYPES.NEW_CONCEPT_1, name: '第一册', icon: '1️⃣', local: false },
           { id: DATA_SOURCE_TYPES.NEW_CONCEPT_2, name: '第二册', icon: '2️⃣', local: false },
           { id: DATA_SOURCE_TYPES.NEW_CONCEPT_3, name: '第三册', icon: '3️⃣', local: false }
         ]
@@ -113,19 +107,21 @@ export const findTreeNode = (id) => {
 };
 
 /**
- * 从本地JSON文件获取句子
- * @returns {Promise<Array>} 句子数组
- */
-export const getLocalSentences = async () => {
-  return Promise.resolve(localSentences);
-};
-
-/**
  * 从本地JSON文件获取新概念一句子
  * @returns {Promise<Array>} 句子数组
  */
 export const getNewConcept1Sentences = async () => {
-  return Promise.resolve(newConcept1Sentences);
+  // 新概念一现在使用统一的结构化格式（与NCE2/NCE3一致）
+  if (newConcept1Data.success && newConcept1Data.articles) {
+    return newConcept1Data.articles.flatMap(article =>
+      (article.sentences || []).map((sentence, index) => ({
+        text: sentence.text || '',
+        translation: sentence.translation || '',
+        id: generateSentenceId('nce1', article.lesson_id, index)
+      }))
+    ).filter(s => s.text && s.text.trim().length > 0);
+  }
+  throw new Error('新概念一本地数据格式错误');
 };
 
 /**
@@ -315,13 +311,13 @@ export const getSupabaseSentences = async (articleId) => {
  * @param {string} dataSourceType - 数据源类型 (DATA_SOURCE_TYPES)
  * @returns {Promise<Array>} 句子数组
  */
-export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LOCAL) => {
+export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.NEW_CONCEPT_2) => {
   // 尝试从缓存中读取数据
   const cachedData = cacheService.readCache('getSentencesBySource', { dataSourceType });
   if (cachedData) {
     return cachedData;
   }
-  
+
   let data;
   switch (dataSourceType) {
     case DATA_SOURCE_TYPES.NOTION:
@@ -344,12 +340,11 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
       // 实际句子通过 getSupabaseSentences 获取
       data = [];
       break;
-    case DATA_SOURCE_TYPES.LOCAL:
     default:
-      data = await getLocalSentences();
+      data = await getNewConcept2Sentences();
       break;
   }
-  
+
   // 缓存数据
   cacheService.writeCache('getSentencesBySource', data, { dataSourceType });
   return data;
@@ -363,9 +358,6 @@ export const getSentencesBySource = async (dataSourceType = DATA_SOURCE_TYPES.LO
  * 从 Netlify Function 获取新概念二句子
  * @returns {Promise<Array>} 句子数组
  */
-// 导出新概念二数据
-export { newConcept2Data };
-
 export const getNewConcept2Sentences = async () => {
   // 从本地 JSON 获取文章列表（和 NCE3 一样）
   if (newConcept2Data.success && newConcept2Data.articles) {
@@ -373,7 +365,7 @@ export const getNewConcept2Sentences = async () => {
       (article.sentences || []).map((sentence, index) => ({
         text: sentence.text || sentence,
         translation: sentence.translation || '',
-        id: `nce2-${article.lesson_id || article.title}-${index}`,
+        id: generateSentenceId('nce2', article.lesson_id, index),
         words: (sentence.text || sentence).split(/\s+/).map(word => ({
           word: word.replace(/[^a-zA-Z']/g, '').replace(/^'|'$/g, ''),
           original: word
@@ -385,54 +377,17 @@ export const getNewConcept2Sentences = async () => {
 };
 
 export const getNewConcept3Sentences = async () => {
-  // 创建超时控制器
-  const controller = new AbortController();
-  let timeoutId = null;
-  
-  try {
-    // 调用 Netlify Function
-    const functionUrl = '/.netlify/functions/get-new-concept-3';
-    
-    // 设置超时
-    timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
-    
-    const response = await fetch(functionUrl, {
-      signal: controller.signal,
-    });
-    
-    // 检查响应类型
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('Netlify Functions 未运行或返回了非 JSON 数据。请确保使用 `npm run netlify-dev` 启动项目。');
-    }
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data.success || !data.articles || data.articles.length === 0) {
-      throw new Error('获取新概念三文章失败或无数据');
-    }
-    
-    // 扁平化所有文章的句子
-    const allSentences = data.articles.flatMap(article => article.sentences);
-    return allSentences;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('New Concept 3 API request timeout');
-      throw new Error('请求超时，请检查网络连接');
-    }
-    console.error('Error fetching New Concept 3 sentences:', error);
-    throw error;
-  } finally {
-    // 确保清理超时，无论成功还是失败
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-    }
+  // 新概念三现在使用统一的结构化格式（与NCE2一致），直接从本地JSON读取
+  if (newConcept3Data.success && newConcept3Data.articles) {
+    return newConcept3Data.articles.flatMap(article =>
+      (article.sentences || []).map((sentence, index) => ({
+        text: sentence.text || '',
+        translation: sentence.translation || '',
+        id: generateSentenceId('nce3', article.lesson_id, index)
+      }))
+    ).filter(s => s.text && s.text.trim().length > 0);
   }
+  throw new Error('新概念三本地数据格式错误');
 };
 
 /**
@@ -442,16 +397,10 @@ export const getNewConcept3Sentences = async () => {
 export const getLocalResources = () => {
   return [
     {
-      id: 'simple',
-      name: '简单句',
-      description: '基础简单句子练习',
-      data: localSentences
-    },
-    {
       id: 'new-concept-1',
       name: '新概念一',
       description: '新概念英语第一册句子',
-      data: newConcept1Sentences
+      data: newConcept1Data
     }
   ];
 };
@@ -461,13 +410,13 @@ export const getLocalResources = () => {
  * @param {string} resourceId - 本地资源ID
  * @returns {Promise<Array>} 句子数组
  */
-export const getSentencesByLocalResource = async (resourceId = 'simple') => {
+export const getSentencesByLocalResource = async (resourceId = 'new-concept-1') => {
   const resources = getLocalResources();
   const resource = resources.find(r => r.id === resourceId);
   if (resource) {
     return Promise.resolve(resource.data);
   }
-  return Promise.resolve(localSentences);
+  return Promise.resolve([]);
 };
 
 /**
@@ -475,11 +424,11 @@ export const getSentencesByLocalResource = async (resourceId = 'simple') => {
  * @param {string|boolean} dataSource - 数据源类型或是否使用 Notion（向后兼容）
  * @returns {Promise<Array>} 句子数组
  */
-export const getSentences = async (dataSource = DATA_SOURCE_TYPES.LOCAL) => {
+export const getSentences = async (dataSource = DATA_SOURCE_TYPES.NEW_CONCEPT_2) => {
   // 向后兼容：如果传入 boolean，转换为数据源类型
   if (typeof dataSource === 'boolean') {
-    dataSource = dataSource ? DATA_SOURCE_TYPES.NOTION : DATA_SOURCE_TYPES.LOCAL;
+    dataSource = dataSource ? DATA_SOURCE_TYPES.NOTION : DATA_SOURCE_TYPES.NEW_CONCEPT_2;
   }
-  
+
   return await getSentencesBySource(dataSource);
 };

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音频预览 - Edge TTS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.8);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .audio-list {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .audio-item {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+    .audio-item:hover {
+      background: #f8f9fa;
+    }
+    .audio-item:last-child {
+      border-bottom: none;
+    }
+    .number {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 20px;
+      flex-shrink: 0;
+    }
+    .content {
+      flex: 1;
+    }
+    .text {
+      font-size: 1.1rem;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: #666;
+    }
+    audio {
+      width: 300px;
+      height: 40px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .error {
+      text-align: center;
+      padding: 40px;
+      color: #e74c3c;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 30px;
+      color: white;
+      text-decoration: none;
+      opacity: 0.8;
+    }
+    .back-link:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Edge TTS 音频预览</h1>
+    <p class="subtitle">使用 Microsoft Azure Edge TTS 生成的高质量音频</p>
+    
+    <div class="audio-list" id="audioList">
+      <div class="loading">加载中...</div>
+    </div>
+    
+    <a href="/" class="back-link">← 返回应用</a>
+  </div>
+
+  <script>
+    const SAMPLE_SENTENCES = [
+      { id: 1, text: "Hello, how are you today?" },
+      { id: 2, text: "The quick brown fox jumps over the lazy dog." },
+      { id: 3, text: "Practice makes perfect." },
+      { id: 4, text: "Every cloud has a silver lining." },
+      { id: 5, text: "Where there's a will, there's a way." },
+    ];
+
+    async function loadAudioList() {
+      const container = document.getElementById('audioList');
+      
+      // 直接渲染列表，不做预检查
+      container.innerHTML = SAMPLE_SENTENCES.map((item, index) => `
+        <div class="audio-item">
+          <div class="number">${item.id}</div>
+          <div class="content">
+            <div class="text">${item.text}</div>
+            <div class="meta">Edge TTS - en-US-AriaNeural</div>
+          </div>
+          <audio controls preload="none">
+            <source src="/sample-${item.id}.mp3" type="audio/mpeg">
+            您的浏览器不支持音频播放
+          </audio>
+        </div>
+      `).join('');
+    }
+
+    // 页面加载完成后加载音频列表
+    loadAudioList();
+  </script>
+</body>
+</html>

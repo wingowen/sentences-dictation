@@ -37,7 +37,12 @@ const LessonSelector = ({ onBack }) => {
     if (onBack) onBack();
   };
 
-  const bookTitle = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 ? '新概念英语第二册' : '新概念英语第三册';
+  const bookTitleMap = {
+    [DATA_SOURCE_TYPES.NEW_CONCEPT_1]: '新概念英语第一册',
+    [DATA_SOURCE_TYPES.NEW_CONCEPT_2]: '新概念英语第二册',
+    [DATA_SOURCE_TYPES.NEW_CONCEPT_3]: '新概念英语第三册',
+  };
+  const bookTitle = bookTitleMap[dataSource] || '新概念英语';
 
   if (sentencesLoading && (!rawArticles || rawArticles.length === 0)) {
     return (

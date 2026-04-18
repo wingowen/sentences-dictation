@@ -5,32 +5,61 @@ import { usePracticeProgress } from '../hooks/usePracticeProgress';
 import { useSpeechVoices } from '../hooks/useSpeechVoices';
 import { useSpeechPlayback } from '../hooks/useSpeechPlayback';
 import { useSentences } from '../hooks/useSentences';
-import { DATA_SOURCE_TYPES, newConcept2Data, newConcept3Data } from '../services/dataService';
+import { DATA_SOURCE_TYPES, newConcept1Data, newConcept2Data, newConcept3Data } from '../services/dataService';
 import { speak, isSpeechSupported, cancelSpeech } from '../services/speechService';
 import { parseSentenceForPhonetics } from '../services/pronunciationService';
 import { getTranslation, getWordTranslation } from '../services/translationService';
+
 
 // 创建Context
 const AppContext = createContext();
 
 // Context Provider组件
-export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) {
+export function AppProvider({ children, dataSource }) {
+  // 如果没有指定数据源，不加载任何句子数据
+  const effectiveDataSource = dataSource || null;
   // 基本状态
   const [currentIndex, setCurrentIndex] = useState(0);
   const [wordInputs, setWordInputs] = useState([]);
   const [result, setResult] = useState(null);
-  const [showOriginalText, setShowOriginalText] = useState(false);
+  const [showOriginalText, setShowOriginalText] = useState(() => {
+    const saved = localStorage.getItem('showOriginalText');
+    return saved ? saved === 'true' : false;
+  });
   const [showModal, setShowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false);
   const [showLessonSelector, setShowLessonSelector] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [speechRate, setSpeechRate] = useState(1);
-  const [randomMode, setRandomMode] = useState(false);
-  const [listenMode, setListenMode] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(() => {
+    const saved = localStorage.getItem('autoPlay');
+    return saved ? saved === 'true' : false;
+  });
+  const [speechRate, setSpeechRate] = useState(() => {
+    const saved = localStorage.getItem('speechRate');
+    return saved ? parseFloat(saved) : 1;
+  });
+  const [randomMode, setRandomMode] = useState(() => {
+    const saved = localStorage.getItem('randomMode');
+    return saved ? saved === 'true' : false;
+  });
+  const [listenMode, setListenMode] = useState(() => {
+    const saved = localStorage.getItem('listenMode');
+    return saved ? saved === 'true' : false;
+  });
   const [speechService, setSpeechService] = useState('web_speech');
-  const [autoNext, setAutoNext] = useState(true);
+  const [autoNext, setAutoNext] = useState(() => {
+    const saved = localStorage.getItem('autoNext');
+    return saved ? saved === 'true' : true;
+  });
+  const [showCounter, setShowCounter] = useState(() => {
+    const saved = localStorage.getItem('showCounter');
+    return saved ? saved === 'true' : false;
+  });
+  const [showTranslation, setShowTranslation] = useState(() => {
+    const saved = localStorage.getItem('showTranslation');
+    return saved ? saved === 'true' : false;
+  });
 
   // 输入框引用
   const inputRefs = useRef([]);
@@ -40,7 +69,7 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
 
   // 使用自定义 hooks
   const practiceStats = usePracticeStats();
-  const sentences = useSentences(dataSource);
+  const sentences = useSentences(effectiveDataSource);
   const speechVoices = useSpeechVoices(speechService);
   const speechPlayback = useSpeechPlayback(speechService, { rate: speechRate });
   
@@ -68,27 +97,8 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
       sentencesToProcess = sentences.sentences;
     }
     
-    return sentencesToProcess.map((sentence, index) => {
-      if (typeof sentence === 'string') {
-        // 如果是字符串，将其解析为单词对象
-        const words = parseSentenceForPhonetics(sentence);
-        // 注意：getTranslation 现在是异步的，所以这里先返回 null
-        // 翻译会在实际使用时异步加载
-        const translation = null; // getTranslation(sentence);
-
-        // 为每个单词添加翻译
-        const wordsWithTranslation = words.map(word => ({
-          ...word,
-          translation: getWordTranslation(word.word)
-        }));
-
-        return {
-          id: index + 1, // 使用索引+1作为句子ID，用于匹配预加载音频
-          text: sentence,
-          translation: translation,
-          words: wordsWithTranslation
-        };
-      } else if (sentence && sentence.words) {
+    return sentencesToProcess.map((sentence) => {
+      if (sentence && sentence.words) {
         // 如果已经有words属性，添加翻译信息
         // 注意：getTranslation 现在是异步的，所以这里先返回 null
         const translation = null; // getTranslation(sentence.text || sentence);
@@ -101,22 +111,22 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
 
         return {
           ...sentence,
-          id: sentence.id || index + 1, // 保留原有ID或使用索引+1
+          id: sentence.id,
           translation: translation,
           words: wordsWithTranslation
         };
       } else if (sentence && sentence.text) {
         // 对象格式但只有 text 属性（如新概念二/三的数据）
         const words = parseSentenceForPhonetics(sentence.text);
-        
+
         // 为每个单词添加翻译
         const wordsWithTranslation = words.map(word => ({
           ...word,
           translation: getWordTranslation(word.word)
         }));
-        
+
         return {
-          id: sentence.id || index + 1,
+          id: sentence.id,
           text: sentence.text,
           translation: sentence.translation || null,
           words: wordsWithTranslation
@@ -124,7 +134,7 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
       } else {
         // 其他情况，返回空对象
         return {
-          id: index + 1,
+          id: sentence.id,
           text: sentence.text || sentence || '',
           translation: sentence.translation || null,
           words: []
@@ -136,6 +146,9 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
   const practiceProgress = usePracticeProgress(sentences.currentDataSource, processedSentences.length);
 
   const rawArticles = useMemo(() => {
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_1 && newConcept1Data?.success && newConcept1Data?.articles) {
+      return newConcept1Data.articles;
+    }
     if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_2 && newConcept2Data?.success && newConcept2Data?.articles) {
       return newConcept2Data.articles;
     }
@@ -248,26 +261,55 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
   }, [speechPlayback]);
 
   const handleToggleAutoPlay = useCallback(() => {
-    setAutoPlay(!autoPlay);
+    const newValue = !autoPlay;
+    setAutoPlay(newValue);
+    localStorage.setItem('autoPlay', newValue.toString());
   }, [autoPlay]);
 
   const handleToggleRandomMode = useCallback(() => {
-    setRandomMode(!randomMode);
+    const newValue = !randomMode;
+    setRandomMode(newValue);
+    localStorage.setItem('randomMode', newValue.toString());
   }, [randomMode]);
 
   const handleToggleListenMode = useCallback(() => {
-    setListenMode(!listenMode);
+    const newValue = !listenMode;
+    setListenMode(newValue);
+    localStorage.setItem('listenMode', newValue.toString());
   }, [listenMode]);
 
-
+  const handleSpeechRateChange = useCallback((newRate) => {
+    setSpeechRate(newRate);
+    localStorage.setItem('speechRate', newRate.toString());
+  }, []);
 
   const handleToggleAutoNext = useCallback(() => {
-    setAutoNext(!autoNext);
+    const newValue = !autoNext;
+    setAutoNext(newValue);
+    localStorage.setItem('autoNext', newValue.toString());
   }, [autoNext]);
 
   const handleToggleSettings = useCallback(() => {
     setShowSettingsModal(prev => !prev);
   }, []);
+
+  const handleToggleShowCounter = useCallback(() => {
+    const newValue = !showCounter;
+    setShowCounter(newValue);
+    localStorage.setItem('showCounter', newValue.toString());
+  }, [showCounter]);
+
+  const handleToggleShowTranslation = useCallback(() => {
+    const newValue = !showTranslation;
+    setShowTranslation(newValue);
+    localStorage.setItem('showTranslation', newValue.toString());
+  }, [showTranslation]);
+
+  const handleToggleShowOriginalText = useCallback(() => {
+    const newValue = !showOriginalText;
+    setShowOriginalText(newValue);
+    localStorage.setItem('showOriginalText', newValue.toString());
+  }, [showOriginalText]);
 
   // 上下文值
   const value = {
@@ -292,6 +334,10 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
     setSpeechRate,
     randomMode,
     setRandomMode,
+    showCounter,
+    setShowCounter,
+    showTranslation,
+    setShowTranslation,
     listenMode,
     setListenMode,
 
@@ -308,9 +354,12 @@ export function AppProvider({ children, dataSource = DATA_SOURCE_TYPES.LOCAL }) 
     handleToggleAutoPlay,
     handleToggleRandomMode,
     handleToggleListenMode,
-
+    handleSpeechRateChange,
     handleToggleAutoNext,
     handleToggleSettings,
+    handleToggleShowCounter,
+    handleToggleShowTranslation,
+    handleToggleShowOriginalText,
 
     // 课文选择
     showLessonSelector,

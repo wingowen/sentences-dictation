@@ -1,5 +1,6 @@
 import React from 'react'
 import HintButton from './HintButton'
+import { SentenceInput } from './SentenceInput'
 import { useApp } from '../contexts/AppContext'
 
 const PracticeCard = React.memo(({
@@ -16,15 +17,11 @@ const PracticeCard = React.memo(({
     showTranslation,
     setShowTranslation,
     currentTranslation,
-    wordInputs,
     currentWords,
-    handleWordInputChange,
-    handleSubmit,
     listenMode,
     isSupported: speechSupported,
     handlePlay,
     handlePlayWord,
-    inputRefs,
     setShowSettingsModal: setShowSettingsModal,
     setCurrentIndex,
     totalSentences = sentences?.length || 0
@@ -41,39 +38,17 @@ const PracticeCard = React.memo(({
   const currentSentence = sentences?.[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
   const [focusedInputIndex, setFocusedInputIndex] = React.useState(0);
-  const inputRefsLocal = React.useRef([]);
 
-  // 聚焦第一个输入框
-  React.useEffect(() => {
+  const handleSentenceComplete = () => {
+    // 句子完成后自动进入下一句
     setTimeout(() => {
-      (inputRefs?.current || inputRefsLocal.current)?.[0]?.focus()
-    }, 100)
-  }, [wordInputs?.length])
+      onNext();
+    }, 1000);
+  };
 
-  const onWordChange = (index, value) => {
-    if (handleWordInputChange) handleWordInputChange(index, value)
-  }
-
-  const handleInputFocus = (index) => {
-    setFocusedInputIndex(index)
-  }
-
-  const handleKeyDown = (index, e) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault()
-      const userWord = wordInputs[index]
-      const correctWord = currentWords[index]?.word
-
-      if (userWord.trim() && correctWord) {
-        const isCorrect = normalize(userWord) === normalize(correctWord)
-        if (isCorrect && index < wordInputs.length - 1) {
-          setTimeout(() => {
-            (inputRefs?.current || inputRefsLocal.current)?.[index + 1]?.focus()
-          }, 100)
-        }
-      }
-    }
-  }
+  const handleWordComplete = (index, word) => {
+    setFocusedInputIndex(index);
+  };
 
   const normalize = (str) => {
     return str
@@ -161,57 +136,15 @@ const PracticeCard = React.memo(({
         </button>
       </div>
 
-      {/* 输入区域 */}
-      <form className="word-inputs-form" onSubmit={handleSubmit}>
-        <div className="word-inputs">
-          {wordInputs.map((input, index) => {
-            const isCorrect = input.trim() && currentWords[index] && normalize(input) === normalize(currentWords[index].word)
-            const wordLength = currentWords[index]?.word?.length || 5
-            const currentInputLength = input.length || wordLength
-            const maxLength = Math.max(wordLength, currentInputLength)
-            const calculatedWidth = Math.max(5, wordLength * 1.2 + 2);
-            const clampedWidth = Math.max(4, Math.min(40, calculatedWidth))
-            const inputWidth = `${clampedWidth}ch`
-            const underlinePlaceholder = '_'.repeat(wordLength)
-
-            return (
-              <div key={index} className="word-input-wrapper">
-                <div className="word-input-container">
-                  <input
-                    ref={(el) => {
-                      const refs = inputRefs?.current || inputRefsLocal.current
-                      if (refs) refs[index] = el
-                    }}
-                    type="text"
-                    className={`word-input ${isCorrect ? 'word-correct' : ''}`}
-                    style={{ width: inputWidth }}
-                    value={input}
-                    onChange={(e) => onWordChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    onFocus={() => handleInputFocus(index)}
-                    onClick={() => handlePlayWord?.(currentWords[index]?.word)}
-                    placeholder={underlinePlaceholder}
-                    autoFocus={index === 0}
-                  />
-                  <button
-                    type="button"
-                    className="word-pronounce-button"
-                    onClick={() => handlePlayWord?.(currentWords[index]?.word)}
-                    disabled={!speechSupported || !currentWords[index]?.word}
-                    title="点击发音"
-                    tabIndex={-1}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </form>
+      {/* 输入区域 - 使用整行输入模式 */}
+      <SentenceInput
+        targetSentence={sentenceText}
+        onComplete={handleSentenceComplete}
+        onWordComplete={handleWordComplete}
+        onPlayWord={handlePlayWord}
+        onPlaySentence={handlePlay}
+        disabled={listenMode}
+      />
     </div>
   )
 })

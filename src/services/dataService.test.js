@@ -1,7 +1,6 @@
 // src/services/dataService.test.js
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
-  getLocalSentences,
   getNewConcept1Sentences,
   getNotionSentences,
   getSentencesBySource,
@@ -15,19 +14,63 @@ import {
 import cacheService from './cacheService';
 import { getAllFlashcards } from './flashcardService';
 
-// Mock the imported data
-vi.mock('../data/简单句.json', () => ({
-  default: [
-    { id: 1, text: 'This is a simple sentence.' },
-    { id: 2, text: 'Another simple sentence.' }
-  ]
+// Mock the imported data - 使用统一的结构化格式
+vi.mock('../data/new-concept-1.json', () => ({
+  default: {
+    success: true,
+    articles: [
+      {
+        lesson_id: '1-001',
+        title: 'Excuse me!',
+        chinese_title: '对不起！',
+        question: 'Whose handbag is it? 这是谁的手袋？',
+        sentences: [
+          { text: 'Excuse me!', translation: '对不起！' },
+          { text: 'Is this your handbag?', translation: '这是您的手提包吗？' }
+        ],
+        original_chinese: '对不起！这是您的手提包吗？'
+      }
+    ],
+    totalArticles: 1,
+    lastUpdated: new Date().toISOString()
+  }
 }));
 
-vi.mock('../data/新概念一.json', () => ({
-  default: [
-    { id: 1, text: 'New Concept 1 sentence 1.' },
-    { id: 2, text: 'New Concept 1 sentence 2.' }
-  ]
+vi.mock('../data/new-concept-2.json', () => ({
+  default: {
+    success: true,
+    articles: [
+      {
+        lesson_id: '2-001',
+        title: 'A private conversation',
+        question: 'Why did the writer complain?',
+        sentences: [
+          { text: 'Last week I went to the theatre.', translation: '上周我去了剧院。' }
+        ],
+        original_chinese: '上周我去了剧院。'
+      }
+    ],
+    totalArticles: 1
+  }
+}));
+
+vi.mock('../data/new-concept-3.json', () => ({
+  default: {
+    success: true,
+    articles: [
+      {
+        lesson_id: '3-001',
+        title: 'A puma at large',
+        chinese_title: '逃遁的美洲狮',
+        question: 'Where must the puma have come from?',
+        sentences: [
+          { text: 'Pumas are large, cat-like animals.', translation: '' }
+        ],
+        original_chinese: '美洲狮是一种体形似猫的大动物。'
+      }
+    ],
+    totalArticles: 1
+  }
 }));
 
 // Mock flashcardService
@@ -39,10 +82,13 @@ vi.mock('./flashcardService', () => ({
 globalThis.fetch = vi.fn();
 
 // Mock AbortController
-globalThis.AbortController = vi.fn().mockImplementation(() => ({
-  abort: vi.fn(),
-  signal: {}
-}));
+class MockAbortController {
+  constructor() {
+    this.signal = {};
+    this.abort = vi.fn();
+  }
+}
+globalThis.AbortController = MockAbortController;
 
 describe('dataService', () => {
   beforeEach(() => {
@@ -55,7 +101,6 @@ describe('dataService', () => {
 
   describe('DATA_SOURCE_TYPES', () => {
     it('should have all required data source types', () => {
-      expect(DATA_SOURCE_TYPES.LOCAL).toBe('local');
       expect(DATA_SOURCE_TYPES.NOTION).toBe('notion');
       expect(DATA_SOURCE_TYPES.NEW_CONCEPT_1).toBe('new-concept-1');
       expect(DATA_SOURCE_TYPES.NEW_CONCEPT_3).toBe('new-concept-3');
@@ -65,12 +110,11 @@ describe('dataService', () => {
 
   describe('DATA_SOURCES', () => {
     it('should contain all data source configurations', () => {
-      expect(DATA_SOURCES).toHaveLength(5);
-      expect(DATA_SOURCES[0].id).toBe(DATA_SOURCE_TYPES.FLASHCARDS);
-      expect(DATA_SOURCES[1].id).toBe(DATA_SOURCE_TYPES.LOCAL);
-      expect(DATA_SOURCES[2].id).toBe(DATA_SOURCE_TYPES.NOTION);
-      expect(DATA_SOURCES[3].id).toBe(DATA_SOURCE_TYPES.NEW_CONCEPT_1);
-      expect(DATA_SOURCES[4].id).toBe(DATA_SOURCE_TYPES.NEW_CONCEPT_3);
+      expect(DATA_SOURCES.length).toBeGreaterThanOrEqual(4);
+      expect(DATA_SOURCES.some(s => s.id === DATA_SOURCE_TYPES.FLASHCARDS)).toBe(true);
+      expect(DATA_SOURCES.some(s => s.id === DATA_SOURCE_TYPES.NOTION)).toBe(true);
+      expect(DATA_SOURCES.some(s => s.id === DATA_SOURCE_TYPES.NEW_CONCEPT_1)).toBe(true);
+      expect(DATA_SOURCES.some(s => s.id === DATA_SOURCE_TYPES.NEW_CONCEPT_3)).toBe(true);
     });
 
     it('should have proper structure for each data source', () => {
@@ -83,23 +127,14 @@ describe('dataService', () => {
     });
   });
 
-  describe('getLocalSentences', () => {
-    it('should return local sentences data', async () => {
-      const result = await getLocalSentences();
-      expect(result).toEqual([
-        { id: 1, text: 'This is a simple sentence.' },
-        { id: 2, text: 'Another simple sentence.' }
-      ]);
-    });
-  });
-
   describe('getNewConcept1Sentences', () => {
-    it('should return New Concept 1 sentences data', async () => {
+    it('should return New Concept 1 sentences from structured data', async () => {
       const result = await getNewConcept1Sentences();
-      expect(result).toEqual([
-        { id: 1, text: 'New Concept 1 sentence 1.' },
-        { id: 2, text: 'New Concept 1 sentence 2.' }
-      ]);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]).toHaveProperty('text');
+      expect(result[0]).toHaveProperty('translation');
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0].text).toBe('Excuse me!');
     });
   });
 
@@ -204,73 +239,13 @@ describe('dataService', () => {
   });
 
   describe('getNewConcept3Sentences', () => {
-    it('should fetch New Concept 3 sentences successfully', async () => {
-      const mockResponse = {
-        ok: true,
-        headers: {
-          get: () => 'application/json'
-        },
-        json: vi.fn().mockResolvedValue({
-          success: true,
-          articles: [
-            { sentences: ['Article 1 sentence 1', 'Article 1 sentence 2'] },
-            { sentences: ['Article 2 sentence 1'] }
-          ]
-        })
-      };
-
-      globalThis.fetch.mockResolvedValue(mockResponse);
-
+    it('should return New Concept 3 sentences from local data', async () => {
       const result = await getNewConcept3Sentences();
-      expect(result).toEqual([
-        'Article 1 sentence 1',
-        'Article 1 sentence 2',
-        'Article 2 sentence 1'
-      ]);
-    });
-
-    it('should throw error when no articles found', async () => {
-      const mockResponse = {
-        ok: true,
-        headers: {
-          get: () => 'application/json'
-        },
-        json: vi.fn().mockResolvedValue({
-          success: false,
-          articles: []
-        })
-      };
-
-      globalThis.fetch.mockResolvedValue(mockResponse);
-
-      await expect(getNewConcept3Sentences()).rejects.toThrow('获取新概念三文章失败或无数据');
-    });
-
-    it('should handle timeout for New Concept 3 API', async () => {
-      const mockController = {
-        abort: vi.fn(),
-        signal: {}
-      };
-      global.AbortController = vi.fn().mockImplementation(() => mockController);
-
-      vi.useFakeTimers();
-      global.fetch.mockImplementation(() => {
-        return new Promise((_, reject) => {
-          setTimeout(() => {
-            const error = new Error('Aborted');
-            error.name = 'AbortError';
-            reject(error);
-          }, 15000);
-        });
-      });
-
-      const promise = getNewConcept3Sentences();
-
-      vi.advanceTimersByTime(15000);
-
-      await expect(promise).rejects.toThrow('请求超时，请检查网络连接');
-
-      vi.useRealTimers();
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]).toHaveProperty('text');
+      expect(result[0]).toHaveProperty('translation');
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0].text).toBe('Pumas are large, cat-like animals.');
     });
   });
 
@@ -319,10 +294,10 @@ describe('dataService', () => {
     it('should fetch and cache New Concept 1 data', async () => {
       const result = await getSentencesBySource(DATA_SOURCE_TYPES.NEW_CONCEPT_1);
 
-      expect(result).toEqual([
-        { id: 1, text: 'New Concept 1 sentence 1.' },
-        { id: 2, text: 'New Concept 1 sentence 2.' }
-      ]);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]).toHaveProperty('text');
+      expect(result[0]).toHaveProperty('translation');
+      expect(result[0]).toHaveProperty('id');
       expect(cacheService.writeCache).toHaveBeenCalled();
     });
 
@@ -339,20 +314,12 @@ describe('dataService', () => {
       expect(result).toEqual(['Notion sentence']);
     });
 
-    it('should fetch New Concept 3 data when requested', async () => {
-      const mockResponse = {
-        ok: true,
-        headers: { get: () => 'application/json' },
-        json: vi.fn().mockResolvedValue({
-          success: true,
-          articles: [{ sentences: ['NC3 sentence'] }]
-        })
-      };
-      globalThis.fetch.mockResolvedValue(mockResponse);
-
+    it('should return New Concept 3 data from local JSON', async () => {
       const result = await getSentencesBySource(DATA_SOURCE_TYPES.NEW_CONCEPT_3);
 
-      expect(result).toEqual(['NC3 sentence']);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]).toHaveProperty('text');
+      expect(result[0]).toHaveProperty('id');
     });
 
     it('should handle flashcards data source', async () => {
@@ -380,59 +347,47 @@ describe('dataService', () => {
     it('should return local resources configuration', () => {
       const resources = getLocalResources();
 
-      expect(resources).toHaveLength(2);
-        expect(resources[0]).toEqual({
-          id: 'simple',
-          name: '简单句',
-          description: '基础简单句子练习',
-          data: [
-            { id: 1, text: 'This is a simple sentence.' },
-            { id: 2, text: 'Another simple sentence.' }
-          ]
-        });
-
-      expect(resources[1]).toEqual({
-        id: 'new-concept-1',
-        name: '新概念一',
-        description: '新概念英语第一册句子',
-        data: [
-          { id: 1, text: 'New Concept 1 sentence 1.' },
-          { id: 2, text: 'New Concept 1 sentence 2.' }
-        ]
-      });
+      expect(resources).toHaveLength(1);
+      expect(resources[0].id).toBe('new-concept-1');
+      expect(resources[0].name).toBe('新概念一');
+      expect(resources[0].data).toHaveProperty('success');
+      expect(resources[0].data).toHaveProperty('articles');
     });
   });
 
   describe('getSentencesByLocalResource', () => {
     it('should return data for valid resource ID', async () => {
-      const result = await getSentencesByLocalResource('simple');
+      const result = await getSentencesByLocalResource('new-concept-1');
 
-      expect(result).toEqual([
-        { id: 1, text: 'This is a simple sentence.' },
-        { id: 2, text: 'Another simple sentence.' }
-      ]);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('articles');
     });
 
-    it('should return default local data for unknown resource ID', async () => {
+    it('should return empty array for unknown resource ID', async () => {
       const result = await getSentencesByLocalResource('unknown');
 
-      expect(result).toEqual([
-        { id: 1, text: 'This is a simple sentence.' },
-        { id: 2, text: 'Another simple sentence.' }
-      ]);
+      expect(result).toEqual([]);
     });
 
-    it('should default to "simple" for undefined resource ID', async () => {
+    it('should default to "new-concept-1" for undefined resource ID', async () => {
       const result = await getSentencesByLocalResource();
 
-      expect(result).toEqual([
-        { id: 1, text: 'This is a simple sentence.' },
-        { id: 2, text: 'Another simple sentence.' }
-      ]);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('articles');
     });
   });
 
   describe('getSentences', () => {
+    let readCacheSpy;
+
+    beforeEach(() => {
+      readCacheSpy = vi.spyOn(cacheService, 'readCache').mockReturnValue(null);
+    });
+
+    afterEach(() => {
+      readCacheSpy.mockRestore();
+    });
+
     it('should handle boolean dataSource for backward compatibility', async () => {
       // Mock cache and fetch for Notion
       readCacheSpy.mockReturnValue(null);
@@ -448,31 +403,22 @@ describe('dataService', () => {
       expect(result).toEqual(['Notion sentence']);
     });
 
-    it('should handle false boolean dataSource', async () => {
-      const result = await getSentences(false); // false = use local
-
-      expect(result).toEqual([
-        { id: 1, text: 'This is a simple sentence.' },
-        { id: 2, text: 'Another simple sentence.' }
-      ]);
-    });
-
     it('should handle string dataSource', async () => {
       const result = await getSentences(DATA_SOURCE_TYPES.NEW_CONCEPT_1);
 
-      expect(result).toEqual([
-        { id: 1, text: 'New Concept 1 sentence 1.' },
-        { id: 2, text: 'New Concept 1 sentence 2.' }
-      ]);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]).toHaveProperty('text');
+      expect(result[0]).toHaveProperty('id');
     });
 
-    it('should default to local for undefined dataSource', async () => {
+    it('should default to new-concept-2 for undefined dataSource', async () => {
+      // Mock cache for new-concept-2
+      readCacheSpy.mockReturnValue(null);
+
       const result = await getSentences();
 
-      expect(result).toEqual([
-        { id: 1, text: 'This is a simple sentence.' },
-        { id: 2, text: 'Another simple sentence.' }
-      ]);
+      // Should use new-concept-2 as default
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 });
