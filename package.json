@@ -37,7 +37,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react-swc": "^4.2.2",
+    "@vitejs/plugin-react-swc": "^4.3.0",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
@@ -47,7 +47,7 @@
     "jsdom": "^27.4.0",
     "netlify-cli": "^23.13.5",
     "playwright": "^1.58.2",
-    "vite": "^7.2.4",
+    "vite": "^7.3.2",
     "vitest": "^4.0.18"
   }
 }
