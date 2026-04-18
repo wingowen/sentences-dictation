@@ -7,6 +7,17 @@ import {
 } from '../services/vocabularyService';
 import LoadingIndicator from './LoadingIndicator';
 
+// 从 localStorage 直接获取数据的辅助函数
+function getLocalVocabulariesDirect() {
+  try {
+    const item = localStorage.getItem('vocabularies_local');
+    return item ? JSON.parse(item) : [];
+  } catch (err) {
+    console.error('Error loading vocabularies from localStorage:', err);
+    return [];
+  }
+}
+
 // 词性映射表
 const POS_MAP = {
   'noun': '名词',
@@ -93,7 +104,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
       setFormData({ word: '', phonetic: '', meaning: '', part_of_speech: '', notes: '' });
       setShowAddForm(false);
       setEditingId(null);
-      loadVocabularies();
+      // 不需要重新从服务器加载，直接从本地获取最新数据
+      setVocabularies(getLocalVocabulariesDirect());
     } catch (err) {
       showNotification(err.message || '操作失败', 'error');
     }
@@ -110,7 +122,8 @@ const VocabularyApp = ({ onBack, onNavigateToReview }) => {
     
     try {
       await deleteVocabulary(deleteConfirmId);
-      loadVocabularies();
+      // 直接从本地获取最新数据
+      setVocabularies(getLocalVocabulariesDirect());
       setDeleteConfirmId(null);
       showNotification('生词删除成功', 'success');
     } catch (err) {
