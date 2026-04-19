@@ -81,19 +81,43 @@ export function SentenceInput({
 
       {/* 单词指示器 */}
       <div className="word-indicators">
-        {validation.words.map((wordResult, index) => (
-          <WordIndicator
-            key={index}
-            word={wordResult.target}
-            input={wordResult.input}
-            isCorrect={wordResult.isCorrect}
-            isCurrent={wordResult.isCurrent}
-            isEmpty={wordResult.isEmpty}
-            isExtra={wordResult.isExtra}
-            onPlay={handlePlayWord}
-            onClick={() => handleWordClick(index)}
-          />
-        ))}
+        {validation.words.map((wordResult, index) => {
+          // 计算该单词是否应该显示
+          // 规则：
+          // 1. 初始状态所有单词都不显示
+          // 2. 只有当前单词（用户正在输入）、已经正确的单词、或者前一个单词已经正确的下一个单词才显示
+          let isVisible = false;
+          
+          // 检查是否有任何输入
+          const hasAnyInput = validation.words.some(word => word.input && word.input.trim());
+          
+          if (hasAnyInput) {
+            if (wordResult.isCurrent || wordResult.isCorrect) {
+              isVisible = true;
+            } else if (index > 0) {
+              // 检查前一个单词是否正确
+              const prevWordResult = validation.words[index - 1];
+              if (prevWordResult && prevWordResult.isCorrect) {
+                isVisible = true;
+              }
+            }
+          }
+          
+          return (
+            <WordIndicator
+              key={index}
+              word={wordResult.target}
+              input={wordResult.input}
+              isCorrect={wordResult.isCorrect}
+              isCurrent={wordResult.isCurrent}
+              isEmpty={wordResult.isEmpty}
+              isExtra={wordResult.isExtra}
+              isVisible={isVisible}
+              onPlay={handlePlayWord}
+              onClick={() => handleWordClick(index)}
+            />
+          );
+        })}
       </div>
 
       {/* 进度提示 */}

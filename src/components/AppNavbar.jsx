@@ -76,11 +76,13 @@ const AppNavbar = ({
   const handleDropdownClick = useCallback((childId) => {
     if (onNewConceptSelect) {
       onNewConceptSelect(childId);
+      // 对于新概念选择，不立即关闭菜单，让导航完成后自动关闭
+      setActiveDropdown(null);
     } else {
       onNavigate(childId);
+      setActiveDropdown(null);
+      setIsMobileMenuOpen(false);
     }
-    setActiveDropdown(null);
-    setIsMobileMenuOpen(false);
   }, [onNavigate, onNewConceptSelect]);
 
   const isActive = useCallback((itemId) => {

@@ -38,6 +38,7 @@ const PracticeCard = React.memo(({
   const currentSentence = sentences?.[currentIndex];
   const sentenceText = typeof currentSentence === 'object' ? currentSentence?.text || '' : currentSentence || '';
   const [focusedInputIndex, setFocusedInputIndex] = React.useState(0);
+  const [showFullText, setShowFullText] = React.useState(false);
 
   const handleSentenceComplete = () => {
     // 句子完成后自动进入下一句
@@ -45,6 +46,19 @@ const PracticeCard = React.memo(({
       onNext();
     }, 1000);
   };
+
+  const handleToggleFullText = () => {
+    setShowFullText(prev => !prev);
+  };
+
+  // 生成全文内容
+  const fullText = sentences?.map((sentence, index) => {
+    const text = typeof sentence === 'object' ? sentence?.text || '' : sentence || '';
+    return `${index + 1}. ${text}`;
+  }).join('\n');
+
+  // 检查是否有课文内容
+  const hasFullText = sentences && sentences.length > 1;
 
   const handleWordComplete = (index, word) => {
     setFocusedInputIndex(index);
@@ -76,6 +90,24 @@ const PracticeCard = React.memo(({
         {showOriginalText && sentenceText && (
           <div className="original-text-display">
             <span className="original-text-content">{sentenceText}</span>
+          </div>
+        )}
+        {showFullText && fullText && (
+          <div className="full-text-modal-overlay">
+            <div className="full-text-modal-content">
+              <div className="full-text-header">
+                <h3>课文全文</h3>
+                <button
+                  type="button"
+                  className="close-full-text-button"
+                  onClick={handleToggleFullText}
+                  title="关闭全文"
+                >
+                  ×
+                </button>
+              </div>
+              <pre className="full-text-content">{fullText}</pre>
+            </div>
           </div>
         )}
       </div>
@@ -110,6 +142,18 @@ const PracticeCard = React.memo(({
         >
           下一句
         </button>
+
+        {hasFullText && (
+          <button
+            type="button"
+            className="full-text-button small"
+            onClick={handleToggleFullText}
+            disabled={listenMode}
+            title={showFullText ? '隐藏全文' : '显示全文'}
+          >
+            {showFullText ? '隐藏全文' : '显示全文'}
+          </button>
+        )}
 
         <HintButton
           hintText={currentWords.length > 0 ? currentWords[focusedInputIndex]?.word : '暂无提示'}

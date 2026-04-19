@@ -173,9 +173,9 @@ export function AppProvider({ children, dataSource }) {
     }
   }, [currentWords.length, currentWords]);
 
-  // 当 currentIndex 变化时，如果启用了自动播放，则自动播放句子（只播放一次）
+  // 当 currentIndex 变化时，如果启用了自动播放且已选择课文，则自动播放句子（只播放一次）
   useEffect(() => {
-    if (autoPlay && currentWords.length > 0 && currentIndex !== lastPlayedIndexRef.current) {
+    if (autoPlay && selectedLesson && currentWords.length > 0 && currentIndex !== lastPlayedIndexRef.current) {
       const sentenceText = currentWords
         .filter(w => w && w.word)
         .map(w => w.word)
@@ -194,7 +194,7 @@ export function AppProvider({ children, dataSource }) {
         return () => clearTimeout(timer);
       }
     }
-  }, [currentIndex, autoPlay, currentWords.length]); // 只依赖 currentIndex 和 autoPlay，避免 processedSentences 和 speechPlayback 导致的重复触发
+  }, [currentIndex, autoPlay, selectedLesson, currentWords.length]); // 只依赖 currentIndex、autoPlay、selectedLesson，避免 processedSentences 和 speechPlayback 导致的重复触发
 
   // 标准化字符串比较
   const normalize = useCallback((str) => str.toLowerCase().trim().replace(/[^\w]/g, ''), []);
@@ -311,11 +311,56 @@ export function AppProvider({ children, dataSource }) {
     localStorage.setItem('showOriginalText', newValue.toString());
   }, [showOriginalText]);
 
+  // 安全的索引设置函数，当索引超出范围时自动切换到下一篇课文
+  const safeSetCurrentIndex = useCallback((newIndex) => {
+    if (!processedSentences || processedSentences.length === 0) {
+      setCurrentIndex(0);
+      return;
+    }
+    
+    // 计算新索引
+    const index = typeof newIndex === 'function' ? newIndex(currentIndex) : newIndex;
+    
+    if (index >= processedSentences.length) {
+      // 索引超出范围，尝试切换到下一篇课文
+      if (rawArticles && selectedLesson) {
+        const currentLessonIndex = rawArticles.findIndex(article => 
+          article.lesson_id === selectedLesson.lesson_id
+        );
+        
+        if (currentLessonIndex !== -1 && currentLessonIndex < rawArticles.length - 1) {
+          // 切换到下一篇课文
+          const nextLesson = {
+            lesson_id: rawArticles[currentLessonIndex + 1].lesson_id || `lesson-${currentLessonIndex + 2}`,
+            lesson_number: `Lesson ${currentLessonIndex + 2}`,
+            title: rawArticles[currentLessonIndex + 1].title || `第 ${currentLessonIndex + 2} 课`,
+            sentences: rawArticles[currentLessonIndex + 1].sentences || []
+          };
+          setSelectedLesson(nextLesson);
+          setCurrentIndex(0);
+          lastPlayedIndexRef.current = -1;
+        } else {
+          // 已经是最后一篇课文，保持在最后一句
+          setCurrentIndex(processedSentences.length - 1);
+        }
+      } else {
+        // 没有选择课文或没有课文数据，保持在最后一句
+        setCurrentIndex(processedSentences.length - 1);
+      }
+    } else if (index < 0) {
+      // 索引小于0，保持在第一句
+      setCurrentIndex(0);
+    } else {
+      // 索引正常，直接设置
+      setCurrentIndex(index);
+    }
+  }, [processedSentences.length, rawArticles, selectedLesson, currentIndex]);
+
   // 上下文值
   const value = {
     // 基本状态
     currentIndex,
-    setCurrentIndex,
+    setCurrentIndex: safeSetCurrentIndex,
     wordInputs,
     setWordInputs,
     result,

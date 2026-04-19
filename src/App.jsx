@@ -12,6 +12,7 @@ import SettingsModal from './components/SettingsModal';
 import LessonSelector from './components/LessonSelector';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { addVocabulary } from './services/vocabularyService';
+import Toast from './components/Toast';
 
 const FlashcardApp = lazy(() => import('./components/FlashcardApp'));
 const FlashcardLearner = lazy(() => import('./components/FlashcardLearner'));
@@ -129,7 +130,7 @@ function useHashRouter(initialView) {
 }
 
 // PracticeCard 包装组件，用于传递 onAddToVocabulary 函数
-function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
+function PracticeCardWrapper({ onBack, currentUser, onRequireLogin, showToast }) {
   const appContext = useApp();
   const { currentWords, currentIndex, sentences, selectedLesson, dataSource } = appContext || {};
   
@@ -151,12 +152,12 @@ function PracticeCardWrapper({ onBack, currentUser, onRequireLogin }) {
         sentence_context: sentenceText
       });
       
-      alert(`已添加 "${wordData.word}" 到生词本`);
+      showToast(`已添加 "${wordData.word}" 到生词本`);
     } catch (err) {
       console.error('添加生词失败:', err);
-      alert(err.message || '添加失败，请重试');
+      showToast(err.message || '添加失败，请重试', 'error');
     }
-  }, [currentUser, sentences, currentIndex, onRequireLogin]);
+  }, [currentUser, sentences, currentIndex, onRequireLogin, showToast]);
   
   // 检查是否需要显示课文选择器（新概念一、二、三且没有选择课文）
   const isNce1 = dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_1;
@@ -184,7 +185,16 @@ function AppContent({ onSelectedDataSourceChange }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [isContentLoading, setIsContentLoading] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: 'success', show: false });
   const contentAreaRef = useRef(null);
+  
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type, show: true });
+  }, []);
+  
+  const hideToast = useCallback(() => {
+    setToast({ message: '', type: 'success', show: false });
+  }, []);
 
   const { currentView, navigateTo, navigateBack, canGoBack } = useHashRouter(VIEWS.HOME);
   
@@ -321,6 +331,7 @@ function AppContent({ onSelectedDataSourceChange }) {
             onSelect={handleSelectDataSource}
             currentUser={currentUser}
             onLoginClick={handleLoginClick}
+            showToast={showToast}
           />
         );
       
@@ -330,6 +341,7 @@ function AppContent({ onSelectedDataSourceChange }) {
             onBack={() => navigateTo(VIEWS.HOME)}
             currentUser={currentUser}
             onRequireLogin={() => setIsLoginModalOpen(true)}
+            showToast={showToast}
           />
         );
       
@@ -458,6 +470,12 @@ function AppContent({ onSelectedDataSourceChange }) {
         showOriginalText={showOriginalText}
         onToggleOriginalText={handleToggleShowOriginalText}
         currentTranslation={currentTranslation}
+      />
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={hideToast}
       />
     </div>
   );

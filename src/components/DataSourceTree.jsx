@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
-const SectionCard = ({ node, onSelect, currentUser }) => {
+const SectionCard = ({ node, onSelect, currentUser, showToast }) => {
   const isLocked = node.requiresLogin && !currentUser;
 
   const handleClick = () => {
     if (isLocked) {
-      alert('请先登录');
+      showToast('请先登录', 'info');
     } else {
       onSelect(node);
     }
@@ -23,7 +23,7 @@ const SectionCard = ({ node, onSelect, currentUser }) => {
   );
 };
 
-const DataSourceTree = ({ tree, onSelect, currentUser, onLoginClick }) => {
+const DataSourceTree = ({ tree, onSelect, currentUser, onLoginClick, showToast }) => {
   return (
     <div className="homepage">
       {/* Hero Section */}
@@ -60,6 +60,7 @@ const DataSourceTree = ({ tree, onSelect, currentUser, onLoginClick }) => {
                       node={subChild}
                       onSelect={onSelect}
                       currentUser={currentUser}
+                      showToast={showToast}
                     />
                   ))
                 ) : (
@@ -68,6 +69,7 @@ const DataSourceTree = ({ tree, onSelect, currentUser, onLoginClick }) => {
                     node={child}
                     onSelect={onSelect}
                     currentUser={currentUser}
+                    showToast={showToast}
                   />
                 )
               )}
