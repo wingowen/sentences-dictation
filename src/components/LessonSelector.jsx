@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { DATA_SOURCE_TYPES } from '../services/dataService';
 
@@ -23,19 +23,21 @@ const LessonSelector = ({ onBack }) => {
         sentences: article.sentences || []
       }));
       setLessons(lessonList);
-      console.log('[LessonSelector] Lessons loaded:', lessonList.length);
     }
   }, [rawArticles, dataSource]);
 
-  const handleSelectLesson = (lesson) => {
-    console.log('[LessonSelector] Selecting lesson:', lesson);
-    if (setSelectedLesson) setSelectedLesson(lesson);
-    if (setShowLessonSelector) setShowLessonSelector(false);
-  };
+  const handleSelectLesson = useCallback((lesson) => {
+    if (setSelectedLesson) {
+      setSelectedLesson(lesson);
+    }
+    if (setShowLessonSelector) {
+      setShowLessonSelector(false);
+    }
+  }, [setSelectedLesson, setShowLessonSelector]);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     if (onBack) onBack();
-  };
+  }, [onBack]);
 
   const bookTitleMap = {
     [DATA_SOURCE_TYPES.NEW_CONCEPT_1]: '新概念英语第一册',

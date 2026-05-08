@@ -19,20 +19,23 @@ const SupabaseSelector = React.memo(({
   const [loadingStep, setLoadingStep] = useState(null);
   
   // 使用 ref 防止重复加载
-  const isInitializedRef = useRef(false);
   const lastLoadedTagIdRef = useRef(null);
+  const mountedRef = useRef(true);
 
-  // 初始化：加载数据源时只执行一次
+  // 组件卸载时设置标志
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // 初始化：加载数据源时执行
   useEffect(() => {
     // 只在 SUPABASE 数据源时执行
     if (dataSource !== DATA_SOURCE_TYPES.SUPABASE) {
-      isInitializedRef.current = false;
       return;
     }
-    
-    // 防止重复初始化
-    if (isInitializedRef.current) return;
-    isInitializedRef.current = true;
     
     console.log('[SupabaseSelector] 初始化加载标签');
     
@@ -41,6 +44,8 @@ const SupabaseSelector = React.memo(({
       setIsLoading?.(true);
       try {
         const tagsData = await getSupabaseTags();
+        if (!mountedRef.current) return;
+        
         setTags(tagsData);
         if (tagsData.length > 0) {
           const firstTagId = tagsData[0].id;
@@ -49,21 +54,24 @@ const SupabaseSelector = React.memo(({
           // 立即加载第一个标签的文章
           setLoadingStep('articles');
           const articlesData = await getSupabaseArticles(firstTagId);
+          if (!mountedRef.current) return;
+          
           setArticles(articlesData);
           lastLoadedTagIdRef.current = firstTagId;
         }
       } catch (error) {
         console.error('[SupabaseSelector] 加载失败:', error);
         onError?.(error.message || '加载数据失败');
-        isInitializedRef.current = false; // 失败时允许重试
       } finally {
-        setLoadingStep(null);
-        setIsLoading?.(false);
+        if (mountedRef.current) {
+          setLoadingStep(null);
+          setIsLoading?.(false);
+        }
       }
     };
     
     loadInitialData();
-  }, [dataSource]); // 只依赖 dataSource
+  }, [dataSource]);
 
   // 手动切换标签时加载文章
   const handleTagChange = useCallback(async (newTagId) => {

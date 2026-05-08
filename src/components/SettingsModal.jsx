@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import cacheService from '../services/cacheService'
 
 const SettingsModal = ({
   isOpen,
@@ -23,6 +24,13 @@ const SettingsModal = ({
   currentTranslation,
 }) => {
   const [activeTab, setActiveTab] = useState('speech')
+  const [cacheCleared, setCacheCleared] = useState(false)
+
+  const handleClearCache = () => {
+    cacheService.clearAllCache()
+    setCacheCleared(true)
+    setTimeout(() => setCacheCleared(false), 3000)
+  }
 
   if (!isOpen) return null
 
@@ -30,6 +38,7 @@ const SettingsModal = ({
     { id: 'speech', label: '语音' },
     { id: 'practice', label: '练习' },
     { id: 'display', label: '显示' },
+    { id: 'data', label: '数据' },
   ]
 
   return (
@@ -148,6 +157,39 @@ const SettingsModal = ({
                   />
                   <span>显示原文</span>
                 </label>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'data' && (
+            <div className="settings-panel">
+              <div className="settings-section">
+                <h3>数据管理</h3>
+
+                <div className="settings-option">
+                  <button
+                    onClick={handleClearCache}
+                    className="settings-button"
+                  >
+                    清除所有缓存
+                  </button>
+                  {cacheCleared && (
+                    <span className="settings-hint success">✓ 缓存已清除</span>
+                  )}
+                </div>
+
+                <div className="settings-option">
+                  <button
+                    onClick={() => {
+                      localStorage.clear()
+                      window.location.reload()
+                    }}
+                    className="settings-button danger"
+                  >
+                    重置所有设置
+                  </button>
+                  <span className="settings-hint">将清除所有本地设置并刷新页面</span>
+                </div>
               </div>
             </div>
           )}

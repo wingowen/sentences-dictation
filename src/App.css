@@ -1898,6 +1898,28 @@ html {
   font-size: var(--text-subhead);
 }
 
+.settings-button.danger {
+  color: var(--error-color);
+  border-color: var(--error-color);
+  background: rgba(255, 59, 48, 0.05);
+}
+
+.settings-button.danger:hover:not(:disabled) {
+  background: rgba(255, 59, 48, 0.1);
+  border-color: var(--error-color);
+}
+
+.settings-hint {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--gray-500);
+  margin-top: 0.5rem;
+}
+
+.settings-hint.success {
+  color: var(--success-color);
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
