@@ -68,6 +68,8 @@ function AppContent() {
   const [speechRate, _setSpeechRate] = useState(1)
   const [newConcept3Articles, setNewConcept3Articles] = useState([])
   const [selectedArticleId, setSelectedArticleId] = useState(null)
+  // Ref to track selected article ID - avoids stale closure in async loadSentences
+  const selectedArticleIdRef = useRef(null);
   const [hasSelectedDataSource, setHasSelectedDataSource] = useState(false)
   const [randomMode, setRandomMode] = useState(false)
   const [listenMode, setListenMode] = useState(false)
@@ -323,7 +325,7 @@ function AppContent() {
 
   // 加载句子数据
   const loadSentences = useCallback(async () => {
-    console.log('开始加载句子数据', { dataSource, selectedArticleId, hasSelectedDataSource });
+    console.log('开始加载句子数据', { dataSource, selectedArticleId: selectedArticleIdRef.current, hasSelectedDataSource });
     
     // 如果正在进行回退操作，避免重复执行
     if (isFallbackInProgressRef.current) {
@@ -338,7 +340,8 @@ function AppContent() {
     }
     
     // 如果是新概念三但未选择文章，等待用户选择文章
-    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !selectedArticleId) {
+    const currentSelectedArticleId = selectedArticleIdRef.current;
+    if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && !currentSelectedArticleId) {
       console.log('新概念三未选择文章，等待用户选择');
       // 设置为非加载状态，因为不需要加载句子，只需要等待用户选择文章
       setIsLoading(false)
@@ -362,11 +365,14 @@ function AppContent() {
     
     try {
       let data;
-      
-      if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && selectedArticleId) {
+
+      // Use ref to get latest selectedArticleId - avoids stale closure in async function
+      const currentSelectedArticleId = selectedArticleIdRef.current;
+
+      if (dataSource === DATA_SOURCE_TYPES.NEW_CONCEPT_3 && currentSelectedArticleId) {
         // 对于新概念三，从本地数据获取选中文章的句子
-        console.log('加载新概念三课程内容', { selectedArticleId });
-        const selectedArticle = newConcept3Articles.find(article => article.id === selectedArticleId);
+        console.log('加载新概念三课程内容', { currentSelectedArticleId });
+        const selectedArticle = newConcept3Articles.find(article => article.id === currentSelectedArticleId);
         if (selectedArticle && selectedArticle.sentences) {
           // 转换所有句子中的缩写为完整形式
           data = selectedArticle.sentences.map(sentence => expandContractionsInSentence(sentence));
@@ -1167,6 +1173,12 @@ function AppContent() {
       setDataSourceError(null);
     }
   }, []);
+
+  // 处理文章选择 - 同时更新 state 和 ref，避免闭包问题
+  const handleArticleChange = useCallback((articleId) => {
+    setSelectedArticleId(articleId);
+    selectedArticleIdRef.current = articleId;
+  }, []);
   
   // 监听听句子模式状态变化
   useEffect(() => {
@@ -1299,7 +1311,7 @@ function AppContent() {
             dataSource={dataSource}
             articles={newConcept3Articles}
             selectedArticleId={selectedArticleId}
-            onArticleChange={setSelectedArticleId}
+            onArticleChange={handleArticleChange}
             isLoading={isLoading}
           />
         ) : practiceMode !== 'immersive' && (
@@ -1308,7 +1320,7 @@ function AppContent() {
               dataSource={dataSource}
               articles={newConcept3Articles}
               selectedArticleId={selectedArticleId}
-              onArticleChange={setSelectedArticleId}
+              onArticleChange={handleArticleChange}
               isLoading={isLoading}
             />
 
