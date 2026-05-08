@@ -89,21 +89,16 @@ export function AppProvider({ children, dataSource }) {
     // 确定要处理的句子数据源
     let sentencesToProcess = [];
     
-    if (selectedLesson && selectedLesson.sentences) {
+    if (selectedLesson?.sentences && selectedLesson.sentences.length > 0) {
       // 如果选择了特定课程，使用该课程的句子
       sentencesToProcess = selectedLesson.sentences;
-    } else if (sentences.sentences && sentences.sentences.length > 0) {
+    } else if (sentences.sentences && Array.isArray(sentences.sentences) && sentences.sentences.length > 0) {
       // 否则使用默认的句子数据
       sentencesToProcess = sentences.sentences;
     }
     
-    return sentencesToProcess.map((sentence) => {
+    return sentencesToProcess.map((sentence, index) => {
       if (sentence && sentence.words) {
-        // 如果已经有words属性，添加翻译信息
-        // 注意：getTranslation 现在是异步的，所以这里先返回 null
-        const translation = null; // getTranslation(sentence.text || sentence);
-
-        // 为每个单词添加翻译
         const wordsWithTranslation = sentence.words.map(word => ({
           ...word,
           translation: getWordTranslation(word.word)
@@ -111,32 +106,29 @@ export function AppProvider({ children, dataSource }) {
 
         return {
           ...sentence,
-          id: sentence.id,
-          translation: translation,
+          id: sentence.id || index,
           words: wordsWithTranslation
         };
-      } else if (sentence && sentence.text) {
-        // 对象格式但只有 text 属性（如新概念二/三的数据）
-        const words = parseSentenceForPhonetics(sentence.text);
+      } else if (sentence && (sentence.text || typeof sentence === 'string')) {
+        const text = typeof sentence === 'string' ? sentence : sentence.text;
+        const words = parseSentenceForPhonetics(text);
 
-        // 为每个单词添加翻译
         const wordsWithTranslation = words.map(word => ({
           ...word,
           translation: getWordTranslation(word.word)
         }));
 
         return {
-          id: sentence.id,
-          text: sentence.text,
+          id: sentence.id || index,
+          text: text,
           translation: sentence.translation || null,
           words: wordsWithTranslation
         };
       } else {
-        // 其他情况，返回空对象
         return {
-          id: sentence.id,
-          text: sentence.text || sentence || '',
-          translation: sentence.translation || null,
+          id: index,
+          text: '',
+          translation: null,
           words: []
         };
       }

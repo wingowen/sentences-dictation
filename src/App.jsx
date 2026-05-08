@@ -238,35 +238,11 @@ function AppContent({ onSelectedDataSourceChange }) {
   }, []);
 
   const handleNavigate = useCallback((view) => {
-    setIsContentLoading(true);
-    
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        navigateTo(view);
-        
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            setIsContentLoading(false);
-          }, 50);
-        });
-      }, 80);
-    });
+    navigateTo(view);
   }, [navigateTo]);
 
   const handleBack = useCallback(() => {
-    setIsContentLoading(true);
-    
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        navigateBack();
-        
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            setIsContentLoading(false);
-          }, 50);
-        });
-      }, 80);
-    });
+    navigateBack();
   }, [navigateBack]);
 
   const handleLoginClick = useCallback(() => {
