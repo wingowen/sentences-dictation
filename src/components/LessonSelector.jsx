@@ -172,12 +172,13 @@ const LessonSelector = ({ onBack }) => {
       <div className="lesson-list">
         {lessons.map((lesson, index) => (
           <button
-            key={`${dataSource}-${lesson.lesson_id}-${index}`}
+            key={`${lesson.lesson_id}-${index}`}
             className={`lesson-item ${selectedLesson?.lesson_id === lesson.lesson_id ? 'selected' : ''}`}
             onClick={() => {
               console.log('[LessonSelector] Clicked:', lesson.lesson_id, 'title:', lesson.title);
               handleSelectLesson(lesson);
             }}
+            style={{ WebkitTapHighlightColor: 'transparent' }}  // 修复移动端触摸高亮
           >
             <div className="lesson-info">
               <span className="lesson-number">{lesson.lesson_number}</span>
