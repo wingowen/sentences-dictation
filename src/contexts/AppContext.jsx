@@ -311,6 +311,33 @@ export function AppProvider({ children, dataSource }) {
     localStorage.setItem('showOriginalText', newValue.toString());
   }, [showOriginalText]);
 
+  // 进度存储工具函数
+  const getProgressKey = (ds, lessonId) => `progress_${ds}_${lessonId}`;
+
+  const getStoredProgress = useCallback((ds, lessonId) => {
+    try {
+      const key = getProgressKey(ds, lessonId);
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.error('[AppContext] 读取进度失败:', e);
+      return null;
+    }
+  }, []);
+
+  const saveProgress = useCallback((ds, lessonId, idx, total) => {
+    try {
+      const key = getProgressKey(ds, lessonId);
+      localStorage.setItem(key, JSON.stringify({
+        currentIndex: idx,
+        total: total,
+        lastVisit: new Date().toISOString()
+      }));
+    } catch (e) {
+      console.error('[AppContext] 保存进度失败:', e);
+    }
+  }, []);
+
   // 安全的索引设置函数，当索引超出范围时自动切换到下一篇课文
   const safeSetCurrentIndex = useCallback((newIndex) => {
     if (!processedSentences || processedSentences.length === 0) {
@@ -320,6 +347,11 @@ export function AppProvider({ children, dataSource }) {
     
     // 计算新索引
     const index = typeof newIndex === 'function' ? newIndex(currentIndex) : newIndex;
+    
+    // 保存进度到 localStorage
+    if (selectedLesson && dataSource && index >= 0) {
+      saveProgress(dataSource, selectedLesson.lesson_id, index, processedSentences.length);
+    }
     
     if (index >= processedSentences.length) {
       // 索引超出范围，尝试切换到下一篇课文
@@ -354,7 +386,7 @@ export function AppProvider({ children, dataSource }) {
       // 索引正常，直接设置
       setCurrentIndex(index);
     }
-  }, [processedSentences.length, rawArticles, selectedLesson, currentIndex]);
+  }, [processedSentences.length, rawArticles, selectedLesson, currentIndex, dataSource, saveProgress]);
 
   // 上下文值
   const value = {
@@ -420,6 +452,7 @@ export function AppProvider({ children, dataSource }) {
     dataSource,
     sentencesLoading,
     rawArticles,
+    getStoredProgress,
 
     // 派生状态
     currentWords,

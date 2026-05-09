@@ -9,10 +9,15 @@ const LessonSelector = ({ onBack }) => {
     setShowLessonSelector,
     dataSource,
     rawArticles,
-    sentencesLoading
+    sentencesLoading,
+    getStoredProgress,
+    setCurrentIndex
   } = useApp() || {};
 
   const [lessons, setLessons] = useState([]);
+  const [showProgressHint, setShowProgressHint] = useState(false);
+  const [progressInfo, setProgressInfo] = useState(null);
+  const [pendingLesson, setPendingLesson] = useState(null);
 
   // 当 rawArticles 变化时，确保清除旧的选择状态
   useEffect(() => {
@@ -46,8 +51,42 @@ const LessonSelector = ({ onBack }) => {
 
   const handleSelectLesson = (lesson) => {
     console.log('[LessonSelector] Selecting lesson:', lesson);
-    if (setSelectedLesson) setSelectedLesson(lesson);
+    
+    // 检测是否有历史进度
+    const progress = getStoredProgress ? getStoredProgress(dataSource, lesson.lesson_id) : null;
+    
+    if (progress && progress.currentIndex > 0) {
+      // 有进度，显示提示让用户选择
+      setProgressInfo(progress);
+      setPendingLesson(lesson);
+      setShowProgressHint(true);
+    } else {
+      // 无进度，直接设置课程
+      if (setSelectedLesson) setSelectedLesson(lesson);
+      if (setShowLessonSelector) setShowLessonSelector(false);
+    }
+  };
+
+  const handleContinue = () => {
+    if (setSelectedLesson && pendingLesson && setCurrentIndex) {
+      setSelectedLesson(pendingLesson);
+      setCurrentIndex(progressInfo.currentIndex);
+    }
     if (setShowLessonSelector) setShowLessonSelector(false);
+  };
+
+  const handleRestart = () => {
+    if (setSelectedLesson && pendingLesson) {
+      setSelectedLesson(pendingLesson);
+      // 从第一句开始
+    }
+    if (setShowLessonSelector) setShowLessonSelector(false);
+  };
+
+  const closeProgressHint = () => {
+    setShowProgressHint(false);
+    setProgressInfo(null);
+    setPendingLesson(null);
   };
 
   const handleBackClick = () => {
@@ -110,6 +149,65 @@ const LessonSelector = ({ onBack }) => {
         </button>
         <h2 className="lesson-selector-title">{bookTitle} - 选择课文</h2>
       </div>
+
+      {/* 进度提示 */}
+      {showProgressHint && progressInfo && (
+        <div className="progress-hint" style={{
+          margin: '12px',
+          padding: '16px',
+          background: '#e8f4fd',
+          borderRadius: '8px',
+          border: '1px solid #b3d7f5'
+        }}>
+          <p style={{ margin: '0 0 12px 0', color: '#333', fontSize: '14px' }}>
+            上次学到第 {progressInfo.currentIndex + 1} 句/共 {progressInfo.total} 句
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleContinue}
+              style={{
+                padding: '8px 16px',
+                background: '#00247D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              继续
+            </button>
+            <button
+              onClick={handleRestart}
+              style={{
+                padding: '8px 16px',
+                background: '#fff',
+                color: '#00247D',
+                border: '1px solid #00247D',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              重新开始
+            </button>
+            <button
+              onClick={closeProgressHint}
+              style={{
+                padding: '8px 12px',
+                background: 'transparent',
+                color: '#666',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                marginLeft: 'auto'
+              }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="lesson-list">
         {lessons.map((lesson, index) => (
