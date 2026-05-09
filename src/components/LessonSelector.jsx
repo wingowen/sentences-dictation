@@ -46,7 +46,7 @@ const LessonSelector = ({ onBack }) => {
       let latestLesson = null;
       for (const lesson of lessonList) {
         const progress = getStoredProgress ? getStoredProgress(dataSource, lesson.lesson_id) : null;
-        if (progress && progress.currentIndex > 0) {
+        if (progress && progress.currentIndex >= 0) {
           if (!latestProgress || new Date(progress.lastVisit) > new Date(latestProgress.lastVisit)) {
             latestProgress = progress;
             latestLesson = lesson;
