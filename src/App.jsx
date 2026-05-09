@@ -220,6 +220,7 @@ function AppContent({ onSelectedDataSourceChange }) {
     handleToggleShowOriginalText,
     currentTranslation,
     isSupported: speechSupported,
+    clearSelectedLesson,
   } = useApp() || {};
 
   useEffect(() => {
@@ -292,12 +293,15 @@ function AppContent({ onSelectedDataSourceChange }) {
     } else if (node.view === 'vocab-review') {
       handleNavigate(VIEWS.VOCAB_REVIEW);
     } else if (node.id) {
+      // 先清除已选课文，确保进入文章选择页面
+      if (clearSelectedLesson) clearSelectedLesson();
+      // 更新数据源并导航
       onSelectedDataSourceChange(node.id);
       handleNavigate(VIEWS.PRACTICE);
     } else {
       handleNavigate(VIEWS.HOME);
     }
-  }, [handleNavigate, onSelectedDataSourceChange]);
+  }, [handleNavigate, onSelectedDataSourceChange, clearSelectedLesson]);
   
   // 处理新概念选择（从导航栏）
   const handleNewConceptSelect = useCallback((conceptId) => {
@@ -308,16 +312,12 @@ function AppContent({ onSelectedDataSourceChange }) {
     };
     const dataSource = conceptMap[conceptId] || DATA_SOURCE_TYPES.NEW_CONCEPT_2;
     
-    // 第一册直接进入练习，第二册和第三册需要先选择课文
-    if (conceptId === 'new-concept-1') {
-      onSelectedDataSourceChange(dataSource);
-      handleNavigate(VIEWS.PRACTICE);
-    } else {
-      // 第二册和第三册：设置数据源并进入练习模式，在练习模式中显示课文选择
-      onSelectedDataSourceChange(dataSource);
-      handleNavigate(VIEWS.PRACTICE);
-    }
-  }, [handleNavigate, onSelectedDataSourceChange]);
+    // 先清除已选课文，确保进入文章选择页面
+    if (clearSelectedLesson) clearSelectedLesson();
+    // 更新数据源并导航
+    onSelectedDataSourceChange(dataSource);
+    handleNavigate(VIEWS.PRACTICE);
+  }, [handleNavigate, onSelectedDataSourceChange, clearSelectedLesson]);
 
   const showBackButton = VIEW_CONFIG[currentView]?.showBackButton && canGoBack;
   const pageTitle = VIEW_TITLES[currentView];
