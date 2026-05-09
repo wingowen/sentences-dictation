@@ -220,6 +220,7 @@ function AppContent({ onSelectedDataSourceChange }) {
     handleToggleShowOriginalText,
     currentTranslation,
     isSupported: speechSupported,
+    clearSelectedLesson,
   } = useApp() || {};
 
   useEffect(() => {
@@ -292,14 +293,15 @@ function AppContent({ onSelectedDataSourceChange }) {
     } else if (node.view === 'vocab-review') {
       handleNavigate(VIEWS.VOCAB_REVIEW);
     } else if (node.id) {
-      // 合并状态更新和导航，确保状态先更新再导航
+      // 先清除已选课文，确保进入文章选择页面
+      if (clearSelectedLesson) clearSelectedLesson();
+      // 更新数据源并导航
       onSelectedDataSourceChange(node.id);
-      // 延迟一点确保状态更新完成后再导航
-      setTimeout(() => handleNavigate(VIEWS.PRACTICE), 0);
+      handleNavigate(VIEWS.PRACTICE);
     } else {
       handleNavigate(VIEWS.HOME);
     }
-  }, [handleNavigate, onSelectedDataSourceChange]);
+  }, [handleNavigate, onSelectedDataSourceChange, clearSelectedLesson]);
   
   // 处理新概念选择（从导航栏）
   const handleNewConceptSelect = useCallback((conceptId) => {
@@ -310,10 +312,12 @@ function AppContent({ onSelectedDataSourceChange }) {
     };
     const dataSource = conceptMap[conceptId] || DATA_SOURCE_TYPES.NEW_CONCEPT_2;
     
-    // 合并状态更新和导航，确保状态先更新再导航
+    // 先清除已选课文，确保进入文章选择页面
+    if (clearSelectedLesson) clearSelectedLesson();
+    // 更新数据源并导航
     onSelectedDataSourceChange(dataSource);
-    setTimeout(() => handleNavigate(VIEWS.PRACTICE), 0);
-  }, [handleNavigate, onSelectedDataSourceChange]);
+    handleNavigate(VIEWS.PRACTICE);
+  }, [handleNavigate, onSelectedDataSourceChange, clearSelectedLesson]);
 
   const showBackButton = VIEW_CONFIG[currentView]?.showBackButton && canGoBack;
   const pageTitle = VIEW_TITLES[currentView];
@@ -483,21 +487,17 @@ function App() {
     const saved = localStorage.getItem('selectedDataSource');
     return saved || null;
   });
-  
-  // 强制刷新 key - 用于强制 AppProvider 重新渲染并清除 selectedLesson
-  const [providerKey, setProviderKey] = useState(0);
 
   // 当数据源变化时，保存到 localStorage
   const handleDataSourceChange = useCallback((dataSource) => {
     setSelectedDataSource(dataSource);
-    setProviderKey(v => v + 1); // 强制 AppProvider 重新创建，清除状态
     if (dataSource) {
       localStorage.setItem('selectedDataSource', dataSource);
     }
   }, []);
 
   return (
-    <AppProvider key={providerKey} dataSource={selectedDataSource}>
+    <AppProvider dataSource={selectedDataSource}>
       <AppContent onSelectedDataSourceChange={handleDataSourceChange} />
     </AppProvider>
   );

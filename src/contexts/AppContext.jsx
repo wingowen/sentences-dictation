@@ -454,6 +454,11 @@ export function AppProvider({ children, dataSource }) {
     sentencesLoading,
     rawArticles,
     getStoredProgress,
+    clearSelectedLesson: () => {
+      setSelectedLesson(null);
+      setCurrentIndex(0);
+      lastPlayedIndexRef.current = -1;
+    },
 
     // 派生状态
     currentWords,
