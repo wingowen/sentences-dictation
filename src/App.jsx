@@ -292,8 +292,10 @@ function AppContent({ onSelectedDataSourceChange }) {
     } else if (node.view === 'vocab-review') {
       handleNavigate(VIEWS.VOCAB_REVIEW);
     } else if (node.id) {
+      // 合并状态更新和导航，确保状态先更新再导航
       onSelectedDataSourceChange(node.id);
-      handleNavigate(VIEWS.PRACTICE);
+      // 延迟一点确保状态更新完成后再导航
+      setTimeout(() => handleNavigate(VIEWS.PRACTICE), 0);
     } else {
       handleNavigate(VIEWS.HOME);
     }
@@ -308,15 +310,9 @@ function AppContent({ onSelectedDataSourceChange }) {
     };
     const dataSource = conceptMap[conceptId] || DATA_SOURCE_TYPES.NEW_CONCEPT_2;
     
-    // 第一册直接进入练习，第二册和第三册需要先选择课文
-    if (conceptId === 'new-concept-1') {
-      onSelectedDataSourceChange(dataSource);
-      handleNavigate(VIEWS.PRACTICE);
-    } else {
-      // 第二册和第三册：设置数据源并进入练习模式，在练习模式中显示课文选择
-      onSelectedDataSourceChange(dataSource);
-      handleNavigate(VIEWS.PRACTICE);
-    }
+    // 合并状态更新和导航，确保状态先更新再导航
+    onSelectedDataSourceChange(dataSource);
+    setTimeout(() => handleNavigate(VIEWS.PRACTICE), 0);
   }, [handleNavigate, onSelectedDataSourceChange]);
 
   const showBackButton = VIEW_CONFIG[currentView]?.showBackButton && canGoBack;
