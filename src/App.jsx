@@ -487,17 +487,24 @@ function App() {
     const saved = localStorage.getItem('selectedDataSource');
     return saved || null;
   });
+  
+  // 强制刷新计数器 - 解决 dataSource 未变化时 selectedLesson 不清除的问题
+  const [sourceVersion, setSourceVersion] = useState(0);
 
   // 当数据源变化时，保存到 localStorage
   const handleDataSourceChange = useCallback((dataSource) => {
     setSelectedDataSource(dataSource);
+    setSourceVersion(v => v + 1); // 强制触发 AppProvider 重新渲染
     if (dataSource) {
       localStorage.setItem('selectedDataSource', dataSource);
     }
   }, []);
 
+  // 使用带版本号的 dataSource 确保每次选择都触发更新
+  const effectiveDataSource = selectedDataSource ? `${selectedDataSource}_${sourceVersion}` : null;
+
   return (
-    <AppProvider dataSource={selectedDataSource}>
+    <AppProvider dataSource={effectiveDataSource}>
       <AppContent onSelectedDataSourceChange={handleDataSourceChange} />
     </AppProvider>
   );

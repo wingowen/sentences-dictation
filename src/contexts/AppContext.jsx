@@ -78,6 +78,7 @@ export function AppProvider({ children, dataSource }) {
 
   // 当数据源变化时，清除已选择的课程
   useEffect(() => {
+    console.log('[AppContext] dataSource changed, clearing selectedLesson:', dataSource);
     setSelectedLesson(null);
     setCurrentIndex(0);
     lastPlayedIndexRef.current = -1;
