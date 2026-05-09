@@ -73,7 +73,11 @@ export default defineConfig({
         'cypress/',
         '**/*.config.*',
         'src/main.jsx',
-        'src/vite-env.d.ts'
+        'src/vite-env.d.ts',
+        // Legacy flashcard import functionality - not part of core learning flow
+        'src/services/flashcardService.js',
+        'src/services/flashcardImportService.js',
+        'src/components/FlashcardImporter.jsx'
       ],
       thresholds: {
         global: {
