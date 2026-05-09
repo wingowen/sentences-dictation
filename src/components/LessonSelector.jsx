@@ -14,6 +14,20 @@ const LessonSelector = ({ onBack }) => {
 
   const [lessons, setLessons] = useState([]);
 
+  // 当 rawArticles 变化时，确保清除旧的选择状态
+  useEffect(() => {
+    // 切换数据源时，先清除当前选择
+    if (selectedLesson && rawArticles) {
+      const currentLessonId = selectedLesson.lesson_id;
+      const existsInNewList = rawArticles.some(a => a.lesson_id === currentLessonId);
+      // 如果当前选择的 lesson_id 不在新列表中，清除选择
+      if (!existsInNewList) {
+        console.log('[LessonSelector] Clearing stale selection:', currentLessonId);
+        if (setSelectedLesson) setSelectedLesson(null);
+      }
+    }
+  }, [rawArticles, selectedLesson, setSelectedLesson]);
+
   useEffect(() => {
     if (rawArticles && rawArticles.length > 0) {
       const lessonList = rawArticles.map((article, index) => ({
@@ -23,7 +37,10 @@ const LessonSelector = ({ onBack }) => {
         sentences: article.sentences || []
       }));
       setLessons(lessonList);
-      console.log('[LessonSelector] Lessons loaded:', lessonList.length);
+      console.log('[LessonSelector] Lessons loaded:', lessonList.length, 'dataSource:', dataSource);
+    } else if (rawArticles && rawArticles.length === 0) {
+      // 数据源切换但新数据还没加载，清空 lessons
+      setLessons([]);
     }
   }, [rawArticles, dataSource]);
 
@@ -95,11 +112,14 @@ const LessonSelector = ({ onBack }) => {
       </div>
 
       <div className="lesson-list">
-        {lessons.map((lesson) => (
+        {lessons.map((lesson, index) => (
           <button
-            key={lesson.lesson_id}
+            key={`${dataSource}-${lesson.lesson_id}-${index}`}
             className={`lesson-item ${selectedLesson?.lesson_id === lesson.lesson_id ? 'selected' : ''}`}
-            onClick={() => handleSelectLesson(lesson)}
+            onClick={() => {
+              console.log('[LessonSelector] Clicked:', lesson.lesson_id, 'title:', lesson.title);
+              handleSelectLesson(lesson);
+            }}
           >
             <div className="lesson-info">
               <span className="lesson-number">{lesson.lesson_number}</span>
