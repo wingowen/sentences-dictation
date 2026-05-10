@@ -21,9 +21,9 @@ export function WordIndicator({
   const canPlay = isCurrent || hasInput;
   // 决定是否显示单词
   const shouldDisplay = isVisible && (hasInput || isCurrent);
-  const displayWord = shouldDisplay ? (word || input) : '\u00A0';
+  const displayWord = shouldDisplay ? (isCorrect ? word : (input || '\u00A0')) : '\u00A0';
 
-  const handleClick = (e) => {
+  const handleClick = () => {
     // 只有可见的单词才能被点击
     if (!isVisible) return;
     
@@ -48,7 +48,6 @@ export function WordIndicator({
       title={isVisible ? (canPlay ? `点击播放 "${word}"${isCorrect ? ' ✓' : ''}` : '输入单词后显示') : '完成上一个单词后显示'}
     >
       <span className="word-text">{displayWord}</span>
-      {isCorrect && <span className="word-status">✓</span>}
     </span>
   );
 }

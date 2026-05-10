@@ -7161,3 +7161,37 @@ button:focus-visible:not(:disabled) {
   font-weight: var(--font-medium);
   white-space: nowrap;
 }
+
+/* ============================================
+   WORD INDICATOR STYLES
+   ============================================ */
+
+.word-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--text-body-2);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  min-width: 40px;
+}
+
+.word-indicator.correct {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+}
+
+.word-indicator.current {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.word-indicator.hidden-word {
+  background-color: transparent;
+}
+
+.word-indicator.empty {
+  background-color: var(--gray-100);
+}
